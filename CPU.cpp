@@ -22,31 +22,21 @@ constexpr CPU::Byte BIT7 = 1 << 7;
 #define HEX_CULL_FORMAT std::uppercase << std::setfill('0') << std::setw(2) << std::hex
 
 
+void set_bit(CPU::Byte &byte, int number, bool to) {
+    if (to) byte |= 1 << number;
+    else byte &= ~(1 << number);
+}
 
-void CPU::set_flag(CPU::Flag flag) {
-    switch (flag) {
-        case Flag::CARRY:
-            SR |= BIT0;
-            break;
-        case Flag::ZERO:
-            SR |= BIT1;
-            break;
-        case Flag::INTERRUPT:
-            SR |= BIT2;
-            break;
-        case Flag::DECIMAL:
-            SR |= BIT3;
-            break;
-        case Flag::BREAK:
-            SR |= BIT4;
-            break;
-        case Flag::OVERFLOW:
-            SR |= BIT6;
-            break;
-        case Flag::NEGATIVE:
-            SR |= BIT7;
-            break;
-    }
+
+
+bool check_bit(CPU::Byte byte, int number) {
+    return byte & (1 << number);
+}
+
+
+
+void CPU::set_flag(CPU::Flag flag, bool value) {
+    set_bit(SR, flag, value);
 }
 
 
@@ -74,6 +64,7 @@ void CPU::load_register(Register reg, AddressingMode mode) {
 
 
 void CPU::write_to_register(Register reg, Byte value) {
+    cycle++;
     switch (reg) {
         case Register::AC:
             AC = value;
@@ -86,12 +77,22 @@ void CPU::write_to_register(Register reg, Byte value) {
         case Register::Y:
             Y = value;
             break;
+
+        case Register::SP:
+            // writing to stack register does not affect the flags
+            SP = value;
+            return;
+
+        case Register::SR:
+            // writing to processor status register does not affect the flags
+            SR = value;
+            return;
     }
-    cycle++;
+
 
     // setting flags
-    if (value == 0) set_flag(Flag::ZERO);
-    if (value & BIT7) set_flag(Flag::NEGATIVE);
+    set_flag(Flag::ZERO, value == 0);
+    set_flag(Flag::NEGATIVE, check_bit(value, 7));
 }
 
 
@@ -120,9 +121,15 @@ std::string CPU::dump(bool include_memory) const {
 
 
 
-void CPU::write_byte(CPU::Byte value, CPU::Word address) {
+void CPU::write_byte(Byte value, Word address, bool set_flags) {
     memory[address] = value;
     cycle++;
+
+    if (set_flags) {
+        // setting flags
+        set_flag(Flag::ZERO, value == 0);
+        set_flag(Flag::NEGATIVE, check_bit(value, 7));
+    }
 }
 
 
@@ -136,6 +143,10 @@ CPU::Byte CPU::read_from_register(CPU::Register reg) {
             return X;
         case Register::Y:
             return Y;
+        case Register::SP:
+            return SP;
+        case Register::SR:
+            return SR;
     }
 }
 
@@ -152,10 +163,6 @@ void CPU::store_register(CPU::Register reg, CPU::AddressingMode mode) {
 
 CPU::Word CPU::determine_address(CPU::AddressingMode mode) {
     switch (mode) {
-        case AddressingMode::IMPLICIT: case AddressingMode::ACCUMULATOR:
-            // the return value does not matter
-            return 0;
-
         case AddressingMode::IMMEDIATE:
             return PC;
 
@@ -239,14 +246,261 @@ CPU::Word CPU::determine_address(CPU::AddressingMode mode) {
 }
 
 
+
+void CPU::push_to_stack(Register reg) {
+    if (reg != Register::AC && reg != Register::SR) {
+        std::stringstream ss;
+        ss << "Cannot push register " << reg << " on stack";
+        throw std::invalid_argument(ss.str());
+    }
+
+    push_to_stack(read_from_register(reg));
+}
+
+
+
+void CPU::push_to_stack(CPU::Byte value) {
+    Word address = 0x0100 + read_from_register(Register::SP);
+    write_byte(value, address);
+    SP++;
+}
+
+
+
+CPU::Byte CPU::pull_from_stack() {
+    Word address = 0x0100 + read_from_register(Register::SP);
+    Byte value = read_byte(address);
+    // for some reason, pulling from stack takes 1 more cycle than pushing to it, so we do write_to_register instead of manipulating SP directly
+    write_to_register(Register::SP, SP - 1);
+    return value;
+}
+
+
+
+void CPU::pull_from_stack(CPU::Register to) {
+    if (to != Register::AC && to != Register::SR) {
+        std::stringstream ss;
+        ss << "Cannot pull from stack to register " << to;
+        throw std::invalid_argument(ss.str());
+    }
+
+    write_to_register(to, pull_from_stack());
+}
+
+
+
+void CPU::logical_and(CPU::AddressingMode mode) {
+    Byte rhs = read_byte(mode);
+    write_to_register(Register::AC, AC & rhs);
+}
+
+
+
+void CPU::logical_xor(CPU::AddressingMode mode) {
+    Byte rhs = read_byte(mode);
+    write_to_register(Register::AC, AC ^ rhs);
+}
+
+
+
+void CPU::logical_or(CPU::AddressingMode mode) {
+    Byte rhs = read_byte(mode);
+    write_to_register(Register::AC, AC | rhs);
+}
+
+
+
+void CPU::bit_test(CPU::AddressingMode mode) {
+    Byte accumulator_byte = read_from_register(Register::AC);
+    Byte memory_byte = read_byte(mode);
+    bool test_result = accumulator_byte & memory_byte;
+
+    set_flag(Flag::ZERO, test_result);
+    set_flag(Flag::OVERFLOW, check_bit(memory_byte, OVERFLOW));
+    set_flag(Flag::NEGATIVE, check_bit(memory_byte, 7));
+}
+
+
+
+void CPU::add_with_carry(CPU::AddressingMode mode) {
+    bool initial_sign_bit = check_bit(AC, NEGATIVE);
+
+    Byte rhs = read_byte(mode);
+    bool rhs_sign_bit = check_bit(rhs, NEGATIVE);
+
+    write_to_register(Register::AC, AC + rhs + carry_bit_set());
+
+    bool resulting_sign_bit = check_bit(AC, NEGATIVE);
+
+    // carry flag is set only when the result crossed 255
+    set_flag(Flag::OVERFLOW, initial_sign_bit && !resulting_sign_bit);
+
+    // overflow flag is set every time when the sign of the result is incorrect
+    set_flag(Flag::OVERFLOW, initial_sign_bit == rhs_sign_bit && initial_sign_bit != resulting_sign_bit);
+}
+
+
+
+bool CPU::carry_bit_set() const {
+    return check_bit(SR, CARRY);
+}
+
+
+
+void CPU::subtract_with_carry(CPU::AddressingMode mode) {
+    bool initial_sign_bit = check_bit(AC, NEGATIVE);
+
+    Byte rhs = read_byte(mode);
+    bool rhs_sign_bit = check_bit(rhs, NEGATIVE);
+
+    write_to_register(Register::AC, AC - rhs - !carry_bit_set());
+
+    bool resulting_sign_bit = check_bit(AC, NEGATIVE);
+
+    // carry flag is set only when the result crossed 0
+    set_flag(Flag::OVERFLOW, !initial_sign_bit && resulting_sign_bit);
+
+    // overflow flag is set every time when the sign of the result is incorrect
+    set_flag(Flag::OVERFLOW, initial_sign_bit != rhs_sign_bit && initial_sign_bit != resulting_sign_bit);
+}
+
+
+
+void CPU::compare_register(CPU::Register reg, CPU::AddressingMode mode) {
+    if (reg != Register::AC && reg != Register::X && reg != Register::Y) {
+        std::stringstream ss;
+        ss << "Cannot compare register " << reg;
+        throw std::invalid_argument(ss.str());
+    }
+
+    Byte reg_value = read_from_register(reg);
+    Byte memory_value = read_byte(mode);
+
+    set_flag(Flag::CARRY, reg_value >= memory_value);
+    set_flag(Flag::ZERO, reg_value == memory_value);
+    set_flag(Flag::NEGATIVE, reg_value < memory_value);
+}
+
+
+
+void CPU::increment_memory(CPU::AddressingMode mode) {
+    Word address = determine_address(mode);
+    write_byte(read_byte(address) + 1, address, true);
+}
+
+
+
+void CPU::decrement_memory(CPU::AddressingMode mode) {
+    Word address = determine_address(mode);
+    write_byte(read_byte(address) - 1, address, true);
+}
+
+
+
+void CPU::increment_register(CPU::Register reg) {
+    if (reg != Register::X && reg != Register::Y) {
+        std::stringstream ss;
+        ss << "Cannot increment register " << reg;
+        throw std::invalid_argument(ss.str());
+    }
+
+    write_to_register(reg, read_from_register(reg) + 1);
+}
+
+
+
+void CPU::decrement_register(CPU::Register reg) {
+    if (reg != Register::X && reg != Register::Y) {
+        std::stringstream ss;
+        ss << "Cannot decrement register " << reg;
+        throw std::invalid_argument(ss.str());
+    }
+
+    write_to_register(reg, read_from_register(reg) - 1);
+}
+
+
+
+void CPU::shift_left_accumulator() {
+    set_flag(Flag::CARRY, check_bit(AC, 7));
+    write_to_register(Register::AC, read_from_register(Register::AC) << 1);
+}
+
+
+
+void CPU::shift_left_memory(CPU::AddressingMode mode) {
+    Word address = determine_address(mode);
+    Byte value = read_byte(address);
+
+    set_flag(Flag::CARRY, check_bit(value, 7));
+
+    write_byte(value << 1, address, true);
+}
+
+
+
+void CPU::shift_right_accumulator() {
+    set_flag(Flag::CARRY, check_bit(AC, 0));
+    write_to_register(Register::AC, read_from_register(Register::AC) >> 1);
+}
+
+
+
+void CPU::shift_right_memory(CPU::AddressingMode mode) {
+    Word address = determine_address(mode);
+    Byte value = read_byte(address);
+
+    set_flag(Flag::CARRY, check_bit(value, 0));
+
+    write_byte(value >> 1, address, true);
+}
+
+
+
+void CPU::rotate_left_accumulator() {
+    set_flag(Flag::CARRY, check_bit(AC, 7));
+    write_to_register(Register::AC, (read_from_register(Register::AC) << 1) + carry_bit_set());
+}
+
+
+
+void CPU::rotate_left_memory(AddressingMode mode) {
+    Word address = determine_address(mode);
+    Byte value = read_byte(address);
+
+    set_flag(Flag::CARRY, check_bit(value, 7));
+
+    write_byte((value << 1) + carry_bit_set(), address, true);
+}
+
+
+
+void CPU::rotate_right_accumulator() {
+    set_flag(Flag::CARRY, check_bit(AC, CARRY));
+
+    Byte value = read_from_register(Register::AC);
+    value >>= 1;
+    set_bit(value, 7, carry_bit_set());
+
+    write_to_register(Register::AC, value);
+}
+
+
+
+void CPU::rotate_right_memory(CPU::AddressingMode mode) {
+    Word address = determine_address(mode);
+    Byte value = read_byte(address);
+    set_flag(Flag::CARRY, check_bit(value, 0));
+
+    value >>= 1;
+    set_bit(value, 7, carry_bit_set());
+
+    write_byte(value, address, true);
+}
+
+
 std::ostream& operator <<(std::ostream &os, CPU::AddressingMode mode) {
     switch (mode) {
-        case CPU::AddressingMode::IMPLICIT:
-            os << "Implicit";
-            break;
-        case CPU::AddressingMode::ACCUMULATOR:
-            os << "Accumulator";
-            break;
         case CPU::AddressingMode::IMMEDIATE:
             os << "Immediate";
             break;
@@ -297,7 +551,14 @@ std::ostream& operator <<(std::ostream &os, CPU::Register aRegister) {
         case CPU::Register::Y:
             os << 'Y';
             break;
+        case CPU::Register::SP:
+            os << "SP";
+            break;
+        case CPU::Register::SR:
+            os << "SR";
+            break;
     }
+    return os;
 }
 
 

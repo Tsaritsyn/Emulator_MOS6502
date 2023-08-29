@@ -16,19 +16,17 @@ public:
     using Byte = uint8_t;
     using Word = uint16_t;
 
-    enum class Flag {
-        NEGATIVE,
-        OVERFLOW,
-        BREAK,
-        DECIMAL,
-        INTERRUPT,
-        ZERO,
-        CARRY
+    enum Flag {
+        NEGATIVE = 7,
+        OVERFLOW = 6,
+        BREAK = 4,
+        DECIMAL = 3,
+        INTERRUPT = 2,
+        ZERO = 1,
+        CARRY = 0
     };
 
     enum class AddressingMode {
-        IMPLICIT,
-        ACCUMULATOR,
         IMMEDIATE,
         ZERO_PAGE,
         ZERO_PAGE_X,
@@ -43,7 +41,7 @@ public:
     };
 
     enum class Register {
-        AC, X, Y
+        AC, X, Y, SP, SR
     };
 
     [[nodiscard]] std::string dump(bool include_memory = false) const;
@@ -59,6 +57,103 @@ public:
 
     void transfer_registers(Register from, Register to) { write_to_register(to, read_from_register(from)); };
 
+
+
+    // **************** //
+    // STACK OPERATIONS //
+    // **************** //
+
+    void push_to_stack(Register reg);
+
+    void pull_from_stack(Register to);
+
+
+    // ****************** //
+    // LOGICAL OPERATIONS //
+    // ****************** //
+
+    /**
+     * Performs AND operation on AC and a byte from memory.
+     * Result is written back to AC.
+     */
+    void logical_and(AddressingMode mode);
+
+    /**
+     * Performs XOR operation on AC and a byte from memory.
+     * Result is written back to AC.
+     */
+    void logical_xor(AddressingMode mode);
+
+    /**
+     * Performs OR operation on AC and a byte from memory.
+     * Result is written back to AC.
+     */
+    void logical_or(AddressingMode mode);
+
+    /**
+     * This instructions is used to test if one or more bits are set in a target memory location.
+     * The mask pattern in A is ANDed with the value in memory to set or clear the zero flag, but the result is not kept.
+     * Bits 7 and 6 of the value from memory are copied into the N and V flags.
+     */
+    void bit_test(AddressingMode mode);
+
+
+    // ********************* //
+    // ARITHMETIC OPERATIONS //
+    // ********************* //
+
+    /**
+     * Adds value in memory to the accumulator.
+     * The result is written back to accumulator.
+     */
+    void add_with_carry(AddressingMode mode);
+
+    /**
+     * Subtracts value in memory from the accumulator.
+     * The result is written back to accumulator.
+     */
+    void subtract_with_carry(AddressingMode mode);
+
+    /**
+     * Compares value in register to the value in memory.
+     * Can only be used with AC, X or Y.
+     * If register is greater or equal, carry flag is set, if less, negative flag is set, if equal, zero flag is set.
+     */
+    void compare_register(Register reg, AddressingMode mode);
+
+
+    // ************************* //
+    // INCREMENTS AND DECREMENTS //
+    // ************************* //
+
+    void increment_memory(AddressingMode mode);
+
+    void decrement_memory(AddressingMode mode);
+
+    void increment_register(Register reg);
+
+    void decrement_register(Register reg);
+
+
+    // ****** //
+    // SHIFTS //
+    // ****** //
+
+    void shift_left_accumulator();
+
+    void shift_left_memory(AddressingMode mode);
+
+    void shift_right_accumulator();
+
+    void shift_right_memory(AddressingMode mode);
+
+    void rotate_left_accumulator();
+
+    void rotate_left_memory(AddressingMode mode);
+
+    void rotate_right_accumulator();
+
+    void rotate_right_memory(AddressingMode mode);
 
 
 //private:
@@ -93,7 +188,7 @@ public:
     // HELPER FUNCTIONS //
     // **************** //
 
-    void set_flag(Flag flag);
+    void set_flag(Flag flag, bool value);
 
     void write_to_register(Register reg, Byte value);
 
@@ -106,15 +201,24 @@ public:
     /// reads word, least significant byte of which is pointed at by the address
     Word inline read_reversed_word(Word address) { return ((Word)read_byte(address + 1) << 8) + read_byte(address); }
 
+    /// reads byte from memory determining the address according to the given scheme
+    Byte read_byte(AddressingMode mode) { return read_byte(determine_address(mode)); };
+
     /// reads byte from memory at a given address
     Byte read_byte(Word address);
 
     /// writes the specified value to the specified address in memory
-    void write_byte(Byte value, Word address);
+    void write_byte(Byte value, Word address, bool set_flags = false);
 
     Byte read_from_register(Register reg);
 
     Word determine_address(AddressingMode mode);
+
+    void push_to_stack(Byte value);
+
+    Byte pull_from_stack();
+
+    [[nodiscard]] bool carry_bit_set() const;
 };
 
 
