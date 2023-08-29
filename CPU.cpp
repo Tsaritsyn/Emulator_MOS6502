@@ -3,6 +3,8 @@
 //
 
 #include <sstream>
+#include <iomanip>
+#include <bitset>
 
 #include "CPU.hpp"
 
@@ -15,6 +17,9 @@ constexpr CPU::Byte BIT4 = 1 << 4;
 constexpr CPU::Byte BIT5 = 1 << 5;
 constexpr CPU::Byte BIT6 = 1 << 6;
 constexpr CPU::Byte BIT7 = 1 << 7;
+
+#define HEX_FORMAT "0x" << std::uppercase << std::setfill('0') << std::setw(2) << std::hex
+#define HEX_CULL_FORMAT std::uppercase << std::setfill('0') << std::setw(2) << std::hex
 
 
 
@@ -60,72 +65,119 @@ CPU::Byte CPU::read_byte(Word address) {
 
 
 void CPU::load_register(Register reg, AddressingMode mode) {
-    // it will be determined below
-    /// value that will be loaded into the register
-    Byte value;
+    // TODO: check for forbidden register-mode pairs
+    Word address = determine_address(mode);
+    Byte value = read_byte(address);
+    write_to_register(reg, value);
+}
 
+
+
+void CPU::write_to_register(Register reg, Byte value) {
+    switch (reg) {
+        case Register::AC:
+            AC = value;
+            break;
+
+        case Register::X:
+            X = value;
+            break;
+
+        case Register::Y:
+            Y = value;
+            break;
+    }
+    cycle++;
+
+    // setting flags
+    if (value == 0) set_flag(Flag::ZERO);
+    if (value & BIT7) set_flag(Flag::NEGATIVE);
+}
+
+
+
+std::string CPU::dump(bool include_memory) const {
+    std::stringstream ss;
+    ss << "Registers: AC = " << HEX_FORMAT << (int)AC << ", X = " << HEX_FORMAT << (int)X << ", Y = " << HEX_FORMAT << (int)Y;
+    ss << "\nProgram counter = " << HEX_FORMAT << (int)PC << ", Stack pointer = " << HEX_FORMAT << (int)SP;
+    ss << "\nFlags: " << std::bitset<8>(SR);
+    ss << "\nCurrent cycle = " << cycle;
+    ss << "\nZero page: ";
+    for (int i = 0x00; i < 0xFF; i++) ss << HEX_FORMAT << (int)memory[i] << ' ';
+    ss << "\nStack: ";
+    for (int i = 0x0100; i < 0x01ff; i++) ss << HEX_FORMAT << (int)memory[i] << ' ';
+    ss << "\nSpecial addresses: non-maskable interrupt handler = " << HEX_FORMAT << (int)memory[0xfffb] << HEX_CULL_FORMAT << (int)memory[0xfffa]
+        << ", power on reset location = " << HEX_FORMAT << (int)memory[0xfffd] << HEX_CULL_FORMAT << (int)memory[0xfffc]
+        << ", BRK/interrupt request handler = " << HEX_FORMAT << (int)memory[0xffff] << HEX_CULL_FORMAT << (int)memory[0xfffe];
+
+    if (include_memory) {
+        ss << "\nRemaining memory:\n";
+        for (int i = 0x01ff + 1; i < 0xfffa; i++) ss << HEX_FORMAT << (int)memory[i] << ' ';
+        ss << "\nEND OF MEMORY.";
+    }
+    return ss.str();
+}
+
+
+
+void CPU::write_byte(CPU::Byte value, CPU::Word address) {
+    memory[address] = value;
+    cycle++;
+}
+
+
+
+CPU::Byte CPU::read_from_register(CPU::Register reg) {
+    cycle++;
+    switch (reg) {
+        case Register::AC:
+            return AC;
+        case Register::X:
+            return X;
+        case Register::Y:
+            return Y;
+    }
+}
+
+
+
+void CPU::store_register(CPU::Register reg, CPU::AddressingMode mode) {
+    // TODO: check for forbidden register-mode pairs
+    Word address = determine_address(mode);
+    Byte value = read_from_register(reg);
+    write_byte(value, address);
+}
+
+
+
+CPU::Word CPU::determine_address(CPU::AddressingMode mode) {
     switch (mode) {
+        case AddressingMode::IMPLICIT: case AddressingMode::ACCUMULATOR:
+            // the return value does not matter
+            return 0;
+
         case AddressingMode::IMMEDIATE:
-        {
-            value = read_current_byte();
-            load_register(AC, value);
-        } break;
+            return PC;
 
         case AddressingMode::ZERO_PAGE:
-        {
-            Byte address = read_current_byte();
-            value = read_byte(address);
-        } break;
+            return read_current_byte();
 
         case AddressingMode::ZERO_PAGE_X:
-        {
-            if (reg == Register::X)
-                throw std::invalid_argument("Unsupported addressing mode for LDX instruction: Zero Page,X");
-
-            Byte address = read_current_byte();
-
-            address += X;
-            // this mode requires an extra cycle, which can only be spent on the action above
-            // though it is unclear whether this cycle is spent on reading from register X or on addition of addresses
-            cycle++;
-
-            value = read_byte(address);
-        } break;
+            return read_current_byte() + read_from_register(Register::X);
 
         case AddressingMode::ZERO_PAGE_Y:
-        {
-            if (reg != Register::X) {
-                std::stringstream errorMessage;
-                errorMessage << "Unsupported addressing mode for LD" << reg << " instruction: " << mode;
-                throw std::invalid_argument(errorMessage.str());
-            }
+            return read_current_byte() + read_from_register(Register::Y);
 
-            Byte address = read_current_byte();
-
-            address += Y;
-            // this mode requires an extra cycle, which can only be spent on the action above
-            // though it is unclear whether this cycle is spent on reading from register X or on addition of addresses
-            cycle++;
-
-            value = read_byte(address);
-        } break;
+        case AddressingMode::RELATIVE:
+            PC += (int8_t)read_current_byte() + 1;
+            return PC;
 
         case AddressingMode::ABSOLUTE:
-        {
             // in this mode the full 2-byte address is given as the instruction parameter, therefore we have to read 2 bytes
             // first byte is the most significant one
-            Word address = read_current_byte();
-            address <<= 8;
-            address += read_current_byte();
+            return read_current_word();
 
-            value = read_byte(address);
-        } break;
-
-        case AddressingMode::ABSOLUTE_X:
-        {
-            if (reg == Register::X)
-                throw std::invalid_argument("Unsupported addressing mode for LDX instruction: Absolute,X");
-
+        case AddressingMode::ABSOLUTE_X: {
             // in this mode the full 2-byte address is given as the instruction parameter, therefore we have to read 2 bytes
             // first byte is the most significant one
             Word address = read_current_byte();
@@ -133,20 +185,15 @@ void CPU::load_register(Register reg, AddressingMode mode) {
 
             // in this mode we need to add the value in X to the given address and keep track if page was crossed
             Word tmp = read_current_byte();
-            tmp += X;
+            tmp += read_from_register(Register::X);
             // if addition of the address with the value in X leads to change of the page, an extra cycle is spent
             if (tmp > UINT8_MAX) cycle++;
 
             address += tmp;
+            return address;
+        }
 
-            value = read_byte(address);
-        } break;
-
-        case AddressingMode::ABSOLUTE_Y:
-        {
-            if (reg == Register::Y)
-                throw std::invalid_argument("Unsupported addressing mode for LDY instruction: Absolute,Y");
-
+        case AddressingMode::ABSOLUTE_Y: {
             // in this mode the full 2-byte address is given as the instruction parameter, therefore we have to read 2 bytes
             // first byte is the most significant one
             Word address = read_current_byte();
@@ -154,90 +201,42 @@ void CPU::load_register(Register reg, AddressingMode mode) {
 
             // in this mode we need to add the value in Y to the given address and keep track if page was crossed
             Word tmp = read_current_byte();
-            tmp += Y;
+            tmp += read_from_register(Register::Y);
             // if addition of the address with the value in Y leads to change of the page, an extra cycle is spent
             if (tmp > UINT8_MAX) cycle++;
 
             address += tmp;
+            return address;
+        }
 
-            value = read_byte(address);
-        } break;
+        case AddressingMode::INDIRECT:
+            return read_reversed_word(read_current_word());
 
-        case AddressingMode::INDEXED_INDIRECT:
-        {
-            if (reg != Register::AC) {
-                std::stringstream errorMessage;
-                errorMessage << "Unsupported addressing mode for LD" << reg << " instruction: " << mode;
-                throw std::invalid_argument(errorMessage.str());
-            }
-
+        case AddressingMode::INDEXED_INDIRECT: {
             // in this mode we do all operations in zero page
             Byte tableAddress = read_current_byte();
 
-            Byte targetAddress = tableAddress + X;
-            cycle++;
+            Byte targetAddress = tableAddress + read_from_register(Register::X);
 
             // for some reason, these two bytes must be swapped
             // so if memory at targetAddress gives 0x0080, then address will be 0x8000
-            Word address = read_byte(targetAddress + 1);
-            address << 8;
-            address += read_byte(targetAddress);
+            return read_reversed_word(targetAddress);
+        }
 
-            value = read_byte(address);
-        } break;
-
-        case AddressingMode::INDIRECT_INDEXED:
-        {
-            if (reg != Register::AC) {
-                std::stringstream errorMessage;
-                errorMessage << "Unsupported addressing mode for LD" << reg << " instruction: " << mode;
-                throw std::invalid_argument(errorMessage.str());
-            }
-
+        case AddressingMode::INDIRECT_INDEXED: {
             Byte zeroPageLocation = read_current_byte();
 
             Word leastSignificantByteOfAddress = read_byte(zeroPageLocation);
-            leastSignificantByteOfAddress += Y;
+            leastSignificantByteOfAddress += read_from_register(Register::Y);
             if (leastSignificantByteOfAddress > UINT8_MAX) cycle++;
 
             Word address = read_byte(zeroPageLocation + 1);
             address <<= 8;
             address += leastSignificantByteOfAddress;
-
-            value = read_byte(address);
-        } break;
-
-        default:
-            std::stringstream errorMessage;
-            errorMessage << "Unsupported addressing mode for any LD instruction: " << mode;
-            throw std::invalid_argument(errorMessage.str());
-    }
-
-
-    switch (reg) {
-        case Register::AC:
-            load_register(AC, value);
-            break;
-        case Register::X:
-            load_register(X, value);
-            break;
-        case Register::Y:
-            load_register(Y, value);
-            break;
+            return address;
+        }
     }
 }
-
-
-
-void CPU::load_register(CPU::Byte &reg, CPU::Byte value) {
-    reg = value;
-    cycle++;
-
-    // setting flags
-    if (reg == 0) set_flag(Flag::ZERO);
-    if (reg & BIT7) set_flag(Flag::NEGATIVE);
-}
-
 
 
 std::ostream& operator <<(std::ostream &os, CPU::AddressingMode mode) {

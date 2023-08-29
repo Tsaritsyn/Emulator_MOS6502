@@ -46,22 +46,22 @@ public:
         AC, X, Y
     };
 
+    [[nodiscard]] std::string dump(bool include_memory = false) const;
 
-    // ********************* //
-    // LOAD/STORE OPERATIONS //
-    // ********************* //
+
+    // ******************* //
+    // REGISTER OPERATIONS //
+    // ******************* //
 
     void load_register(Register reg, AddressingMode mode);
 
-    void store_accumulator();
+    void store_register(Register reg, AddressingMode mode);
 
-    void store_X_register();
-
-    void store_Y_register();
+    void transfer_registers(Register from, Register to) { write_to_register(to, read_from_register(from)); };
 
 
 
-private:
+//private:
 
     /// program counter
     Word PC;
@@ -87,14 +87,34 @@ private:
     /// current cycle of the processor
     size_t cycle;
 
+
+
+    // **************** //
+    // HELPER FUNCTIONS //
+    // **************** //
+
     void set_flag(Flag flag);
 
-    void load_register(Byte &reg, Byte value);
+    void write_to_register(Register reg, Byte value);
 
+    /// reads the byte at the address specified by program counter and increments the latter
     Byte read_current_byte();
+
+    /// reads the 2 consecutive bytes, the first of which is addressed by the program counter and increases the latter by 2
+    Word inline read_current_word() { return ((Word)read_current_byte() << 8) + read_current_byte(); }
+
+    /// reads word, least significant byte of which is pointed at by the address
+    Word inline read_reversed_word(Word address) { return ((Word)read_byte(address + 1) << 8) + read_byte(address); }
 
     /// reads byte from memory at a given address
     Byte read_byte(Word address);
+
+    /// writes the specified value to the specified address in memory
+    void write_byte(Byte value, Word address);
+
+    Byte read_from_register(Register reg);
+
+    Word determine_address(AddressingMode mode);
 };
 
 
