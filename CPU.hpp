@@ -156,6 +156,50 @@ public:
     void rotate_right_memory(AddressingMode mode);
 
 
+    // *************** //
+    // JUMPS AND CALLS //
+    // *************** //
+
+    void jump(AddressingMode mode);
+
+    void jump_to_subroutine();
+
+    void return_from_subroutine();
+
+
+    // ******** //
+    // BRANCHES //
+    // ******** //
+
+    void branch_if_carry_clear();
+
+    void branch_if_carry_set();
+
+    void branch_if_zero_clear();
+
+    void branch_if_zero_set();
+
+    void branch_if_negative_clear();
+
+    void branch_if_negative_set();
+
+    void branch_if_overflow_clear();
+
+    void branch_if_overflow_set();
+
+
+    // **************** //
+    // SYSTEM FUNCTIONS //
+    // **************** //
+
+    void force_interrupt();
+
+    void nop() { cycle++; };
+
+    void return_from_interrupt();
+
+
+
 //private:
 
     /// program counter
@@ -175,8 +219,12 @@ public:
      * Memory layout: 0x0000-0x00FF - zero page (256 bytes), 0x0100-0x01FF - system stack (256 bytes), other - program data.
      *
      * Special addresses: 0xFFFA-0xFFFB - address of non-maskable interrupt handler,
-     *  0xFFFC-0xFFFD - address of power on reset location, 0xFFFE-0xFFFF - address of BRK/interrupt request handler.
+     *  0xFFFC-0xFFFD - address of power on reset location,
+     *  0xFFFE-0xFFFF - address of BRK/interrupt request handler.
      */
+    static constexpr Word INTERRUPT_HANDLER = 0xFFFA;
+    static constexpr Word RESET_LOCATION = 0xFFFC;
+    static constexpr Word BRK_HANDLER = 0xFFFE;
     std::array<Byte, UINT16_MAX> memory;
 
     /// current cycle of the processor
@@ -188,7 +236,7 @@ public:
     // HELPER FUNCTIONS //
     // **************** //
 
-    void set_flag(Flag flag, bool value);
+    void set_flag(Flag flag, bool value, bool increment_cycle = false);
 
     void write_to_register(Register reg, Byte value);
 
@@ -214,11 +262,17 @@ public:
 
     Word determine_address(AddressingMode mode);
 
-    void push_to_stack(Byte value);
+    void push_byte_to_stack(Byte value);
 
-    Byte pull_from_stack();
+    /// first pushes the least significant byte, then the most significant
+    void push_word_to_stack(Word value);
 
-    [[nodiscard]] bool carry_bit_set() const;
+    Byte pull_byte_from_stack();
+
+    /// first pulls the most significant byte, then the least significant
+    Word pull_word_from_stack();
+
+    [[nodiscard]] bool check_flag(Flag flag) const;
 };
 
 

@@ -35,8 +35,9 @@ bool check_bit(CPU::Byte byte, int number) {
 
 
 
-void CPU::set_flag(CPU::Flag flag, bool value) {
+void CPU::set_flag(CPU::Flag flag, bool value, bool increment_cycle) {
     set_bit(SR, flag, value);
+    if (increment_cycle) cycle++;
 }
 
 
@@ -176,8 +177,7 @@ CPU::Word CPU::determine_address(CPU::AddressingMode mode) {
             return read_current_byte() + read_from_register(Register::Y);
 
         case AddressingMode::RELATIVE:
-            PC += (int8_t)read_current_byte() + 1;
-            return PC;
+            return PC + (int8_t)read_current_byte();
 
         case AddressingMode::ABSOLUTE:
             // in this mode the full 2-byte address is given as the instruction parameter, therefore we have to read 2 bytes
@@ -254,12 +254,12 @@ void CPU::push_to_stack(Register reg) {
         throw std::invalid_argument(ss.str());
     }
 
-    push_to_stack(read_from_register(reg));
+    push_byte_to_stack(read_from_register(reg));
 }
 
 
 
-void CPU::push_to_stack(CPU::Byte value) {
+void CPU::push_byte_to_stack(Byte value) {
     Word address = 0x0100 + read_from_register(Register::SP);
     write_byte(value, address);
     SP++;
@@ -267,7 +267,7 @@ void CPU::push_to_stack(CPU::Byte value) {
 
 
 
-CPU::Byte CPU::pull_from_stack() {
+CPU::Byte CPU::pull_byte_from_stack() {
     Word address = 0x0100 + read_from_register(Register::SP);
     Byte value = read_byte(address);
     // for some reason, pulling from stack takes 1 more cycle than pushing to it, so we do write_to_register instead of manipulating SP directly
@@ -284,7 +284,7 @@ void CPU::pull_from_stack(CPU::Register to) {
         throw std::invalid_argument(ss.str());
     }
 
-    write_to_register(to, pull_from_stack());
+    write_to_register(to, pull_byte_from_stack());
 }
 
 
@@ -328,7 +328,7 @@ void CPU::add_with_carry(CPU::AddressingMode mode) {
     Byte rhs = read_byte(mode);
     bool rhs_sign_bit = check_bit(rhs, NEGATIVE);
 
-    write_to_register(Register::AC, AC + rhs + carry_bit_set());
+    write_to_register(Register::AC, AC + rhs + check_flag(CARRY));
 
     bool resulting_sign_bit = check_bit(AC, NEGATIVE);
 
@@ -341,19 +341,13 @@ void CPU::add_with_carry(CPU::AddressingMode mode) {
 
 
 
-bool CPU::carry_bit_set() const {
-    return check_bit(SR, CARRY);
-}
-
-
-
 void CPU::subtract_with_carry(CPU::AddressingMode mode) {
     bool initial_sign_bit = check_bit(AC, NEGATIVE);
 
     Byte rhs = read_byte(mode);
     bool rhs_sign_bit = check_bit(rhs, NEGATIVE);
 
-    write_to_register(Register::AC, AC - rhs - !carry_bit_set());
+    write_to_register(Register::AC, AC - rhs - !check_flag(CARRY));
 
     bool resulting_sign_bit = check_bit(AC, NEGATIVE);
 
@@ -459,7 +453,7 @@ void CPU::shift_right_memory(CPU::AddressingMode mode) {
 
 void CPU::rotate_left_accumulator() {
     set_flag(Flag::CARRY, check_bit(AC, 7));
-    write_to_register(Register::AC, (read_from_register(Register::AC) << 1) + carry_bit_set());
+    write_to_register(Register::AC, (read_from_register(Register::AC) << 1) + check_flag(CARRY));
 }
 
 
@@ -470,7 +464,7 @@ void CPU::rotate_left_memory(AddressingMode mode) {
 
     set_flag(Flag::CARRY, check_bit(value, 7));
 
-    write_byte((value << 1) + carry_bit_set(), address, true);
+    write_byte((value << 1) + check_flag(CARRY), address, true);
 }
 
 
@@ -480,7 +474,7 @@ void CPU::rotate_right_accumulator() {
 
     Byte value = read_from_register(Register::AC);
     value >>= 1;
-    set_bit(value, 7, carry_bit_set());
+    set_bit(value, 7, check_flag(CARRY));
 
     write_to_register(Register::AC, value);
 }
@@ -493,9 +487,119 @@ void CPU::rotate_right_memory(CPU::AddressingMode mode) {
     set_flag(Flag::CARRY, check_bit(value, 0));
 
     value >>= 1;
-    set_bit(value, 7, carry_bit_set());
+    set_bit(value, 7, check_flag(CARRY));
 
     write_byte(value, address, true);
+}
+
+
+
+void CPU::jump(AddressingMode mode) {
+    PC = determine_address(mode);
+}
+
+
+
+void CPU::jump_to_subroutine() {
+    Word targetAddress = determine_address(AddressingMode::ABSOLUTE);
+    push_word_to_stack(PC - 1);
+    PC = targetAddress;
+}
+
+
+
+void CPU::return_from_subroutine() {
+    PC = pull_word_from_stack() + 1;
+}
+
+
+
+void CPU::push_word_to_stack(CPU::Word value) {
+    push_byte_to_stack(value);
+    value >>= 8;
+    push_byte_to_stack(value);
+}
+
+
+
+CPU::Word CPU::pull_word_from_stack() {
+    Word result = pull_byte_from_stack();
+    result <<= 8;
+    return result + pull_byte_from_stack();
+}
+
+
+
+bool CPU::check_flag(CPU::Flag flag) const {
+    return check_bit(SR, flag);
+}
+
+
+
+void CPU::branch_if_carry_clear() {
+    Word new_address = determine_address(AddressingMode::RELATIVE);
+    if (!check_flag(CARRY)) PC = new_address;
+}
+
+
+
+void CPU::branch_if_carry_set() {
+    Word new_address = determine_address(AddressingMode::RELATIVE);
+    if (check_flag(CARRY)) PC = new_address;
+}
+
+
+void CPU::branch_if_zero_clear() {
+    Word new_address = determine_address(AddressingMode::RELATIVE);
+    if (!check_flag(ZERO)) PC = new_address;
+}
+
+
+
+void CPU::branch_if_zero_set() {
+    Word new_address = determine_address(AddressingMode::RELATIVE);
+    if (check_flag(ZERO)) PC = new_address;
+}
+
+
+void CPU::branch_if_negative_clear() {
+    Word new_address = determine_address(AddressingMode::RELATIVE);
+    if (!check_flag(NEGATIVE)) PC = new_address;
+}
+
+
+
+void CPU::branch_if_negative_set() {
+    Word new_address = determine_address(AddressingMode::RELATIVE);
+    if (check_flag(NEGATIVE)) PC = new_address;
+}
+
+
+void CPU::branch_if_overflow_clear() {
+    Word new_address = determine_address(AddressingMode::RELATIVE);
+    if (!check_flag(OVERFLOW)) PC = new_address;
+}
+
+
+
+void CPU::branch_if_overflow_set() {
+    Word new_address = determine_address(AddressingMode::RELATIVE);
+    if (check_flag(OVERFLOW)) PC = new_address;
+}
+
+
+
+void CPU::force_interrupt() {
+    push_word_to_stack(PC);
+    push_to_stack(Register::SR);
+    PC = read_reversed_word(BRK_HANDLER);
+}
+
+
+
+void CPU::return_from_interrupt() {
+    pull_from_stack(Register::SR);
+    PC = pull_word_from_stack() + 1;
 }
 
 
