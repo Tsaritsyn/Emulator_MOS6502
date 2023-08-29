@@ -53,8 +53,6 @@ public:
 
     void load_register(Register reg, AddressingMode mode);
 
-    void load_Y_register();
-
     void store_accumulator();
 
     void store_X_register();
@@ -102,6 +100,8 @@ private:
 
 
 std::ostream& operator <<(std::ostream &os, CPU::AddressingMode mode);
+
+std::ostream& operator <<(std::ostream &os, CPU::Register aRegister);
 
 
 #endif //EMULATOR_MOS6502_CPU_HPP
