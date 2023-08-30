@@ -13,18 +13,9 @@
 
 namespace Emulator {
 
-    constexpr Byte BIT0 = 1;
-    constexpr Byte BIT1 = 1 << 1;
-    constexpr Byte BIT2 = 1 << 2;
-    constexpr Byte BIT3 = 1 << 3;
-    constexpr Byte BIT4 = 1 << 4;
-    constexpr Byte BIT5 = 1 << 5;
-    constexpr Byte BIT6 = 1 << 6;
-    constexpr Byte BIT7 = 1 << 7;
 
-
-    void set_bit(Byte &byte, int number, bool to) {
-        if (to) byte |= 1 << number;
+    void set_bit(Byte &byte, int number, bool value) {
+        if (value) byte |= 1 << number;
         else byte &= ~(1 << number);
     }
 
@@ -47,16 +38,16 @@ namespace Emulator {
 
     Word MOS6502::read_current_word() {
         WordToBytes buf{};
-        buf.set_high(read_current_byte());
-        buf.set_low(read_current_byte());
+        buf.high = read_current_byte();
+        buf.low = read_current_byte();
         return buf.word;
     }
 
 
     Word MOS6502::read_reversed_word(Word address) {
         WordToBytes buf{};
-        buf.set_low(read_byte(address));
-        buf.set_high(read_byte(address + 1));
+        buf.low = read_byte(address);
+        buf.high = read_byte(address + 1);
         return buf.word;
     }
 
@@ -76,7 +67,7 @@ namespace Emulator {
 
 
     void MOS6502::write_to_register(Register reg, Byte value) {
-        cycle++;
+//        cycle++;
         switch (reg) {
             case Register::AC:
                 AC = value;
@@ -161,6 +152,8 @@ namespace Emulator {
             case Register::SR:
                 return SR;
         }
+
+        throw std::runtime_error("Some registers were not handled");
     }
 
 
@@ -229,7 +222,7 @@ namespace Emulator {
             case AddressingMode::INDIRECT:
                 return read_reversed_word(read_current_word());
 
-            case AddressingMode::INDEXED_INDIRECT: {
+            case AddressingMode::INDIRECT_X: {
                 // in this mode we do all operations in zero page
                 Byte tableAddress = read_current_byte();
 
@@ -240,7 +233,7 @@ namespace Emulator {
                 return read_reversed_word(targetAddress);
             }
 
-            case AddressingMode::INDIRECT_INDEXED: {
+            case AddressingMode::INDIRECT_Y: {
                 Byte zeroPageLocation = read_current_byte();
 
                 Word leastSignificantByteOfAddress = read_byte(zeroPageLocation);
@@ -253,6 +246,8 @@ namespace Emulator {
                 return address;
             }
         }
+
+        throw std::runtime_error("Some addressing modes were not handled");
     }
 
 
@@ -270,15 +265,17 @@ namespace Emulator {
     void MOS6502::push_byte_to_stack(Byte value) {
         Word address = 0x0100 + read_from_register(Register::SP);
         write_byte(value, address);
-        SP++;
+        SP--;
     }
 
 
     Byte MOS6502::pull_byte_from_stack() {
+        // for some reason, pulling from stack takes 1 more cycle than pushing to it, so we do write_to_register instead of manipulating SP directly
+        // equivalent for SP++
+        write_to_register(Register::SP, SP + 1);
+
         Word address = 0x0100 + read_from_register(Register::SP);
         Byte value = read_byte(address);
-        // for some reason, pulling from stack takes 1 more cycle than pushing to it, so we do write_to_register instead of manipulating SP directly
-        write_to_register(Register::SP, SP - 1);
         return value;
     }
 
@@ -294,21 +291,23 @@ namespace Emulator {
     }
 
 
-    void MOS6502::logical_and(AddressingMode mode) {
-        Byte rhs = read_byte(mode);
-        write_to_register(Register::AC, AC & rhs);
-    }
+    void MOS6502::logical(LogicalOperation operation, AddressingMode mode) {
+        Byte mem = read_byte(mode);
 
+        Byte result;
+        switch (operation) {
+            case LogicalOperation::AND:
+                result = AC & mem;
+                break;
+            case LogicalOperation::OR:
+                result = AC | mem;
+                break;
+            case LogicalOperation::XOR:
+                result = AC ^ mem;
+                break;
+        }
 
-    void MOS6502::logical_xor(AddressingMode mode) {
-        Byte rhs = read_byte(mode);
-        write_to_register(Register::AC, AC ^ rhs);
-    }
-
-
-    void MOS6502::logical_or(AddressingMode mode) {
-        Byte rhs = read_byte(mode);
-        write_to_register(Register::AC, AC | rhs);
+        write_to_register(Register::AC, result);
     }
 
 
@@ -327,6 +326,7 @@ namespace Emulator {
         bool initial_sign_bit = check_bit(AC, NEGATIVE);
 
         Byte rhs = read_byte(mode);
+        printf("AC = %d, memory = %d, carry = %d\n", AC, rhs, check_flag(CARRY));
         bool rhs_sign_bit = check_bit(rhs, NEGATIVE);
 
         write_to_register(Register::AC, AC + rhs + check_flag(CARRY));
@@ -334,7 +334,7 @@ namespace Emulator {
         bool resulting_sign_bit = check_bit(AC, NEGATIVE);
 
         // carry flag is set only when the result crossed 255
-        set_flag(Flag::OVERFLOW, initial_sign_bit && !resulting_sign_bit);
+        set_flag(Flag::CARRY, (initial_sign_bit || rhs_sign_bit) && !resulting_sign_bit);
 
         // overflow flag is set every time when the sign of the result is incorrect
         set_flag(Flag::OVERFLOW, initial_sign_bit == rhs_sign_bit && initial_sign_bit != resulting_sign_bit);
@@ -498,16 +498,17 @@ namespace Emulator {
 
 
     void MOS6502::push_word_to_stack(Word value) {
-        push_byte_to_stack(value);
-        value >>= 8;
-        push_byte_to_stack(value);
+        WordToBytes buf(value);
+        push_byte_to_stack(buf.high);
+        push_byte_to_stack(buf.low);
     }
 
 
     Word MOS6502::pull_word_from_stack() {
-        Word result = pull_byte_from_stack();
-        result <<= 8;
-        return result + pull_byte_from_stack();
+        WordToBytes buf{};
+        buf.low = pull_byte_from_stack();
+        buf.high = pull_byte_from_stack();
+        return buf.word;
     }
 
 
@@ -516,51 +517,9 @@ namespace Emulator {
     }
 
 
-    void MOS6502::branch_if_carry_clear() {
+    void MOS6502::branch_if(Flag flag_to_check, bool value_to_expect) {
         Word new_address = determine_address(AddressingMode::RELATIVE);
-        if (!check_flag(CARRY)) PC = new_address;
-    }
-
-
-    void MOS6502::branch_if_carry_set() {
-        Word new_address = determine_address(AddressingMode::RELATIVE);
-        if (check_flag(CARRY)) PC = new_address;
-    }
-
-
-    void MOS6502::branch_if_zero_clear() {
-        Word new_address = determine_address(AddressingMode::RELATIVE);
-        if (!check_flag(ZERO)) PC = new_address;
-    }
-
-
-    void MOS6502::branch_if_zero_set() {
-        Word new_address = determine_address(AddressingMode::RELATIVE);
-        if (check_flag(ZERO)) PC = new_address;
-    }
-
-
-    void MOS6502::branch_if_negative_clear() {
-        Word new_address = determine_address(AddressingMode::RELATIVE);
-        if (!check_flag(NEGATIVE)) PC = new_address;
-    }
-
-
-    void MOS6502::branch_if_negative_set() {
-        Word new_address = determine_address(AddressingMode::RELATIVE);
-        if (check_flag(NEGATIVE)) PC = new_address;
-    }
-
-
-    void MOS6502::branch_if_overflow_clear() {
-        Word new_address = determine_address(AddressingMode::RELATIVE);
-        if (!check_flag(OVERFLOW)) PC = new_address;
-    }
-
-
-    void MOS6502::branch_if_overflow_set() {
-        Word new_address = determine_address(AddressingMode::RELATIVE);
-        if (check_flag(OVERFLOW)) PC = new_address;
+        if (check_flag(flag_to_check) == value_to_expect) PC = new_address;
     }
 
 
@@ -580,6 +539,512 @@ namespace Emulator {
     void MOS6502::reset() {
         PC = read_reversed_word(RESET_LOCATION);
         cycle = 7;
+        set_flag(INTERRUPT_DISABLE, true);
+    }
+
+
+
+    Byte MOS6502::read_byte(AddressingMode mode) {
+        if (mode == AddressingMode::IMMEDIATE) return read_current_byte();
+
+        return read_byte(determine_address(mode));
+    }
+
+
+
+    void MOS6502::execute_current_command() {
+        OpCode opCode{read_current_byte()};
+        constexpr bool CLEAR = false;
+        constexpr bool SET = true;
+
+        switch (opCode) {
+            case ADC_IMMEDIATE:
+                add_with_carry(AddressingMode::IMMEDIATE);
+                break;
+            case ADC_ZERO_PAGE:
+                add_with_carry(AddressingMode::ZERO_PAGE);
+                break;
+            case ADC_ZERO_PAGE_X:
+                add_with_carry(AddressingMode::ZERO_PAGE_X);
+                break;
+            case ADC_ABSOLUTE:
+                add_with_carry(AddressingMode::ABSOLUTE);
+                break;
+            case ADC_ABSOLUTE_X:
+                add_with_carry(AddressingMode::ABSOLUTE_X);
+                break;
+            case ADC_ABSOLUTE_Y:
+                add_with_carry(AddressingMode::ABSOLUTE_Y);
+                break;
+            case ADC_INDIRECT_X:
+                add_with_carry(AddressingMode::INDIRECT_X);
+                break;
+            case ADC_INDIRECT_Y:
+                add_with_carry(AddressingMode::INDIRECT_Y);
+                break;
+
+            case AND_IMMEDIATE:
+                logical(LogicalOperation::AND, AddressingMode::IMMEDIATE);
+                break;
+            case AND_ZERO_PAGE:
+                logical(LogicalOperation::AND, AddressingMode::ZERO_PAGE);
+                break;
+            case AND_ZERO_PAGE_X:
+                logical(LogicalOperation::AND, AddressingMode::ZERO_PAGE_X);
+                break;
+            case AND_ABSOLUTE:
+                logical(LogicalOperation::AND, AddressingMode::ABSOLUTE);
+                break;
+            case AND_ABSOLUTE_X:
+                logical(LogicalOperation::AND, AddressingMode::ABSOLUTE_X);
+                break;
+            case AND_ABSOLUTE_Y:
+                logical(LogicalOperation::AND, AddressingMode::ABSOLUTE_Y);
+                break;
+            case AND_INDIRECT_X:
+                logical(LogicalOperation::AND, AddressingMode::INDIRECT_X);
+                break;
+            case AND_INDIRECT_Y:
+                logical(LogicalOperation::AND, AddressingMode::INDIRECT_Y);
+                break;
+
+            case ASL_ACCUMULATOR:
+                shift_left_accumulator();
+                break;
+            case ASL_ZERO_PAGE:
+                shift_left_memory(AddressingMode::ZERO_PAGE);
+                break;
+            case ASL_ZERO_PAGE_X:
+                shift_left_memory(AddressingMode::ZERO_PAGE_X);
+                break;
+            case ASL_ABSOLUTE:
+                shift_left_memory(AddressingMode::ABSOLUTE);
+                break;
+            case ASL_ABSOLUTE_X:
+                shift_left_memory(AddressingMode::ABSOLUTE_X);
+                break;
+
+            case BCC:
+                branch_if(CARRY, CLEAR);
+                break;
+            case BCS:
+                branch_if(CARRY, SET);
+                break;
+            case BEQ:
+                branch_if(ZERO, SET);
+                break;
+            case BMI:
+                branch_if(NEGATIVE, SET);
+                break;
+            case BNE:
+                branch_if(ZERO, CLEAR);
+                break;
+            case BPL:
+                branch_if(NEGATIVE, CLEAR);
+                break;
+            case BVC:
+                branch_if(OVERFLOW, CLEAR);
+                break;
+            case BVS:
+                branch_if(OVERFLOW, SET);
+                break;
+
+            case BIT_ZERO_PAGE:
+                bit_test(AddressingMode::ZERO_PAGE);
+                break;
+            case BIT_ABSOLUTE:
+                bit_test(AddressingMode::ABSOLUTE);
+                break;
+
+            case BRK:
+                force_interrupt();
+                break;
+
+            case CLC:
+                set_flag(CARRY, CLEAR, true);
+                break;
+            case CLD:
+                set_flag(DECIMAL, CLEAR, true);
+                break;
+            case CLI:
+                set_flag(INTERRUPT_DISABLE, CLEAR, true);
+                break;
+            case CLV:
+                set_flag(OVERFLOW, CLEAR, true);
+                break;
+
+            case CMP_IMMEDIATE:
+                compare_register(Register::AC, AddressingMode::IMMEDIATE);
+                break;
+            case CMP_ZERO_PAGE:
+                compare_register(Register::AC, AddressingMode::ZERO_PAGE);
+                break;
+            case CMP_ZERO_PAGE_X:
+                compare_register(Register::AC, AddressingMode::ZERO_PAGE_X);
+                break;
+            case CMP_ABSOLUTE:
+                compare_register(Register::AC, AddressingMode::ABSOLUTE);
+                break;
+            case CMP_ABSOLUTE_X:
+                compare_register(Register::AC, AddressingMode::ABSOLUTE_X);
+                break;
+            case CMP_ABSOLUTE_Y:
+                compare_register(Register::AC, AddressingMode::ABSOLUTE_Y);
+                break;
+            case CMP_INDIRECT_X:
+                compare_register(Register::AC, AddressingMode::INDIRECT_X);
+                break;
+            case CMP_INDIRECT_Y:
+                compare_register(Register::AC, AddressingMode::INDIRECT_Y);
+                break;
+
+            case CPX_IMMEDIATE:
+                compare_register(Register::X, AddressingMode::IMMEDIATE);
+                break;
+            case CPX_ZERO_PAGE:
+                compare_register(Register::X, AddressingMode::ZERO_PAGE);
+                break;
+            case CPX_ABSOLUTE:
+                compare_register(Register::X, AddressingMode::ABSOLUTE);
+                break;
+
+            case CPY_IMMEDIATE:
+                compare_register(Register::Y, AddressingMode::IMMEDIATE);
+                break;
+            case CPY_ZERO_PAGE:
+                compare_register(Register::Y, AddressingMode::ZERO_PAGE);
+                break;
+            case CPY_ABSOLUTE:
+                compare_register(Register::Y, AddressingMode::ABSOLUTE);
+                break;
+
+            case DEC_ZER0_PAGE:
+                decrement_memory(AddressingMode::ZERO_PAGE);
+                break;
+            case DEC_ZERO_PAGE_X:
+                decrement_memory(AddressingMode::ZERO_PAGE_X);
+                break;
+            case DEC_ABSOLUTE:
+                decrement_memory(AddressingMode::ABSOLUTE);
+                break;
+            case DEC_ABSOLUTE_X:
+                decrement_memory(AddressingMode::ABSOLUTE_X);
+                break;
+
+            case DEX:
+                decrement_register(Register::X);
+                break;
+            case DEY:
+                decrement_register(Register::Y);
+                break;
+
+            case EOR_IMMEDIATE:
+                logical(LogicalOperation::XOR, AddressingMode::IMMEDIATE);
+                break;
+            case EOR_ZERO_PAGE:
+                logical(LogicalOperation::XOR, AddressingMode::ZERO_PAGE);
+                break;
+            case EOR_ZERO_PAGE_X:
+                logical(LogicalOperation::XOR, AddressingMode::ZERO_PAGE_X);
+                break;
+            case EOR_ABSOLUTE:
+                logical(LogicalOperation::XOR, AddressingMode::ABSOLUTE);
+                break;
+            case EOR_ABSOLUTE_X:
+                logical(LogicalOperation::XOR, AddressingMode::ABSOLUTE_X);
+                break;
+            case EOR_ABSOLUTE_Y:
+                logical(LogicalOperation::XOR, AddressingMode::ABSOLUTE_Y);
+                break;
+            case EOR_INDIRECT_X:
+                logical(LogicalOperation::XOR, AddressingMode::INDIRECT_X);
+                break;
+            case EOR_INDIRECT_Y:
+                logical(LogicalOperation::XOR, AddressingMode::INDIRECT_Y);
+                break;
+
+            case INC_ZERO_PAGE:
+                increment_memory(AddressingMode::ZERO_PAGE);
+                break;
+            case INC_ZERO_PAGE_X:
+                increment_memory(AddressingMode::ZERO_PAGE_X);
+                break;
+            case INC_ABSOLUTE:
+                increment_memory(AddressingMode::ABSOLUTE);
+                break;
+            case INC_ABSOLUTE_X:
+                increment_memory(AddressingMode::ABSOLUTE_X);
+                break;
+
+            case INX:
+                increment_register(Register::X);
+                break;
+            case INY:
+                increment_register(Register::Y);
+                break;
+
+            case JMP_ABSOLUTE:
+                jump(AddressingMode::ABSOLUTE);
+                break;
+            case JMP_INDIRECT:
+                jump(AddressingMode::INDIRECT);
+                break;
+
+            case JSR:
+                jump_to_subroutine();
+                break;
+
+            case LDA_IMMEDIATE:
+                load_register(Register::AC, AddressingMode::IMMEDIATE);
+                break;
+            case LDA_ZERO_PAGE:
+                load_register(Register::AC, AddressingMode::ZERO_PAGE);
+                break;
+            case LDA_ZERO_PAGE_X:
+                load_register(Register::AC, AddressingMode::ZERO_PAGE_X);
+                break;
+            case LDA_ABSOLUTE:
+                load_register(Register::AC, AddressingMode::ABSOLUTE);
+                break;
+            case LDA_ABSOLUTE_X:
+                load_register(Register::AC, AddressingMode::ABSOLUTE_X);
+                break;
+            case LDA_ABSOLUTE_Y:
+                load_register(Register::AC, AddressingMode::ABSOLUTE_Y);
+                break;
+            case LDA_INDIRECT_X:
+                load_register(Register::AC, AddressingMode::INDIRECT_X);
+                break;
+            case LDA_INDIRECT_Y:
+                load_register(Register::AC, AddressingMode::INDIRECT_Y);
+                break;
+
+            case LDX_IMMEDIATE:
+                load_register(Register::X, AddressingMode::IMMEDIATE);
+                break;
+            case LDX_ZERO_PAGE:
+                load_register(Register::X, AddressingMode::ZERO_PAGE);
+                break;
+            case LDX_ZERO_PAGE_Y:
+                load_register(Register::X, AddressingMode::ZERO_PAGE_Y);
+                break;
+            case LDX_ABSOLUTE:
+                load_register(Register::X, AddressingMode::ABSOLUTE);
+                break;
+            case LDX_ABSOLUTE_Y:
+                load_register(Register::X, AddressingMode::ABSOLUTE_Y);
+                break;
+
+            case LDY_IMMEDIATE:
+                load_register(Register::Y, AddressingMode::IMMEDIATE);
+                break;
+            case LDY_ZERO_PAGE:
+                load_register(Register::Y, AddressingMode::ZERO_PAGE);
+                break;
+            case LDY_ZERO_PAGE_X:
+                load_register(Register::Y, AddressingMode::ZERO_PAGE_X);
+                break;
+            case LDY_ABSOLUTE:
+                load_register(Register::Y, AddressingMode::ABSOLUTE);
+                break;
+            case LDY_ABSOLUTE_X:
+                load_register(Register::Y, AddressingMode::ABSOLUTE_X);
+                break;
+
+            case LSR_ACCUMULATOR:
+                shift_right_accumulator();
+                break;
+            case LSR_ZERO_PAGE:
+                shift_right_memory(AddressingMode::ZERO_PAGE);
+                break;
+            case LSR_ZERO_PAGE_X:
+                shift_right_memory(AddressingMode::ZERO_PAGE_X);
+                break;
+            case LSR_ABSOLUTE:
+                shift_right_memory(AddressingMode::ABSOLUTE);
+                break;
+            case LSR_ABSOLUTE_X:
+                shift_right_memory(AddressingMode::ABSOLUTE_X);
+                break;
+
+            case NOP:
+                nop();
+                break;
+
+            case ORA_IMMEDIATE:
+                logical(LogicalOperation::OR, AddressingMode::IMMEDIATE);
+                break;
+            case ORA_ZERO_PAGE:
+                logical(LogicalOperation::OR, AddressingMode::ZERO_PAGE);
+                break;
+            case ORA_ZERO_PAGE_X:
+                logical(LogicalOperation::OR, AddressingMode::ZERO_PAGE_X);
+                break;
+            case ORA_ABSOLUTE:
+                logical(LogicalOperation::OR, AddressingMode::ABSOLUTE);
+                break;
+            case ORA_ABSOLUTE_X:
+                logical(LogicalOperation::OR, AddressingMode::ABSOLUTE_X);
+                break;
+            case ORA_ABSOLUTE_Y:
+                logical(LogicalOperation::OR, AddressingMode::ABSOLUTE_Y);
+                break;
+            case ORA_INDIRECT_X:
+                logical(LogicalOperation::OR, AddressingMode::INDIRECT_X);
+                break;
+            case ORA_INDIRECT_Y:
+                logical(LogicalOperation::OR, AddressingMode::INDIRECT_Y);
+                break;
+
+            case PHA:
+                push_to_stack(Register::AC);
+                break;
+            case PHP:
+                push_to_stack(Register::SR);
+                break;
+
+            case PLA:
+                pull_from_stack(Register::AC);
+                break;
+            case PLP:
+                pull_from_stack(Register::SR);
+                break;
+
+            case ROL_ACCUMULATOR:
+                rotate_left_accumulator();
+                break;
+            case ROL_ZERO_PAGE:
+                rotate_left_memory(AddressingMode::ZERO_PAGE);
+                break;
+            case ROL_ZERO_PAGE_X:
+                rotate_left_memory(AddressingMode::ZERO_PAGE_X);
+                break;
+            case ROL_ABSOLUTE:
+                rotate_left_memory(AddressingMode::ABSOLUTE);
+                break;
+            case ROL_ABSOLUTE_X:
+                rotate_left_memory(AddressingMode::ABSOLUTE_X);
+                break;
+
+            case ROR_ACCUMULATOR:
+                rotate_right_accumulator();
+                break;
+            case ROR_ZERO_PAGE:
+                rotate_right_memory(AddressingMode::ZERO_PAGE);
+                break;
+            case ROR_ZERO_PAGE_X:
+                rotate_right_memory(AddressingMode::ZERO_PAGE_X);
+                break;
+            case ROR_ABSOLUTE:
+                rotate_right_memory(AddressingMode::ABSOLUTE);
+                break;
+            case ROR_ABSOLUTE_X:
+                rotate_right_memory(AddressingMode::ABSOLUTE_X);
+                break;
+
+            case RTI:
+                return_from_interrupt();
+                break;
+            case RTS:
+                return_from_subroutine();
+                break;
+
+            case SBC_IMMEDIATE:
+                subtract_with_carry(AddressingMode::IMMEDIATE);
+                break;
+            case SBC_ZERO_PAGE:
+                subtract_with_carry(AddressingMode::ZERO_PAGE);
+                break;
+            case SBC_ZERO_PAGE_X:
+                subtract_with_carry(AddressingMode::ZERO_PAGE_X);
+                break;
+            case SBC_ABSOLUTE:
+                subtract_with_carry(AddressingMode::ABSOLUTE);
+                break;
+            case SBC_ABSOLUTE_X:
+                subtract_with_carry(AddressingMode::ABSOLUTE_X);
+                break;
+            case SBC_ABSOLUTE_Y:
+                subtract_with_carry(AddressingMode::ABSOLUTE_Y);
+                break;
+            case SBC_INDIRECT_X:
+                subtract_with_carry(AddressingMode::INDIRECT_X);
+                break;
+            case SBC_INDIRECT_Y:
+                subtract_with_carry(AddressingMode::INDIRECT_Y);
+                break;
+
+            case SEC:
+                set_flag(CARRY, SET, true);
+                break;
+            case SED:
+                set_flag(DECIMAL, SET, true);
+                break;
+            case SEI:
+                set_flag(INTERRUPT_DISABLE, SET, true);
+                break;
+
+            case STA_ZERO_PAGE:
+                store_register(Register::AC, AddressingMode::ZERO_PAGE);
+                break;
+            case STA_ZERO_PAGE_X:
+                store_register(Register::AC, AddressingMode::ZERO_PAGE_X);
+                break;
+            case STA_ABSOLUTE:
+                store_register(Register::AC, AddressingMode::ABSOLUTE);
+                break;
+            case STA_ABSOLUTE_X:
+                store_register(Register::AC, AddressingMode::ABSOLUTE_X);
+                break;
+            case STA_ABSOLUTE_Y:
+                store_register(Register::AC, AddressingMode::ABSOLUTE_Y);
+                break;
+            case STA_INDIRECT_X:
+                store_register(Register::AC, AddressingMode::INDIRECT_X);
+                break;
+            case STA_INDIRECT_Y:
+                store_register(Register::AC, AddressingMode::INDIRECT_Y);
+                break;
+
+            case STX_ZERO_PAGE:
+                store_register(Register::X, AddressingMode::ZERO_PAGE);
+                break;
+            case STX_ZERO_PAGE_Y:
+                store_register(Register::X, AddressingMode::ZERO_PAGE_Y);
+                break;
+            case STX_ABSOLUTE:
+                store_register(Register::X, AddressingMode::ABSOLUTE);
+                break;
+
+            case STY_ZERO_PAGE:
+                store_register(Register::Y, AddressingMode::ZERO_PAGE);
+                break;
+            case STY_ZERO_PAGE_X:
+                store_register(Register::Y, AddressingMode::ZERO_PAGE_X);
+                break;
+            case STY_ABSOLUTE:
+                store_register(Register::Y, AddressingMode::ABSOLUTE);
+                break;
+
+            case TAX:
+                transfer_registers(Register::AC, Register::X);
+                break;
+            case TAY:
+                transfer_registers(Register::AC, Register::Y);
+                break;
+            case TSX:
+                transfer_registers(Register::SP, Register::X);
+                break;
+            case TXA:
+                transfer_registers(Register::X, Register::AC);
+                break;
+            case TXS:
+                transfer_registers(Register::X, Register::SP);
+                break;
+            case TYA:
+                transfer_registers(Register::Y, Register::AC);
+                break;
+        }
     }
 
 
@@ -612,10 +1077,10 @@ namespace Emulator {
             case AddressingMode::INDIRECT:
                 os << "Indirect";
                 break;
-            case AddressingMode::INDEXED_INDIRECT:
+            case AddressingMode::INDIRECT_X:
                 os << "Indexed Indirect";
                 break;
-            case AddressingMode::INDIRECT_INDEXED:
+            case AddressingMode::INDIRECT_Y:
                 os << "Indirect Indexed";
                 break;
         }
@@ -642,6 +1107,14 @@ namespace Emulator {
                 break;
         }
         return os;
+    }
+
+
+
+    Byte flag_combination(const std::vector<Flag> &flags) {
+        Byte result = 0;
+        for (auto flag: flags) set_bit(result, flag);
+        return result;
     }
 
 }

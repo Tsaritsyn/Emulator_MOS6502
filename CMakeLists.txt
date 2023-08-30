@@ -19,9 +19,12 @@ add_executable(Emulator_MOS6502 main.cpp
 )
 
 add_executable(Emulator_MOS6502_Test
-        test/test.hpp
-        test/test.cpp
-        test/test1.cpp
+        MOS6502.cpp
+        MOS6502.hpp
+        test/MOS6502_TestWriteToRegisterFixture.hpp
+        test/MOS6502_TestWriteToRegisterFixture.cpp
+        test/MOS6502_TestADCFixture.cpp
+        test/MOS6502_TestADCFixture.hpp
 )
 
 target_link_libraries(Emulator_MOS6502_Test gtest gtest_main)
