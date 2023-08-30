@@ -14,18 +14,23 @@ set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(googletest)
 
 add_executable(Emulator_MOS6502 main.cpp
-        MOS6502.cpp
-        MOS6502.hpp
+        lib/MOS6502.cpp
+        lib/MOS6502.hpp
+        lib/MOS6502_define.hpp
 )
 
+target_include_directories(Emulator_MOS6502 PRIVATE lib)
+
 add_executable(Emulator_MOS6502_Test
-        MOS6502.cpp
-        MOS6502.hpp
+        lib/MOS6502.cpp
+        lib/MOS6502.hpp
         test/MOS6502_TestWriteToRegisterFixture.hpp
         test/MOS6502_TestWriteToRegisterFixture.cpp
         test/MOS6502_TestADCFixture.cpp
         test/MOS6502_TestADCFixture.hpp
 )
+
+target_include_directories(Emulator_MOS6502_Test PRIVATE lib test)
 
 target_link_libraries(Emulator_MOS6502_Test gtest gtest_main)
 add_test(NAME test COMMAND Emulator_MOS6502)

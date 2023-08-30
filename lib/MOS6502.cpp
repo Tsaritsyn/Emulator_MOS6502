@@ -13,18 +13,6 @@
 
 namespace Emulator {
 
-
-    void set_bit(Byte &byte, int number, bool value) {
-        if (value) byte |= 1 << number;
-        else byte &= ~(1 << number);
-    }
-
-
-    bool check_bit(Byte byte, int number) {
-        return byte & (1 << number);
-    }
-
-
     void MOS6502::set_flag(Flag flag, bool value, bool increment_cycle) {
         set_bit(SR, flag, value);
         if (increment_cycle) cycle++;
@@ -67,7 +55,7 @@ namespace Emulator {
 
 
     void MOS6502::write_to_register(Register reg, Byte value) {
-//        cycle++;
+        cycle++;
         switch (reg) {
             case Register::AC:
                 AC = value;
@@ -326,7 +314,6 @@ namespace Emulator {
         bool initial_sign_bit = check_bit(AC, NEGATIVE);
 
         Byte rhs = read_byte(mode);
-        printf("AC = %d, memory = %d, carry = %d\n", AC, rhs, check_flag(CARRY));
         bool rhs_sign_bit = check_bit(rhs, NEGATIVE);
 
         write_to_register(Register::AC, AC + rhs + check_flag(CARRY));
@@ -1107,14 +1094,6 @@ namespace Emulator {
                 break;
         }
         return os;
-    }
-
-
-
-    Byte flag_combination(const std::vector<Flag> &flags) {
-        Byte result = 0;
-        for (auto flag: flags) set_bit(result, flag);
-        return result;
     }
 
 }
