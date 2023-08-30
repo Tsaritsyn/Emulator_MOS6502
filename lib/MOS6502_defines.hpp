@@ -2,8 +2,11 @@
 // Created by Mikhail on 30/08/2023.
 //
 
-#ifndef EMULATOR_MOS6502_MOS6502_DEFINE_HPP
-#define EMULATOR_MOS6502_MOS6502_DEFINE_HPP
+#ifndef EMULATOR_MOS6502_MOS6502_DEFINES_HPP
+#define EMULATOR_MOS6502_MOS6502_DEFINES_HPP
+
+#include <cstdint>
+#include <array>
 
 namespace Emulator {
     using Byte = uint8_t;
@@ -12,14 +15,14 @@ namespace Emulator {
 
 
 
-    constexpr Byte BIT0 = 1;
-    constexpr Byte BIT1 = 1 << 1;
-    constexpr Byte BIT2 = 1 << 2;
-    constexpr Byte BIT3 = 1 << 3;
-    constexpr Byte BIT4 = 1 << 4;
-    constexpr Byte BIT5 = 1 << 5;
-    constexpr Byte BIT6 = 1 << 6;
-    constexpr Byte BIT7 = 1 << 7;
+//    constexpr Byte BIT0 = 1;
+//    constexpr Byte BIT1 = 1 << 1;
+//    constexpr Byte BIT2 = 1 << 2;
+//    constexpr Byte BIT3 = 1 << 3;
+//    constexpr Byte BIT4 = 1 << 4;
+//    constexpr Byte BIT5 = 1 << 5;
+//    constexpr Byte BIT6 = 1 << 6;
+//    constexpr Byte BIT7 = 1 << 7;
 
 
 
@@ -362,27 +365,6 @@ namespace Emulator {
 
     enum class Register { AC, X, Y, SP, SR };
 
-
-
-
-
-    void set_bit(Byte &byte, int number, bool value = true) {
-        if (value) byte |= 1 << number;
-        else byte &= ~(1 << number);
-    }
-
-
-    bool check_bit(Byte byte, int number) {
-        return byte & (1 << number);
-    }
-
-
-    Byte flag_combination(const std::vector<Flag> &flags) {
-        Byte result = 0;
-        for (auto flag: flags) set_bit(result, flag);
-        return result;
-    }
-
 }
 
-#endif //EMULATOR_MOS6502_MOS6502_DEFINE_HPP
+#endif //EMULATOR_MOS6502_MOS6502_DEFINES_HPP

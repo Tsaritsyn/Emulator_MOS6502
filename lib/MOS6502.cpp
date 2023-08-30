@@ -7,6 +7,7 @@
 #include <bitset>
 
 #include "MOS6502.hpp"
+#include "MOS6502_helpers.hpp"
 
 #define HEX_FORMAT "0x" << std::uppercase << std::setfill('0') << std::setw(2) << std::hex
 #define HEX_CULL_FORMAT std::uppercase << std::setfill('0') << std::setw(2) << std::hex
@@ -539,7 +540,7 @@ namespace Emulator {
 
 
 
-    void MOS6502::execute_current_command() {
+    void MOS6502::execute_command() {
         OpCode opCode{read_current_byte()};
         constexpr bool CLEAR = false;
         constexpr bool SET = true;
@@ -1031,6 +1032,14 @@ namespace Emulator {
             case TYA:
                 transfer_registers(Register::Y, Register::AC);
                 break;
+        }
+    }
+
+
+    void MOS6502::execute() {
+        while (true) {
+            Byte opCode = read_current_byte();
+
         }
     }
 

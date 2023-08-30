@@ -5,11 +5,7 @@
 #ifndef EMULATOR_MOS6502_MOS6502_HPP
 #define EMULATOR_MOS6502_MOS6502_HPP
 
-#include <cstdint>
-#include <array>
-#include <vector>
-
-#include "MOS6502_define.hpp"
+#include "MOS6502_defines.hpp"
 
 
 namespace Emulator {
@@ -37,7 +33,9 @@ namespace Emulator {
         /// sets the memory of the processor to the exact same values as the given new memory
         void burn(const ROM &newMemory) { memory = newMemory; }
 
-        void execute_current_command();
+        void execute_command();
+
+        void execute();
 
 
     protected:
