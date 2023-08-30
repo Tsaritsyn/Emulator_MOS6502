@@ -15,14 +15,8 @@ namespace Emulator {
 
 
 
-//    constexpr Byte BIT0 = 1;
-//    constexpr Byte BIT1 = 1 << 1;
-//    constexpr Byte BIT2 = 1 << 2;
-//    constexpr Byte BIT3 = 1 << 3;
-//    constexpr Byte BIT4 = 1 << 4;
-//    constexpr Byte BIT5 = 1 << 5;
-//    constexpr Byte BIT6 = 1 << 6;
-//    constexpr Byte BIT7 = 1 << 7;
+    constexpr bool CLEAR = false;
+    constexpr bool SET = true;
 
 
 

@@ -33,9 +33,11 @@ namespace Emulator {
         /// sets the memory of the processor to the exact same values as the given new memory
         void burn(const ROM &newMemory) { memory = newMemory; }
 
-        void execute_command();
+        void execute_command(OpCode opCode);
 
-        void execute();
+        void execute_current_command();
+
+        [[noreturn]] void execute();
 
 
     protected:
@@ -49,7 +51,7 @@ namespace Emulator {
 
         void store_register(Register reg, AddressingMode mode);
 
-        void transfer_registers(Register from, Register to) { write_to_register(to, read_from_register(from)); };
+        void transfer_registers(Register from, Register to) { set_register(to, get_register(from, false), false); };
 
 
 
@@ -174,7 +176,7 @@ namespace Emulator {
 
         void set_flag(Flag flag, bool value, bool increment_cycle = false);
 
-        void write_to_register(Register reg, Byte value);
+        void set_register(Register reg, Byte value, bool advanceCycle);
 
         /// reads the byte at the address specified by program counter and increments the latter
         Byte read_current_byte();
@@ -194,7 +196,7 @@ namespace Emulator {
         /// writes the specified value to the specified address in memory
         void write_byte(Byte value, Word address, bool set_flags = false);
 
-        Byte read_from_register(Register reg);
+        Byte get_register(Register reg, bool advanceCycle);
 
         Word determine_address(AddressingMode mode);
 
@@ -240,12 +242,6 @@ namespace Emulator {
         /// current cycle of the processor
         size_t cycle;
     };
-
-
-    std::ostream &operator<<(std::ostream &os, AddressingMode mode);
-
-    std::ostream &operator<<(std::ostream &os, Register aRegister);
-
 }
 
 #endif //EMULATOR_MOS6502_MOS6502_HPP

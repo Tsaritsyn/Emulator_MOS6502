@@ -26,13 +26,11 @@ target_include_directories(Emulator_MOS6502 PRIVATE lib)
 add_executable(Emulator_MOS6502_Test
         lib/MOS6502.cpp
         lib/MOS6502.hpp
-        test/MOS6502_TestWriteToRegisterFixture.hpp
-        test/MOS6502_TestWriteToRegisterFixture.cpp
-        test/MOS6502_TestADCFixture.cpp
-        test/MOS6502_TestADCFixture.hpp
         lib/MOS6502_defines.hpp
         lib/MOS6502_helpers.cpp
         lib/MOS6502_helpers.hpp
+        test/MOS6502_TestADCWithImmediateAddressing_Fixture.cpp
+        test/MOS6502_TestADCWithImmediateAddressing_Fixture.hpp
 )
 
 target_include_directories(Emulator_MOS6502_Test PRIVATE lib test)
