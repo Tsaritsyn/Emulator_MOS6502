@@ -16,7 +16,7 @@ FetchContent_MakeAvailable(googletest)
 add_executable(Emulator_MOS6502 main.cpp
         lib/MOS6502.cpp
         lib/MOS6502.hpp
-        lib/MOS6502_defines.hpp
+        lib/MOS6502_definitions.hpp
         lib/MOS6502_helpers.cpp
         lib/MOS6502_helpers.hpp
 )
@@ -26,11 +26,11 @@ target_include_directories(Emulator_MOS6502 PRIVATE lib)
 add_executable(Emulator_MOS6502_Test
         lib/MOS6502.cpp
         lib/MOS6502.hpp
-        lib/MOS6502_defines.hpp
+        lib/MOS6502_definitions.hpp
         lib/MOS6502_helpers.cpp
         lib/MOS6502_helpers.hpp
-        test/MOS6502_TestADCWithImmediateAddressing_Fixture.cpp
-        test/MOS6502_TestADCWithImmediateAddressing_Fixture.hpp
+        test/MOS6502_TestFixture.hpp
+        test/MOS6502_TestADC.cpp
 )
 
 target_include_directories(Emulator_MOS6502_Test PRIVATE lib test)

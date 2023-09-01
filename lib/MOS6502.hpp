@@ -5,7 +5,7 @@
 #ifndef EMULATOR_MOS6502_MOS6502_HPP
 #define EMULATOR_MOS6502_MOS6502_HPP
 
-#include "MOS6502_defines.hpp"
+#include "MOS6502_definitions.hpp"
 
 
 namespace Emulator {
@@ -51,7 +51,7 @@ namespace Emulator {
 
         void store_register(Register reg, AddressingMode mode);
 
-        void transfer_registers(Register from, Register to) { set_register(to, get_register(from, false), false); };
+        void transfer_registers(Register from, Register to) { set_register(to, get_register(from), false); };
 
 
 
@@ -181,7 +181,10 @@ namespace Emulator {
         /// reads the byte at the address specified by program counter and increments the latter
         Byte read_current_byte();
 
-        /// reads the 2 consecutive bytes, the first of which is addressed by the program counter and increases the latter by 2
+        /// essentially, it is the same as read_current_byte, but elapses 1 more cycle
+        Word read_zero_page_address_and_add(std::optional<Byte> shift);
+
+        /// reads word wih least significant byte of which being at PC; increases PC by 2
         Word read_current_word();
 
         /// reads word, least significant byte of which is pointed at by the address
@@ -196,7 +199,7 @@ namespace Emulator {
         /// writes the specified value to the specified address in memory
         void write_byte(Byte value, Word address, bool set_flags = false);
 
-        Byte get_register(Register reg, bool advanceCycle);
+        [[nodiscard]] Byte get_register(Register reg) const;
 
         Word determine_address(AddressingMode mode);
 
@@ -211,6 +214,16 @@ namespace Emulator {
         Word pull_word_from_stack();
 
         [[nodiscard]] bool check_flag(Flag flag) const;
+
+        /**
+         * Performs two byte additions, first low byte of the target with other byte, than high byte of the target with carry from the first step.
+         * If the first step overflows Byte, 1 cycle will be elapsed, otherwise none.
+         */
+        Word add_word(Word word, Byte byte);
+
+        static Byte add_bytes(Byte target, Byte other, bool &carry);
+
+
 
 
 

@@ -2,17 +2,24 @@
 // Created by Mikhail on 30/08/2023.
 //
 
-#ifndef EMULATOR_MOS6502_MOS6502_DEFINES_HPP
-#define EMULATOR_MOS6502_MOS6502_DEFINES_HPP
+#ifndef EMULATOR_MOS6502_MOS6502_DEFINITIONS_HPP
+#define EMULATOR_MOS6502_MOS6502_DEFINITIONS_HPP
 
 #include <cstdint>
 #include <array>
+#include <iomanip>
+
+#define HEX_BYTE(byte) "0x" << std::uppercase << std::setfill('0') << std::setw(2) << std::hex << ((int)byte)
+#define HEX_WORD(word) "0x" << std::uppercase << std::setfill('0') << std::setw(4) << std::hex << ((int)word)
+#define HEX_CULL_BYTE(byte) std::uppercase << std::setfill('0') << std::setw(2) << std::hex << ((int)byte)
+
 
 namespace Emulator {
     using Byte = uint8_t;
     using Word = uint16_t;
     using ROM = std::array<Byte, UINT16_MAX>;
 
+    constexpr Word STACK_LEFT_ADDR = 0x0100;
 
 
     constexpr bool CLEAR = false;
@@ -158,7 +165,7 @@ namespace Emulator {
         INDIRECT_X,
 
         /**
-         * Indirect indirect addressing is the most common indirection mode used on the 6502.
+         * Indirect indexed addressing is the most common indirection mode used on the 6502.
          * In instruction contains the zero page location of the least significant byte of 16 bit address.
          * The Y register is dynamically added to this value to generated the actual target address for operation.
          */
@@ -361,4 +368,4 @@ namespace Emulator {
 
 }
 
-#endif //EMULATOR_MOS6502_MOS6502_DEFINES_HPP
+#endif //EMULATOR_MOS6502_MOS6502_DEFINITIONS_HPP

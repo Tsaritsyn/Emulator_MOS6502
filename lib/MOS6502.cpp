@@ -6,13 +6,12 @@
 #include <iomanip>
 #include <bitset>
 #include <iostream>
+#include <optional>
 
 #include "MOS6502.hpp"
 #include "MOS6502_helpers.hpp"
 
-#define HEX_BYTE(byte) "0x" << std::uppercase << std::setfill('0') << std::setw(2) << std::hex << ((int)byte)
-#define HEX_WORD(word) "0x" << std::uppercase << std::setfill('0') << std::setw(4) << std::hex << ((int)word)
-#define HEX_CULL_BYTE(byte) std::uppercase << std::setfill('0') << std::setw(2) << std::hex << ((int)byte)
+
 
 namespace Emulator {
 
@@ -23,14 +22,15 @@ namespace Emulator {
 
 
     Byte MOS6502::read_current_byte() {
-        return read_byte(PC++);
+        Byte result = read_byte(PC++);
+        return result;
     }
 
 
     Word MOS6502::read_current_word() {
         WordToBytes buf{};
-        buf.high = read_current_byte();
         buf.low = read_current_byte();
+        buf.high = read_current_byte();
         return buf.word;
     }
 
@@ -127,8 +127,7 @@ namespace Emulator {
     }
 
 
-    Byte MOS6502::get_register(Register reg, bool advanceCycle) {
-        cycle++;
+    Byte MOS6502::get_register(Emulator::Register reg) const {
         switch (reg) {
             case Register::AC:
                 return AC;
@@ -142,15 +141,12 @@ namespace Emulator {
                 return SR;
         }
 
-        throw std::runtime_error("Some registers were not handled");
+        throw std::runtime_error("Unknown register");
     }
 
 
     void MOS6502::store_register(Register reg, AddressingMode mode) {
-        // TODO: check for forbidden register-mode pairs
-        Word address = determine_address(mode);
-        Byte value = get_register(reg, false);
-        write_byte(value, address);
+        write_byte(get_register(reg), determine_address(mode));
     }
 
 
@@ -160,80 +156,35 @@ namespace Emulator {
                 return PC;
 
             case AddressingMode::ZERO_PAGE:
-                return read_current_byte();
+                // when nothing is added to the zero-page address, it does not elapse an additional cycle
+                return read_zero_page_address_and_add(std::nullopt);
 
             case AddressingMode::ZERO_PAGE_X:
-                return read_current_byte() + get_register(Register::X, false);
+                return read_zero_page_address_and_add(X);
 
             case AddressingMode::ZERO_PAGE_Y:
-                return read_current_byte() + get_register(Register::Y, false);
+                return read_zero_page_address_and_add(Y);
 
             case AddressingMode::RELATIVE:
-                return PC + (int8_t) read_current_byte();
+                return PC + read_current_byte();
 
             case AddressingMode::ABSOLUTE:
-                // in this mode the full 2-byte address is given as the instruction parameter, therefore we have to read 2 bytes
-                // first byte is the most significant one
                 return read_current_word();
 
-            case AddressingMode::ABSOLUTE_X: {
-                // in this mode the full 2-byte address is given as the instruction parameter, therefore we have to read 2 bytes
-                // first byte is the most significant one
-                Word address = read_current_byte();
-                address <<= 8;
+            case AddressingMode::ABSOLUTE_X:
+                return add_word(read_current_word(), X);
 
-                // in this mode we need to add the value in X to the given address and keep track if page was crossed
-                Word tmp = read_current_byte();
-                tmp += get_register(Register::X, false);
-                // if addition of the address with the value in X leads to change of the page, an extra cycle is spent
-                if (tmp > UINT8_MAX) cycle++;
-
-                address += tmp;
-                return address;
-            }
-
-            case AddressingMode::ABSOLUTE_Y: {
-                // in this mode the full 2-byte address is given as the instruction parameter, therefore we have to read 2 bytes
-                // first byte is the most significant one
-                Word address = read_current_byte();
-                address <<= 8;
-
-                // in this mode we need to add the value in Y to the given address and keep track if page was crossed
-                Word tmp = read_current_byte();
-                tmp += get_register(Register::Y, false);
-                // if addition of the address with the value in Y leads to change of the page, an extra cycle is spent
-                if (tmp > UINT8_MAX) cycle++;
-
-                address += tmp;
-                return address;
-            }
+            case AddressingMode::ABSOLUTE_Y:
+                return add_word(read_current_word(), Y);
 
             case AddressingMode::INDIRECT:
                 return read_reversed_word(read_current_word());
 
-            case AddressingMode::INDIRECT_X: {
-                // in this mode we do all operations in zero page
-                Byte tableAddress = read_current_byte();
+            case AddressingMode::INDIRECT_X:
+                return read_reversed_word(read_zero_page_address_and_add(X));
 
-                Byte targetAddress = tableAddress + get_register(Register::X, false);
-
-                // for some reason, these two bytes must be swapped
-                // so if memory at targetAddress gives 0x0080, then address will be 0x8000
-                return read_reversed_word(targetAddress);
-            }
-
-            case AddressingMode::INDIRECT_Y: {
-                Byte zeroPageLocation = read_current_byte();
-
-                Word leastSignificantByteOfAddress = read_byte(zeroPageLocation);
-                leastSignificantByteOfAddress += get_register(Register::Y, false);
-                if (leastSignificantByteOfAddress > UINT8_MAX) cycle++;
-
-                Word address = read_byte(zeroPageLocation + 1);
-                address <<= 8;
-                address += leastSignificantByteOfAddress;
-                return address;
-            }
+            case AddressingMode::INDIRECT_Y:
+                return add_word(read_reversed_word(read_zero_page_address_and_add(std::nullopt)), Y);
         }
 
         throw std::runtime_error("Some addressing modes were not handled");
@@ -241,41 +192,21 @@ namespace Emulator {
 
 
     void MOS6502::push_to_stack(Register reg) {
-        if (reg != Register::AC && reg != Register::SR) {
-            std::stringstream ss;
-            ss << "Cannot push register " << reg << " on stack";
-            throw std::invalid_argument(ss.str());
-        }
-
-        push_byte_to_stack(get_register(reg, false));
+        push_byte_to_stack(get_register(reg));
     }
 
 
     void MOS6502::push_byte_to_stack(Byte value) {
-        Word address = 0x0100 + get_register(Register::SP, false);
-        write_byte(value, address);
-        SP--;
+        write_byte(value, STACK_LEFT_ADDR + SP--);
     }
 
 
     Byte MOS6502::pull_byte_from_stack() {
-        // for some reason, pulling from stack takes 1 more cycle than pushing to it, so we do set_register instead of manipulating SP directly
-        // equivalent for SP++
-        set_register(Register::SP, SP + 1, true);
-
-        Word address = 0x0100 + get_register(Register::SP, true);
-        Byte value = read_byte(address);
-        return value;
+        return read_byte(STACK_LEFT_ADDR + SP++);
     }
 
 
     void MOS6502::pull_from_stack(Register to) {
-        if (to != Register::AC && to != Register::SR) {
-            std::stringstream ss;
-            ss << "Cannot pull from stack to register " << to;
-            throw std::invalid_argument(ss.str());
-        }
-
         set_register(to, pull_byte_from_stack(), true);
     }
 
@@ -301,9 +232,8 @@ namespace Emulator {
 
 
     void MOS6502::bit_test(AddressingMode mode) {
-        Byte accumulator_byte = get_register(Register::AC, true);
         Byte memory_byte = read_byte(mode);
-        bool test_result = accumulator_byte & memory_byte;
+        bool test_result = AC & memory_byte;
 
         set_flag(Flag::ZERO, test_result);
         set_flag(Flag::OVERFLOW, check_bit(memory_byte, OVERFLOW));
@@ -317,16 +247,14 @@ namespace Emulator {
         Byte mem = read_byte(mode);
         bool initialMemSignBit = check_bit(mem, NEGATIVE);
 
-        int result = (int)AC + mem + check_flag(CARRY);
-        set_register(Register::AC, (Byte)result, false);
+        bool carry = check_flag(CARRY);
+        Byte result = add_bytes(AC, mem, carry);
+        bool resultSignBit = check_bit(result, NEGATIVE);
 
-        bool resultSignBit = check_bit(AC, NEGATIVE);
-
-        // carry flag is set only when the result crossed 255
-        set_flag(Flag::CARRY, result > UINT8_MAX);
-
+        set_register(Register::AC, result, false);
+        set_flag(Flag::CARRY, carry);
         // overflow flag is set every time when the sign of the result is incorrect
-        set_flag(Flag::OVERFLOW, initialACSignBit == initialMemSignBit && initialACSignBit != resultSignBit);
+        set_flag(Flag::OVERFLOW, (initialACSignBit == initialMemSignBit) && (initialACSignBit != resultSignBit));
     }
 
 
@@ -349,13 +277,7 @@ namespace Emulator {
 
 
     void MOS6502::compare_register(Register reg, AddressingMode mode) {
-        if (reg != Register::AC && reg != Register::X && reg != Register::Y) {
-            std::stringstream ss;
-            ss << "Cannot compare register " << reg;
-            throw std::invalid_argument(ss.str());
-        }
-
-        Byte reg_value = get_register(reg, false);
+        Byte reg_value = get_register(reg);
         Byte memory_value = read_byte(mode);
 
         set_flag(Flag::CARRY, reg_value >= memory_value);
@@ -377,30 +299,18 @@ namespace Emulator {
 
 
     void MOS6502::increment_register(Register reg) {
-        if (reg != Register::X && reg != Register::Y) {
-            std::stringstream ss;
-            ss << "Cannot increment register " << reg;
-            throw std::invalid_argument(ss.str());
-        }
-
-        set_register(reg, get_register(reg, false) + 1, true);
+        set_register(reg, get_register(reg) + 1, true);
     }
 
 
     void MOS6502::decrement_register(Register reg) {
-        if (reg != Register::X && reg != Register::Y) {
-            std::stringstream ss;
-            ss << "Cannot decrement register " << reg;
-            throw std::invalid_argument(ss.str());
-        }
-
-        set_register(reg, get_register(reg, false) - 1, true);
+        set_register(reg, get_register(reg) - 1, true);
     }
 
 
     void MOS6502::shift_left_accumulator() {
         set_flag(Flag::CARRY, check_bit(AC, 7));
-        set_register(Register::AC, get_register(Register::AC, false) << 1, true);
+        set_register(Register::AC, get_register(Register::AC) << 1, true);
     }
 
 
@@ -416,7 +326,7 @@ namespace Emulator {
 
     void MOS6502::shift_right_accumulator() {
         set_flag(Flag::CARRY, check_bit(AC, 0));
-        set_register(Register::AC, get_register(Register::AC, false) >> 1, true);
+        set_register(Register::AC, get_register(Register::AC) >> 1, true);
     }
 
 
@@ -432,7 +342,7 @@ namespace Emulator {
 
     void MOS6502::rotate_left_accumulator() {
         set_flag(Flag::CARRY, check_bit(AC, 7));
-        set_register(Register::AC, (get_register(Register::AC, false) << 1) + check_flag(CARRY), true);
+        set_register(Register::AC, (AC << 1) + check_flag(CARRY), true);
     }
 
 
@@ -449,7 +359,7 @@ namespace Emulator {
     void MOS6502::rotate_right_accumulator() {
         set_flag(Flag::CARRY, check_bit(AC, CARRY));
 
-        Byte value = get_register(Register::AC, false);
+        Byte value = AC;
         value >>= 1;
         set_bit(value, 7, check_flag(CARRY));
 
@@ -534,9 +444,7 @@ namespace Emulator {
 
 
     Byte MOS6502::read_byte(AddressingMode mode) {
-        if (mode == AddressingMode::IMMEDIATE) return read_current_byte();
-
-        return read_byte(determine_address(mode));
+        return (mode == AddressingMode::IMMEDIATE) ? read_current_byte() : read_byte(determine_address(mode));
     }
 
 
@@ -1050,6 +958,33 @@ namespace Emulator {
         OpCode opCode{read_current_byte()};
         execute_command(opCode);
     }
+
+
+    Word MOS6502::add_word(Word word, Byte byte) {
+        WordToBytes buf(word);
+        bool carry = false;
+        buf.low = add_bytes(buf.low, byte, carry);
+        if (carry) cycle++;
+        buf.high = add_bytes(buf.high, 0, carry);
+        return buf.word;
+    }
+
+    Byte MOS6502::add_bytes(Byte target, Byte other, bool &carry) {
+        int result = target + other + carry;
+        carry = result > UINT8_MAX;
+        return result;
+    }
+
+    Word MOS6502::read_zero_page_address_and_add(std::optional<Byte> shift) {
+        Byte address = read_current_byte();
+        if (shift.has_value()) {
+            address += shift.value();
+            cycle++;
+        }
+        return address;
+    }
+
+
 }
 
 

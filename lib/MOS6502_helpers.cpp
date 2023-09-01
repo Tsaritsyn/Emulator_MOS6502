@@ -85,4 +85,27 @@ namespace Emulator {
         return os;
     }
 
+
+    std::ostream &operator<<(std::ostream &os, Flag flag) {
+        switch (flag) {
+            case NEGATIVE:
+                return os << "Negative";
+            case OVERFLOW:
+                return os << "Overflow";
+            case BREAK:
+                return os << "Break";
+            case DECIMAL:
+                return os << "Decimal";
+            case INTERRUPT_DISABLE:
+                return os << "Interrupt disable";
+            case ZERO:
+                return os << "Zero";
+            case CARRY:
+                return os << "Carry";
+
+            default:
+                throw std::runtime_error("Unknown flag");
+        }
+    }
+
 }

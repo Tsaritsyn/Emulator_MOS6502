@@ -8,7 +8,7 @@
 #include <vector>
 #include <ostream>
 
-#include "MOS6502_defines.hpp"
+#include "MOS6502_definitions.hpp"
 
 namespace Emulator {
 
@@ -22,6 +22,15 @@ namespace Emulator {
 
     std::ostream &operator<<(std::ostream &os, Register aRegister);
 
+    std::ostream &operator<<(std::ostream &os, Flag flag);
+
+    template <class T>
+    std::ostream& operator <<(std::ostream &os, const std::vector<T> &vec) {
+        os << '{';
+        for (const auto &element: vec) os << element << ", ";
+        os << '}';
+        return os;
+    }
 }
 
 #endif //EMULATOR_MOS6502_MOS6502_HELPERS_HPP
