@@ -31,6 +31,58 @@ namespace Emulator {
         os << '}';
         return os;
     }
+
+//    template<class T>
+//    ClippedValue<T> clip(T number, T min, T max) {
+//        T range = max - min;
+//
+//        bool overflow_min = number < min;
+//        bool overflow_max = number >= max;
+//
+//        T result{number};
+//        while (result >= max) result -= range;
+//        while (result < min) result += range;
+//
+//        return {result, overflow_min, overflow_max};
+//    }
+
+    template <class T>
+    std::pair<T, bool> add_and_clip(
+            T a,
+            T b,
+            bool carry,
+            T min,
+            T max
+            ) {
+        T range = max - min;
+        T result = a + b + carry;
+
+        bool overflow = result >= max || result < min;
+        while (result >= max) result -= range;
+        while (result < min) result += range;
+
+        return {result, overflow};
+    }
+
+
+    template <class T>
+    std::pair<T, bool> subtract_and_clip(
+            T a,
+            T b,
+            bool carry,
+            T min,
+            T max
+    ) {
+        T range = max - min;
+        T result = a - b - !carry;
+
+        bool overflow = result >= max || result < min;
+        while (result >= max) result -= range;
+        while (result < min) result += range;
+
+        return {result, overflow};
+    }
+
 }
 
 #endif //EMULATOR_MOS6502_MOS6502_HELPERS_HPP

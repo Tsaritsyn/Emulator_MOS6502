@@ -22,23 +22,38 @@ struct MOS6502_TestFixture: public ::testing::Test, public MOS6502 {
         Byte memory;
         bool carry;
 
+
         [[nodiscard]] constexpr Byte sum() const { return AC + memory + carry; }
 
         [[nodiscard]] constexpr std::vector<Flag> flags_sum() const {
-            const unsigned sum = AC + memory + carry;
-            std::vector<Flag> result{};
+            std::vector<Flag> flags{};
 
-            if ((Byte) sum == 0) result.push_back(ZERO);
-            if ((char) sum < 0)  result.push_back(NEGATIVE);
-            if (sum > UINT8_MAX) result.push_back(CARRY);
-            // every time when sign changes illegally
-            if (((char) AC > 0 && (char) memory > 0 && (char) sum <= 0)
-                || ((char) AC > 0 && (char) memory == 0 && (char) sum <= 0)
-                || ((char) AC == 0 && (char) memory > 0 && (char) sum <= 0)
-                || ((char) AC < 0 && (char) memory < 0 && (char) sum >= 0))
-                result.push_back(OVERFLOW);
+            auto [_, overflowUnsigned] = add_and_clip<int>(AC, memory, carry, 0, UINT8_MAX + 1);
+            if (overflowUnsigned) flags.push_back(CARRY);
 
-            return result;
+            auto [valueSigned, overflowSigned] = add_and_clip<int>((char)AC, (char)memory, carry, CHAR_MIN, CHAR_MAX + 1);
+            if (valueSigned == 0) flags.push_back(ZERO);
+            if (valueSigned < 0) flags.push_back(NEGATIVE);
+            if (overflowSigned) flags.push_back(OVERFLOW);
+
+            return flags;
+        }
+
+
+        [[nodiscard]] constexpr Byte sub() const { return AC - memory - !carry; }
+
+        [[nodiscard]] constexpr std::vector<Flag> flags_sub() const {
+            std::vector<Flag> flags{};
+
+            auto [_, overflowUnsigned] = subtract_and_clip<int>(AC, memory, carry, 0, UINT8_MAX + 1);
+            if (!overflowUnsigned) flags.push_back(CARRY);
+
+            auto [valueSigned, overflowSigned] = subtract_and_clip<int>((char)AC, (char)memory, carry, CHAR_MIN, CHAR_MAX + 1);
+            if (valueSigned == 0) flags.push_back(ZERO);
+            if (valueSigned < 0) flags.push_back(NEGATIVE);
+            if (overflowSigned) flags.push_back(OVERFLOW);
+
+            return flags;
         }
     };
 
@@ -52,6 +67,66 @@ struct MOS6502_TestFixture: public ::testing::Test, public MOS6502 {
         const WordToBytes buf(word);
         memory[address] = buf.low;
         memory[address + 1] = buf.high;
+    }
+
+
+    void prepare_memory(AddressingMode mode, Byte value) {
+        switch (mode) {
+            case AddressingMode::IMMEDIATE: {
+                memory[PC + 1] = value;
+            } break;
+            case AddressingMode::ZERO_PAGE: {
+                constexpr Byte zeroPageAddress = 0xFF;
+                memory[zeroPageAddress] = value;
+                memory[PC + 1] = zeroPageAddress;
+            } break;
+            case AddressingMode::ZERO_PAGE_X: {
+                constexpr Byte zeroPageAddress = 0xF0;
+                memory[zeroPageAddress + X] = value;
+                memory[PC + 1] = zeroPageAddress;
+            } break;
+            case AddressingMode::ZERO_PAGE_Y: {
+                constexpr Byte zeroPageAddress = 0xF0;
+                memory[zeroPageAddress + Y] = value;
+                memory[PC + 1] = zeroPageAddress;
+            } break;
+            case AddressingMode::RELATIVE:
+                break;
+            case AddressingMode::ABSOLUTE: {
+                constexpr Word address = 0x1234;
+                memory[address] = value;
+                write_word(address, PC + 1);
+            } break;
+            case AddressingMode::ABSOLUTE_X: {
+                constexpr Word address = 0x1200;
+                memory[address + X] = value;
+                write_word(address, PC + 1);
+            } break;
+            case AddressingMode::ABSOLUTE_Y: {
+                constexpr Word address = 0x1200;
+                memory[address + Y] = value;
+                write_word(address, PC + 1);
+            } break;
+            case AddressingMode::INDIRECT: {
+                constexpr Word address = 0x1234;
+                write_word(address, PC + 1);
+                write_word(value, address);
+            } break;
+            case AddressingMode::INDIRECT_X: {
+                constexpr Byte tableAddress = 0x10;
+                constexpr Word targetAddress = 0x1234;
+                memory[targetAddress] = value;
+                write_word(targetAddress, tableAddress + X);
+                memory[PC + 1] = tableAddress;
+            } break;
+            case AddressingMode::INDIRECT_Y: {
+                constexpr Byte tableAddress = 0x10;
+                constexpr Word targetAddress = 0x1234;
+                write_word(targetAddress, tableAddress);
+                memory[targetAddress + Y] = value;
+                memory[PC + 1] = tableAddress;
+            } break;
+        }
     }
 
 
@@ -73,63 +148,46 @@ struct MOS6502_TestFixture: public ::testing::Test, public MOS6502 {
         switch (mode) {
             case AddressingMode::IMMEDIATE: {
                 memory[PC] = OpCode::ADC_IMMEDIATE;
-                memory[PC + 1] = operands.memory;
+
+                prepare_memory(mode, operands.memory);
 
                 expectedCommandSize = 2;
                 expectedCommandDuration = 2;
             } break;
 
             case AddressingMode::ZERO_PAGE: {
-                constexpr Byte zeroPageAddress = 0xFF;
-                memory[zeroPageAddress] = operands.memory;
                 memory[PC] = OpCode::ADC_ZERO_PAGE;
-                memory[PC + 1] = zeroPageAddress;
+
+                prepare_memory(mode, operands.memory);
 
                 expectedCommandSize = 2;
                 expectedCommandDuration = 3;
             } break;
 
             case AddressingMode::ZERO_PAGE_X: {
-                constexpr Byte zeroPageAddress = 0xF0;
                 X = 0x0F;
-
-                memory[zeroPageAddress + X] = operands.memory;
                 memory[PC] = OpCode::ADC_ZERO_PAGE_X;
-                memory[PC + 1] = zeroPageAddress;
+
+                prepare_memory(mode, operands.memory);
 
                 expectedCommandSize = 2;
                 expectedCommandDuration = 4;
             } break;
 
-//            case AddressingMode::ZERO_PAGE_Y: {
-//                Byte zeroPageAddress = 0xF0;
-//                Y = 0x0F;
-//                memory[zeroPageAddress + Y] = initialMemory;
-//                memory[PC] = OpCode::ADC_ZERO_PAGE_Y;
-//                memory[PC + 1] = zeroPageAddress;
-//            } break;
-
-//            case AddressingMode::RELATIVE:
-//                break;
-
             case AddressingMode::ABSOLUTE: {
-                constexpr Word address = 0x1234;
-
-                memory[address] = operands.memory;
                 memory[PC] = OpCode::ADC_ABSOLUTE;
-                write_word(address, PC + 1);
+
+                prepare_memory(mode, operands.memory);
 
                 expectedCommandSize = 3;
                 expectedCommandDuration = 4;
             } break;
 
             case AddressingMode::ABSOLUTE_X: {
-                constexpr Word address = 0x1200;
                 X = 0x34;
-
-                memory[address + X] = operands.memory;
                 memory[PC] = OpCode::ADC_ABSOLUTE_X;
-                write_word(address, PC + 1);
+
+                prepare_memory(mode, operands.memory);
 
                 // TODO: prepare the case where the page is crossed
                 expectedCommandSize = 3;
@@ -137,51 +195,42 @@ struct MOS6502_TestFixture: public ::testing::Test, public MOS6502 {
             } break;
 
             case AddressingMode::ABSOLUTE_Y: {
-                constexpr Word address = 0x1200;
                 Y = 0x34;
-
-                memory[address + Y] = operands.memory;
                 memory[PC] = OpCode::ADC_ABSOLUTE_Y;
-                write_word(address, PC + 1);
+
+                prepare_memory(mode, operands.memory);
 
                 // TODO: prepare the case where the page is crossed
                 expectedCommandSize = 3;
                 expectedCommandDuration = 4;
             } break;
 
-//            case AddressingMode::INDIRECT:
-//                break;
-
             case AddressingMode::INDIRECT_X: {
-                constexpr Byte tableAddress = 0x10;
                 X = 0x0f;
-                constexpr Word targetAddress = 0x1234;
-
-                memory[targetAddress] = operands.memory;
-                write_word(targetAddress, tableAddress + X);
-
                 memory[PC] = OpCode::ADC_INDIRECT_X;
-                memory[PC + 1] = tableAddress;
+
+                prepare_memory(mode, operands.memory);
 
                 expectedCommandSize = 2;
                 expectedCommandDuration = 6;
             } break;
 
             case AddressingMode::INDIRECT_Y: {
-                constexpr Byte tableAddress = 0x10;
                 Y = 0x20;
-                constexpr Word targetAddress = 0x1234;
-
-                write_word(targetAddress, tableAddress);
-                memory[targetAddress + Y] = operands.memory;
-
                 memory[PC] = OpCode::ADC_INDIRECT_Y;
-                memory[PC + 1] = tableAddress;
+
+                prepare_memory(mode, operands.memory);
 
                 // TODO: prepare the case where the page is crossed
                 expectedCommandSize = 2;
                 expectedCommandDuration = 5;
             } break;
+
+            default: {
+                std::stringstream ss;
+                ss << "Unsupported addressing mode " << mode << " for ADC command";
+                throw std::invalid_argument(ss.str());
+            }
         }
 
         execute_current_command();
