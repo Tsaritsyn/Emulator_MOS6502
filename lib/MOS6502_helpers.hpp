@@ -20,6 +20,8 @@ namespace Emulator {
 
     std::ostream &operator<<(std::ostream &os, AddressingMode mode);
 
+    std::ostream &operator<<(std::ostream &os, Instruction instruction);
+
     std::ostream &operator<<(std::ostream &os, Register aRegister);
 
     std::ostream &operator<<(std::ostream &os, Flag flag);
@@ -31,20 +33,6 @@ namespace Emulator {
         os << '}';
         return os;
     }
-
-//    template<class T>
-//    ClippedValue<T> clip(T number, T min, T max) {
-//        T range = max - min;
-//
-//        bool overflow_min = number < min;
-//        bool overflow_max = number >= max;
-//
-//        T result{number};
-//        while (result >= max) result -= range;
-//        while (result < min) result += range;
-//
-//        return {result, overflow_min, overflow_max};
-//    }
 
     template <class T>
     std::pair<T, bool> add_and_clip(
@@ -64,7 +52,6 @@ namespace Emulator {
         return {result, overflow};
     }
 
-
     template <class T>
     std::pair<T, bool> subtract_and_clip(
             T a,
@@ -83,6 +70,7 @@ namespace Emulator {
         return {result, overflow};
     }
 
+    OpCode opcode(Instruction instruction, AddressingMode mode);
 }
 
 #endif //EMULATOR_MOS6502_MOS6502_HELPERS_HPP

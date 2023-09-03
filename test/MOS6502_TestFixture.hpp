@@ -6,6 +6,7 @@
 #define EMULATOR_MOS6502_MOS6502_TESTFIXTURE_HPP
 
 #include <gtest/gtest.h>
+#include <variant>
 
 #include "MOS6502.hpp"
 #include "MOS6502_helpers.hpp"
@@ -59,74 +60,32 @@ struct MOS6502_TestFixture: public ::testing::Test, public MOS6502 {
 
 
 
+    // Addressing mode cases
+    struct Immediate { Byte value; };
+    struct ZeroPage { Byte address, value; };
+    struct ZeroPageX { Byte address, X, value; };
+    struct ZeroPageY { Byte address, Y, value; };
+    struct Relative { char offset; };
+    struct Absolute { Word address; Byte value; };
+    struct AbsoluteX { Word address; Byte X, value; };
+    struct AbsoluteY { Word address; Byte Y, value; };
+    struct Indirect { Word address, newAddress; };
+    struct IndirectX { Byte tableAddress; Word targetAddress; Byte X, value; };
+    struct IndirectY { Byte tableAddress; Word targetAddress; Byte Y, value; };
+    using Addressing = std::variant<Immediate, ZeroPage, ZeroPageX, ZeroPageY, Relative, Absolute, AbsoluteX, AbsoluteY, Indirect, IndirectX, IndirectY>;
+
+    void prepare_instruction(const Addressing &args);
+
+
+
     /**
      * Writes the given word to the given address in memory.
      * Low byte of the word will be written first.
      */
-    void write_word(Word word, Word address) {
+    void write_word(Word word, Word to) {
         const WordToBytes buf(word);
-        memory[address] = buf.low;
-        memory[address + 1] = buf.high;
-    }
-
-
-    void prepare_memory(AddressingMode mode, Byte value) {
-        switch (mode) {
-            case AddressingMode::IMMEDIATE: {
-                memory[PC + 1] = value;
-            } break;
-            case AddressingMode::ZERO_PAGE: {
-                constexpr Byte zeroPageAddress = 0xFF;
-                memory[zeroPageAddress] = value;
-                memory[PC + 1] = zeroPageAddress;
-            } break;
-            case AddressingMode::ZERO_PAGE_X: {
-                constexpr Byte zeroPageAddress = 0xF0;
-                memory[zeroPageAddress + X] = value;
-                memory[PC + 1] = zeroPageAddress;
-            } break;
-            case AddressingMode::ZERO_PAGE_Y: {
-                constexpr Byte zeroPageAddress = 0xF0;
-                memory[zeroPageAddress + Y] = value;
-                memory[PC + 1] = zeroPageAddress;
-            } break;
-            case AddressingMode::RELATIVE:
-                break;
-            case AddressingMode::ABSOLUTE: {
-                constexpr Word address = 0x1234;
-                memory[address] = value;
-                write_word(address, PC + 1);
-            } break;
-            case AddressingMode::ABSOLUTE_X: {
-                constexpr Word address = 0x1200;
-                memory[address + X] = value;
-                write_word(address, PC + 1);
-            } break;
-            case AddressingMode::ABSOLUTE_Y: {
-                constexpr Word address = 0x1200;
-                memory[address + Y] = value;
-                write_word(address, PC + 1);
-            } break;
-            case AddressingMode::INDIRECT: {
-                constexpr Word address = 0x1234;
-                write_word(address, PC + 1);
-                write_word(value, address);
-            } break;
-            case AddressingMode::INDIRECT_X: {
-                constexpr Byte tableAddress = 0x10;
-                constexpr Word targetAddress = 0x1234;
-                memory[targetAddress] = value;
-                write_word(targetAddress, tableAddress + X);
-                memory[PC + 1] = tableAddress;
-            } break;
-            case AddressingMode::INDIRECT_Y: {
-                constexpr Byte tableAddress = 0x10;
-                constexpr Word targetAddress = 0x1234;
-                write_word(targetAddress, tableAddress);
-                memory[targetAddress + Y] = value;
-                memory[PC + 1] = tableAddress;
-            } break;
-        }
+        memory[to] = buf.low;
+        memory[to + 1] = buf.high;
     }
 
 
@@ -148,8 +107,7 @@ struct MOS6502_TestFixture: public ::testing::Test, public MOS6502 {
         switch (mode) {
             case AddressingMode::IMMEDIATE: {
                 memory[PC] = OpCode::ADC_IMMEDIATE;
-
-                prepare_memory(mode, operands.memory);
+                prepare_instruction(Immediate{operands.memory});
 
                 expectedCommandSize = 2;
                 expectedCommandDuration = 2;
@@ -157,18 +115,15 @@ struct MOS6502_TestFixture: public ::testing::Test, public MOS6502 {
 
             case AddressingMode::ZERO_PAGE: {
                 memory[PC] = OpCode::ADC_ZERO_PAGE;
-
-                prepare_memory(mode, operands.memory);
+                prepare_instruction(ZeroPage{0xFF, operands.memory});
 
                 expectedCommandSize = 2;
                 expectedCommandDuration = 3;
             } break;
 
             case AddressingMode::ZERO_PAGE_X: {
-                X = 0x0F;
                 memory[PC] = OpCode::ADC_ZERO_PAGE_X;
-
-                prepare_memory(mode, operands.memory);
+                prepare_instruction(ZeroPageX{0xF0, 0x0F, operands.memory});
 
                 expectedCommandSize = 2;
                 expectedCommandDuration = 4;
@@ -176,18 +131,15 @@ struct MOS6502_TestFixture: public ::testing::Test, public MOS6502 {
 
             case AddressingMode::ABSOLUTE: {
                 memory[PC] = OpCode::ADC_ABSOLUTE;
-
-                prepare_memory(mode, operands.memory);
+                prepare_instruction(Absolute{0x1234, operands.memory});
 
                 expectedCommandSize = 3;
                 expectedCommandDuration = 4;
             } break;
 
             case AddressingMode::ABSOLUTE_X: {
-                X = 0x34;
                 memory[PC] = OpCode::ADC_ABSOLUTE_X;
-
-                prepare_memory(mode, operands.memory);
+                prepare_instruction(AbsoluteX{0x1200, 0x34, operands.memory});
 
                 // TODO: prepare the case where the page is crossed
                 expectedCommandSize = 3;
@@ -195,10 +147,8 @@ struct MOS6502_TestFixture: public ::testing::Test, public MOS6502 {
             } break;
 
             case AddressingMode::ABSOLUTE_Y: {
-                Y = 0x34;
                 memory[PC] = OpCode::ADC_ABSOLUTE_Y;
-
-                prepare_memory(mode, operands.memory);
+                prepare_instruction(AbsoluteY{0x1200, 0x34, operands.memory});
 
                 // TODO: prepare the case where the page is crossed
                 expectedCommandSize = 3;
@@ -206,20 +156,16 @@ struct MOS6502_TestFixture: public ::testing::Test, public MOS6502 {
             } break;
 
             case AddressingMode::INDIRECT_X: {
-                X = 0x0f;
                 memory[PC] = OpCode::ADC_INDIRECT_X;
-
-                prepare_memory(mode, operands.memory);
+                prepare_instruction(IndirectX{0x10, 0x1234, 0x0f, operands.memory});
 
                 expectedCommandSize = 2;
                 expectedCommandDuration = 6;
             } break;
 
             case AddressingMode::INDIRECT_Y: {
-                Y = 0x20;
                 memory[PC] = OpCode::ADC_INDIRECT_Y;
-
-                prepare_memory(mode, operands.memory);
+                prepare_instruction(IndirectY{0x10, 0x1234, 0x20, operands.memory });
 
                 // TODO: prepare the case where the page is crossed
                 expectedCommandSize = 2;
