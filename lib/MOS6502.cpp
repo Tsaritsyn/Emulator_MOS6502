@@ -15,12 +15,6 @@
 
 namespace Emulator {
 
-    void MOS6502::set_flag(Flag flag, bool value, bool increment_cycle) {
-        set_bit(SR, flag, value);
-        if (increment_cycle) cycle++;
-    }
-
-
     Byte MOS6502::read_current_byte() {
         Byte result = read_byte(PC++);
         return result;
@@ -86,8 +80,8 @@ namespace Emulator {
 
 
         // setting flags
-        set_flag(Flag::ZERO, value == 0);
-        set_flag(Flag::NEGATIVE, check_bit(value, 7));
+        SR[ZERO] = value == 0;
+        SR[NEGATIVE] = (char)value < 0;
     }
 
 
@@ -121,8 +115,8 @@ namespace Emulator {
 
         if (set_flags) {
             // setting flags
-            set_flag(Flag::ZERO, value == 0);
-            set_flag(Flag::NEGATIVE, check_bit(value, 7));
+            SR[ZERO] = value == 0;
+            SR[NEGATIVE] = (char)value < 0;
         }
     }
 
@@ -138,7 +132,7 @@ namespace Emulator {
             case Register::SP:
                 return SP;
             case Register::SR:
-                return SR;
+                return SR.to_ulong();
         }
 
         throw std::runtime_error("Unknown register");
@@ -233,11 +227,12 @@ namespace Emulator {
 
     void MOS6502::bit_test(AddressingMode mode) {
         Byte memory_byte = read_byte(mode);
-        bool test_result = AC & memory_byte;
+        Byte test_result = AC & memory_byte;
 
-        set_flag(Flag::ZERO, test_result);
-        set_flag(Flag::OVERFLOW, check_bit(memory_byte, OVERFLOW));
-        set_flag(Flag::NEGATIVE, check_bit(memory_byte, 7));
+        SR[ZERO] = test_result == 0;
+
+        SR[OVERFLOW] = check_bit(memory_byte, OVERFLOW);
+        SR[NEGATIVE] =  check_bit(memory_byte, NEGATIVE);
     }
 
 
@@ -247,14 +242,14 @@ namespace Emulator {
         Byte mem = read_byte(mode);
         bool initialMemSignBit = check_bit(mem, NEGATIVE);
 
-        bool carry = check_flag(CARRY);
+        bool carry = SR[CARRY];
         Byte result = add_bytes(AC, mem, carry);
         bool resultSignBit = check_bit(result, NEGATIVE);
 
         set_register(Register::AC, result, false);
-        set_flag(Flag::CARRY, carry);
+        SR[CARRY] = carry;
         // overflow flag is set every time when the sign of the result is incorrect
-        set_flag(Flag::OVERFLOW, (initialACSignBit == initialMemSignBit) && (initialACSignBit != resultSignBit));
+        SR[OVERFLOW] = (initialACSignBit == initialMemSignBit) && (initialACSignBit != resultSignBit);
     }
 
 
@@ -264,15 +259,13 @@ namespace Emulator {
         Byte rhs = read_byte(mode);
         bool rhs_sign_bit = check_bit(rhs, NEGATIVE);
 
-        set_register(Register::AC, AC - rhs - !check_flag(CARRY), true);
-
+        set_register(Register::AC, AC - rhs - !SR[CARRY], true);
         bool resulting_sign_bit = check_bit(AC, NEGATIVE);
 
         // carry flag is set only when the result crossed 0
-        set_flag(Flag::OVERFLOW, !initial_sign_bit && resulting_sign_bit);
-
+        SR[CARRY] = !initial_sign_bit && resulting_sign_bit;
         // overflow flag is set every time when the sign of the result is incorrect
-        set_flag(Flag::OVERFLOW, initial_sign_bit != rhs_sign_bit && initial_sign_bit != resulting_sign_bit);
+        SR[OVERFLOW] = (initial_sign_bit != rhs_sign_bit) && (initial_sign_bit != resulting_sign_bit);
     }
 
 
@@ -280,9 +273,9 @@ namespace Emulator {
         Byte reg_value = get_register(reg);
         Byte memory_value = read_byte(mode);
 
-        set_flag(Flag::CARRY, reg_value >= memory_value);
-        set_flag(Flag::ZERO, reg_value == memory_value);
-        set_flag(Flag::NEGATIVE, reg_value < memory_value);
+        SR[CARRY] = reg_value >= memory_value;
+        SR[ZERO] = reg_value == memory_value;
+        SR[NEGATIVE] = reg_value < memory_value;
     }
 
 
@@ -309,7 +302,7 @@ namespace Emulator {
 
 
     void MOS6502::shift_left_accumulator() {
-        set_flag(Flag::CARRY, check_bit(AC, 7));
+        SR[CARRY] =  check_bit(AC, 7);
         set_register(Register::AC, get_register(Register::AC) << 1, true);
     }
 
@@ -318,14 +311,13 @@ namespace Emulator {
         Word address = determine_address(mode);
         Byte value = read_byte(address);
 
-        set_flag(Flag::CARRY, check_bit(value, 7));
-
+        SR[CARRY] = check_bit(value, 7);
         write_byte(value << 1, address, true);
     }
 
 
     void MOS6502::shift_right_accumulator() {
-        set_flag(Flag::CARRY, check_bit(AC, 0));
+        SR[CARRY] = check_bit(AC, 0);
         set_register(Register::AC, get_register(Register::AC) >> 1, true);
     }
 
@@ -334,15 +326,14 @@ namespace Emulator {
         Word address = determine_address(mode);
         Byte value = read_byte(address);
 
-        set_flag(Flag::CARRY, check_bit(value, 0));
-
+        SR[CARRY] = check_bit(value, 0);
         write_byte(value >> 1, address, true);
     }
 
 
     void MOS6502::rotate_left_accumulator() {
-        set_flag(Flag::CARRY, check_bit(AC, 7));
-        set_register(Register::AC, (AC << 1) + check_flag(CARRY), true);
+        SR[CARRY] = check_bit(AC, 7);
+        set_register(Register::AC, (AC << 1) + SR[CARRY], true);
     }
 
 
@@ -350,19 +341,18 @@ namespace Emulator {
         Word address = determine_address(mode);
         Byte value = read_byte(address);
 
-        set_flag(Flag::CARRY, check_bit(value, 7));
-
-        write_byte((value << 1) + check_flag(CARRY), address, true);
+        SR[CARRY] = check_bit(value, 7);
+        write_byte((value << 1) + SR[CARRY], address, true);
     }
 
 
     void MOS6502::rotate_right_accumulator() {
-        set_flag(Flag::CARRY, check_bit(AC, CARRY));
+        SR[CARRY] = check_bit(AC, CARRY);
 
         Byte value = AC;
         value >>= 1;
-        set_bit(value, 7, check_flag(CARRY));
 
+        set_bit(value, 7, SR[CARRY]);
         set_register(Register::AC, value, true);
     }
 
@@ -370,10 +360,10 @@ namespace Emulator {
     void MOS6502::rotate_right_memory(AddressingMode mode) {
         Word address = determine_address(mode);
         Byte value = read_byte(address);
-        set_flag(Flag::CARRY, check_bit(value, 0));
+        SR[CARRY] = check_bit(value, 0);
 
         value >>= 1;
-        set_bit(value, 7, check_flag(CARRY));
+        set_bit(value, 7, SR[CARRY]);
 
         write_byte(value, address, true);
     }
@@ -411,14 +401,9 @@ namespace Emulator {
     }
 
 
-    bool MOS6502::check_flag(Flag flag) const {
-        return check_bit(SR, flag);
-    }
-
-
     void MOS6502::branch_if(Flag flag_to_check, bool value_to_expect) {
         Word new_address = determine_address(AddressingMode::RELATIVE);
-        if (check_flag(flag_to_check) == value_to_expect) PC = new_address;
+        if (SR[flag_to_check] == value_to_expect) PC = new_address;
     }
 
 
@@ -438,7 +423,7 @@ namespace Emulator {
     void MOS6502::reset() {
         PC = read_reversed_word(RESET_LOCATION);
         cycle = 7;
-        set_flag(INTERRUPT_DISABLE, true);
+        SR[INTERRUPT_DISABLE] = true;
     }
 
 
@@ -554,16 +539,16 @@ namespace Emulator {
                 break;
 
             case OpCode::CLC:
-                set_flag(CARRY, CLEAR, true);
+                SR[CARRY] = CLEAR;
                 break;
             case OpCode::CLD:
-                set_flag(DECIMAL, CLEAR, true);
+                SR[DECIMAL] = CLEAR;
                 break;
             case OpCode::CLI:
-                set_flag(INTERRUPT_DISABLE, CLEAR, true);
+                SR[INTERRUPT_DISABLE] = CLEAR;
                 break;
             case OpCode::CLV:
-                set_flag(OVERFLOW, CLEAR, true);
+                SR[OVERFLOW] = CLEAR;
                 break;
 
             case OpCode::CMP_IMMEDIATE:
@@ -868,13 +853,13 @@ namespace Emulator {
                 break;
 
             case OpCode::SEC:
-                set_flag(CARRY, SET, true);
+                SR[CARRY] = SET;
                 break;
             case OpCode::SED:
-                set_flag(DECIMAL, SET, true);
+                SR[DECIMAL] = SET;
                 break;
             case OpCode::SEI:
-                set_flag(INTERRUPT_DISABLE, SET, true);
+                SR[INTERRUPT_DISABLE] = SET;
                 break;
 
             case OpCode::STA_ZERO_PAGE:

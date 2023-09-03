@@ -137,7 +137,7 @@ struct MOS6502_TestFixture: public ::testing::Test, public MOS6502 {
         cycle = 0;
 
         AC = operands.AC;
-        set_flag(CARRY, operands.carry, false);
+        SR[CARRY] = operands.carry;
 
         /// number of cycles to be elapsed
         size_t expectedCommandDuration;

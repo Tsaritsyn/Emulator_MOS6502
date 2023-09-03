@@ -7,6 +7,9 @@
 
 #include "MOS6502_definitions.hpp"
 
+#include <optional>
+#include <bitset>
+
 
 namespace Emulator {
     /**
@@ -174,8 +177,6 @@ namespace Emulator {
         // HELPER FUNCTIONS //
         // **************** //
 
-        void set_flag(Flag flag, bool value, bool increment_cycle = false);
-
         void set_register(Register reg, Byte value, bool advanceCycle);
 
         /// reads the byte at the address specified by program counter and increments the latter
@@ -213,8 +214,6 @@ namespace Emulator {
         /// first pulls the most significant byte, then the least significant
         Word pull_word_from_stack();
 
-        [[nodiscard]] bool check_flag(Flag flag) const;
-
         /**
          * Performs two byte additions, first low byte of the target with other byte, than high byte of the target with carry from the first step.
          * If the first step overflows Byte, 1 cycle will be elapsed, otherwise none.
@@ -234,7 +233,7 @@ namespace Emulator {
         /// registers
         Byte X, Y;
         /// status register
-        Byte SR;
+        std::bitset<8> SR;
         /// stack pointer
         Byte SP;
 
