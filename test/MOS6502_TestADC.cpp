@@ -44,7 +44,16 @@ static constexpr std::array<MOS6502_TestFixture::Operands, 21> testedInputs{
 TEST_F(MOS6502_TestFixture, TestADC) {
     for (const auto &mode: testedModes) {
         for (const auto &operands: testedInputs) {
-            test_ADC(mode, operands);
+            test_ADC(mode, operands, false);
+        }
+    }
+}
+
+
+TEST_F(MOS6502_TestFixture, TestADCWithPageCrossing) {
+    for (const auto &mode: {AddressingMode::ABSOLUTE_X, AddressingMode::ABSOLUTE_Y, AddressingMode::INDIRECT_Y}) {
+        for (const auto &operands: testedInputs) {
+            test_ADC(mode, operands, true);
         }
     }
 }
