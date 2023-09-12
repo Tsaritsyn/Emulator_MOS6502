@@ -7,6 +7,7 @@
 
 #include <vector>
 #include <ostream>
+#include <iostream>
 
 #include "MOS6502_definitions.hpp"
 
@@ -14,7 +15,7 @@ namespace Emulator {
 
     void set_bit(Byte &byte, int number, bool value = true);
 
-    bool check_bit(Byte byte, int number);
+    bool get_bit(Byte byte, int number);
 
     Byte flag_combination(const std::vector<Flag> &flags);
 

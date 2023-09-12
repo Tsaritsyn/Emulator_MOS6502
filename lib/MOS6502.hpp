@@ -54,7 +54,7 @@ namespace Emulator {
 
         void store_register(Register reg, AddressingMode mode);
 
-        void transfer_registers(Register from, Register to) { set_register(to, get_register(from), false); };
+        void transfer_registers(Register from, Register to) { set_register(to, get_register(from)); };
 
 
 
@@ -177,7 +177,7 @@ namespace Emulator {
         // HELPER FUNCTIONS //
         // **************** //
 
-        void set_register(Register reg, Byte value, bool advanceCycle);
+        void set_register(Register reg, Byte value);
 
         /// reads the byte at the address specified by program counter and increments the latter
         Byte read_current_byte();
@@ -222,6 +222,8 @@ namespace Emulator {
 
         static Byte add_bytes(Byte target, Byte other, bool &carry);
 
+        static Byte subtract_bytes(Byte target, Byte other, bool &carry);
+
 
 
 
@@ -233,7 +235,7 @@ namespace Emulator {
         /// registers
         Byte X, Y;
         /// status register
-        std::bitset<8> SR;
+        ProcessorStatus SR;
         /// stack pointer
         Byte SP;
 

@@ -8,6 +8,7 @@
 #include <cstdint>
 #include <array>
 #include <iomanip>
+#include <bitset>
 
 #define HEX_BYTE(byte) "0x" << std::uppercase << std::setfill('0') << std::setw(2) << std::hex << ((int)byte)
 #define HEX_WORD(word) "0x" << std::uppercase << std::setfill('0') << std::setw(4) << std::hex << ((int)word)
@@ -18,6 +19,7 @@ namespace Emulator {
     using Byte = uint8_t;
     using Word = uint16_t;
     using ROM = std::array<Byte, UINT16_MAX>;
+    using ProcessorStatus = std::bitset<8>;
 
     constexpr Word STACK_LEFT_ADDR = 0x0100;
 

@@ -4,56 +4,60 @@
 
 #include "MOS6502_TestFixture.hpp"
 
-static constexpr std::array<AddressingMode, 8> testedModes{
-        AddressingMode::IMMEDIATE,
-        AddressingMode::ZERO_PAGE,
-        AddressingMode::ZERO_PAGE_X,
-        AddressingMode::ABSOLUTE,
-        AddressingMode::ABSOLUTE_X,
-        AddressingMode::ABSOLUTE_Y,
-        AddressingMode::INDIRECT_X,
-        AddressingMode::INDIRECT_Y
+using namespace Emulator;
+
+constexpr std::array<Arithmetics, 23> testedInputs {
+        Arithmetics{ArithmeticOperation::ADD, 1, 2, false},
+        {ArithmeticOperation::ADD, 2, 1, false},
+        {ArithmeticOperation::ADD, 1, 0, false},
+        {ArithmeticOperation::ADD, 0, 1, false},
+        {ArithmeticOperation::ADD, 0, 0, false},
+        {ArithmeticOperation::ADD, static_cast<Byte>(-1), 0, false},
+        {ArithmeticOperation::ADD, 0, static_cast<Byte>(-1), false},
+        {ArithmeticOperation::ADD, 100, 110, false},
+        {ArithmeticOperation::ADD, 110, 100, false},
+        {ArithmeticOperation::ADD, 1, static_cast<Byte>(-1), false},
+        {ArithmeticOperation::ADD, static_cast<Byte>(-1), 1, false},
+        {ArithmeticOperation::ADD, static_cast<Byte>(-10), static_cast<Byte>(-20), false},
+        {ArithmeticOperation::ADD, static_cast<Byte>(-20), static_cast<Byte>(-10), false},
+        {ArithmeticOperation::ADD, static_cast<Byte>(-70), static_cast<Byte>(-80), false},
+        {ArithmeticOperation::ADD, static_cast<Byte>(-80), static_cast<Byte>(-70), false},
+        {ArithmeticOperation::ADD, 1, 2, true},
+        {ArithmeticOperation::ADD, 2, 1, true},
+        {ArithmeticOperation::ADD, static_cast<Byte>(-1), 0, true},
+        {ArithmeticOperation::ADD, 0, static_cast<Byte>(-1), true},
+        {ArithmeticOperation::ADD, 127, 127, true},
+        {ArithmeticOperation::ADD, 0, 0, true},
+        {ArithmeticOperation::ADD, static_cast<Byte>(-10), static_cast<Byte>(-20), true},
+        {ArithmeticOperation::ADD, static_cast<Byte>(-20), static_cast<Byte>(-10), true},
 };
 
-static constexpr std::array<MOS6502_TestFixture::Operands, 21> testedInputs{
-        MOS6502_TestFixture::Operands{1, 2, false},
-        {2, 1, false},
-        {1, 0, false},
-        {0, 1, false},
-        {0, 0, false},
-        {static_cast<Byte>(-1), 0, false},
-        {0, static_cast<Byte>(-1), false},
-        {100, 110, false},
-        {110, 100, false},
-        {1, static_cast<Byte>(-1), false},
-        {static_cast<Byte>(-1), 1, false},
-        {static_cast<Byte>(-10), static_cast<Byte>(-20), false},
-        {static_cast<Byte>(-20), static_cast<Byte>(-10), false},
-        {static_cast<Byte>(-70), static_cast<Byte>(-80), false},
-        {static_cast<Byte>(-80), static_cast<Byte>(-70), false},
-        {1, 2, true},
-        {2, 1, true},
-        {0, 0, true},
-        {static_cast<Byte>(-1), 0, true},
-        {0, static_cast<Byte>(-1), true},
-        {127, 127, true}
-};
 
+constexpr std::array<Addressing, 11> testedAddressings {
+    Immediate{},
+    ZeroPage{0xFF},
+    ZeroPageX{0xF0, 0x0F},
+    Absolute{0x1234},
+    // no page crossing
+    AbsoluteX{0x1200, 0x34},
+    // with page crossing
+    AbsoluteX{0x12f0, 0x34},
+    // no page crossing
+    AbsoluteY{0x1200, 0x34},
+    // with page crossing
+    AbsoluteY{0x12f0, 0x34},
+    IndirectX{0x10, 0x1234, 0x0f},
+    // no page crossing
+    IndirectY{0x10, 0x1234, 0x20},
+    // with page crossing
+    IndirectY{0x10, 0x12f0, 0x20}
+};
 
 
 TEST_F(MOS6502_TestFixture, TestADC) {
-    for (const auto &mode: testedModes) {
-        for (const auto &operands: testedInputs) {
-            test_ADC(mode, operands, false);
-        }
-    }
-}
-
-
-TEST_F(MOS6502_TestFixture, TestADCWithPageCrossing) {
-    for (const auto &mode: {AddressingMode::ABSOLUTE_X, AddressingMode::ABSOLUTE_Y, AddressingMode::INDIRECT_Y}) {
-        for (const auto &operands: testedInputs) {
-            test_ADC(mode, operands, true);
+    for (const auto &addressing: testedAddressings) {
+        for (const auto &input: testedInputs) {
+            test_instruction(input, addressing);
         }
     }
 }

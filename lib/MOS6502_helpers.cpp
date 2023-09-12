@@ -13,7 +13,7 @@ namespace Emulator {
     }
 
 
-    bool check_bit(Byte byte, int number) {
+    bool get_bit(Byte byte, int number) {
         return byte & (1 << number);
     }
 

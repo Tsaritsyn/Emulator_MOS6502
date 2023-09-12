@@ -47,13 +47,11 @@ namespace Emulator {
         // TODO: check for forbidden register-mode pairs
         Word address = determine_address(mode);
         Byte value = read_byte(address);
-        set_register(reg, value, true);
+        set_register(reg, value);
     }
 
 
-    void MOS6502::set_register(Register reg, Byte value, bool advanceCycle) {
-        if (advanceCycle) cycle++;
-
+    void MOS6502::set_register(Register reg, Byte value) {
         switch (reg) {
             case Register::AC:
                 AC = value;
@@ -89,7 +87,7 @@ namespace Emulator {
         std::stringstream ss;
         ss << "Registers: AC = " << HEX_BYTE((int) AC) << ", X = " << HEX_BYTE((int) X) << ", Y = " << HEX_BYTE((int) Y);
         ss << "\nProgram counter = " << HEX_BYTE((int) PC) << ", Stack pointer = " << HEX_BYTE((int) SP);
-        ss << "\nFlags: " << std::bitset<8>(SR);
+        ss << "\nFlags: " << SR;
         ss << "\nCurrent cycle = " << cycle;
         ss << "\nZero page: ";
         for (int i = 0x00; i < 0xFF; i++) ss << HEX_BYTE((int) memory[i]) << ' ';
@@ -201,7 +199,7 @@ namespace Emulator {
 
 
     void MOS6502::pull_from_stack(Register to) {
-        set_register(to, pull_byte_from_stack(), true);
+        set_register(to, pull_byte_from_stack());
     }
 
 
@@ -221,7 +219,7 @@ namespace Emulator {
                 break;
         }
 
-        set_register(Register::AC, result, true);
+        set_register(Register::AC, result);
     }
 
 
@@ -231,22 +229,21 @@ namespace Emulator {
 
         SR[ZERO] = test_result == 0;
 
-        SR[OVERFLOW] = check_bit(memory_byte, OVERFLOW);
-        SR[NEGATIVE] =  check_bit(memory_byte, NEGATIVE);
+        SR[OVERFLOW] = get_bit(memory_byte, OVERFLOW);
+        SR[NEGATIVE] = get_bit(memory_byte, NEGATIVE);
     }
 
 
     void MOS6502::add_with_carry(AddressingMode mode) {
-        bool initialACSignBit = check_bit(AC, NEGATIVE);
+        const bool initialACSignBit = get_bit(AC, NEGATIVE);
 
-        Byte mem = read_byte(mode);
-        bool initialMemSignBit = check_bit(mem, NEGATIVE);
+        const Byte mem = read_byte(mode);
+        const bool initialMemSignBit = get_bit(mem, NEGATIVE);
 
         bool carry = SR[CARRY];
-        Byte result = add_bytes(AC, mem, carry);
-        bool resultSignBit = check_bit(result, NEGATIVE);
+        set_register(Register::AC, add_bytes(AC, mem, carry));
+        const bool resultSignBit = get_bit(AC, NEGATIVE);
 
-        set_register(Register::AC, result, false);
         SR[CARRY] = carry;
         // overflow flag is set every time when the sign of the result is incorrect
         SR[OVERFLOW] = (initialACSignBit == initialMemSignBit) && (initialACSignBit != resultSignBit);
@@ -254,16 +251,17 @@ namespace Emulator {
 
 
     void MOS6502::subtract_with_carry(AddressingMode mode) {
-        bool initial_sign_bit = check_bit(AC, NEGATIVE);
+        const bool initial_sign_bit = get_bit(AC, NEGATIVE);
 
-        Byte rhs = read_byte(mode);
-        bool rhs_sign_bit = check_bit(rhs, NEGATIVE);
+        const Byte rhs = read_byte(mode);
+        const bool rhs_sign_bit = get_bit(rhs, NEGATIVE);
 
-        set_register(Register::AC, AC - rhs - !SR[CARRY], true);
-        bool resulting_sign_bit = check_bit(AC, NEGATIVE);
+        bool carry = SR[CARRY];
+        set_register(Register::AC, subtract_bytes(AC, rhs, carry));
+        const bool resulting_sign_bit = get_bit(AC, NEGATIVE);
 
         // carry flag is set only when the result crossed 0
-        SR[CARRY] = !initial_sign_bit && resulting_sign_bit;
+        SR[CARRY] = carry;
         // overflow flag is set every time when the sign of the result is incorrect
         SR[OVERFLOW] = (initial_sign_bit != rhs_sign_bit) && (initial_sign_bit != resulting_sign_bit);
     }
@@ -292,18 +290,18 @@ namespace Emulator {
 
 
     void MOS6502::increment_register(Register reg) {
-        set_register(reg, get_register(reg) + 1, true);
+        set_register(reg, get_register(reg) + 1);
     }
 
 
     void MOS6502::decrement_register(Register reg) {
-        set_register(reg, get_register(reg) - 1, true);
+        set_register(reg, get_register(reg) - 1);
     }
 
 
     void MOS6502::shift_left_accumulator() {
-        SR[CARRY] =  check_bit(AC, 7);
-        set_register(Register::AC, get_register(Register::AC) << 1, true);
+        SR[CARRY] = get_bit(AC, 7);
+        set_register(Register::AC, get_register(Register::AC) << 1);
     }
 
 
@@ -311,14 +309,14 @@ namespace Emulator {
         Word address = determine_address(mode);
         Byte value = read_byte(address);
 
-        SR[CARRY] = check_bit(value, 7);
+        SR[CARRY] = get_bit(value, 7);
         write_byte(value << 1, address, true);
     }
 
 
     void MOS6502::shift_right_accumulator() {
-        SR[CARRY] = check_bit(AC, 0);
-        set_register(Register::AC, get_register(Register::AC) >> 1, true);
+        SR[CARRY] = get_bit(AC, 0);
+        set_register(Register::AC, get_register(Register::AC) >> 1);
     }
 
 
@@ -326,14 +324,14 @@ namespace Emulator {
         Word address = determine_address(mode);
         Byte value = read_byte(address);
 
-        SR[CARRY] = check_bit(value, 0);
+        SR[CARRY] = get_bit(value, 0);
         write_byte(value >> 1, address, true);
     }
 
 
     void MOS6502::rotate_left_accumulator() {
-        SR[CARRY] = check_bit(AC, 7);
-        set_register(Register::AC, (AC << 1) + SR[CARRY], true);
+        SR[CARRY] = get_bit(AC, 7);
+        set_register(Register::AC, (AC << 1) + SR[CARRY]);
     }
 
 
@@ -341,26 +339,26 @@ namespace Emulator {
         Word address = determine_address(mode);
         Byte value = read_byte(address);
 
-        SR[CARRY] = check_bit(value, 7);
+        SR[CARRY] = get_bit(value, 7);
         write_byte((value << 1) + SR[CARRY], address, true);
     }
 
 
     void MOS6502::rotate_right_accumulator() {
-        SR[CARRY] = check_bit(AC, CARRY);
+        SR[CARRY] = get_bit(AC, CARRY);
 
         Byte value = AC;
         value >>= 1;
 
         set_bit(value, 7, SR[CARRY]);
-        set_register(Register::AC, value, true);
+        set_register(Register::AC, value);
     }
 
 
     void MOS6502::rotate_right_memory(AddressingMode mode) {
         Word address = determine_address(mode);
         Byte value = read_byte(address);
-        SR[CARRY] = check_bit(value, 0);
+        SR[CARRY] = get_bit(value, 0);
 
         value >>= 1;
         set_bit(value, 7, SR[CARRY]);
@@ -957,6 +955,12 @@ namespace Emulator {
     Byte MOS6502::add_bytes(Byte target, Byte other, bool &carry) {
         int result = target + other + carry;
         carry = result > UINT8_MAX;
+        return result;
+    }
+
+    Byte MOS6502::subtract_bytes(Byte target, Byte other, bool &carry) {
+        int result = target - other - !carry;
+        carry = result >= 0;
         return result;
     }
 
