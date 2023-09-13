@@ -21,12 +21,10 @@ using namespace Emulator;
 
 struct MOS6502_TestFixture: public ::testing::Test, public MOS6502 {
 
-    void prepare_instruction(Byte value, const Addressing &addressing);
+    /// null if the addressing mode does not imply reading/writing any values from memory or registers
+    const Byte* point_to_value(const Addressing& addressing) const;
 
-    /**
-     * All instructions with the same addressing mode have he same size, since it only depends on the arguments.
-     */
-    static Word instruction_size(AddressingMode mode);
+    void write_argument(Byte value, const Addressing &addressing);
 
 
 
@@ -39,11 +37,6 @@ struct MOS6502_TestFixture: public ::testing::Test, public MOS6502 {
         memory[to] = buf.low;
         memory[to + 1] = buf.high;
     }
-
-
-//    void test_ADC(AddressingMode mode, const OperandsAdd &operands, bool crossPage);
-
-//    void test_AND(AddressingMode mode, const OperandsAnd &operands, bool crossPage);
 
     void test_instruction(const InstructionArguments &instruction, const Addressing &addressing);
 };

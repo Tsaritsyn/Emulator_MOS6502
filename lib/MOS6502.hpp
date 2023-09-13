@@ -182,9 +182,6 @@ namespace Emulator {
         /// reads the byte at the address specified by program counter and increments the latter
         Byte read_current_byte();
 
-        /// essentially, it is the same as read_current_byte, but elapses 1 more cycle
-        Word read_zero_page_address_and_add(std::optional<Byte> shift);
-
         /// reads word wih least significant byte of which being at PC; increases PC by 2
         Word read_current_word();
 
@@ -202,7 +199,7 @@ namespace Emulator {
 
         [[nodiscard]] Byte get_register(Register reg) const;
 
-        Word determine_address(AddressingMode mode);
+        Word determine_address(AddressingMode mode, bool takeCycleWhenNotCrossingPage = false);
 
         void push_byte_to_stack(Byte value);
 
@@ -218,7 +215,7 @@ namespace Emulator {
          * Performs two byte additions, first low byte of the target with other byte, than high byte of the target with carry from the first step.
          * If the first step overflows Byte, 1 cycle will be elapsed, otherwise none.
          */
-        Word add_word(Word word, Byte byte);
+        Word add_word(Word word, Byte byte, bool takeCycleIfLowNotOverflowed = false);
 
         static Byte add_bytes(Byte target, Byte other, bool &carry);
 

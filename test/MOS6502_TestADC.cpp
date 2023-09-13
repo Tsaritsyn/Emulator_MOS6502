@@ -33,10 +33,13 @@ constexpr std::array<Arithmetics, 23> testedInputs {
 };
 
 
-constexpr std::array<Addressing, 11> testedAddressings {
+constexpr std::array<Addressing, 12> testedAddressings {
     Immediate{},
     ZeroPage{0xFF},
+    // no page wrapping
     ZeroPageX{0xF0, 0x0F},
+    // with page wrapping
+    ZeroPageX{0xF0, 0xF0},
     Absolute{0x1234},
     // no page crossing
     AbsoluteX{0x1200, 0x34},

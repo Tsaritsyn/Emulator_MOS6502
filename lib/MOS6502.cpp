@@ -142,20 +142,23 @@ namespace Emulator {
     }
 
 
-    Word MOS6502::determine_address(AddressingMode mode) {
+    Word MOS6502::determine_address(AddressingMode mode, bool takeCycleWhenNotCrossingPage) {
         switch (mode) {
+            case AddressingMode::IMPLICIT:
+            case AddressingMode::ACCUMULATOR:
+                return 0;
+
             case AddressingMode::IMMEDIATE:
                 return PC;
 
             case AddressingMode::ZERO_PAGE:
-                // when nothing is added to the zero-page address, it does not elapse an additional cycle
-                return read_zero_page_address_and_add(std::nullopt);
+                return read_current_byte();
 
             case AddressingMode::ZERO_PAGE_X:
-                return read_zero_page_address_and_add(X);
+                return add_word(read_current_byte(), X, true);
 
             case AddressingMode::ZERO_PAGE_Y:
-                return read_zero_page_address_and_add(Y);
+                return add_word(read_current_byte(), Y, true);
 
             case AddressingMode::RELATIVE:
                 return PC + read_current_byte();
@@ -164,19 +167,19 @@ namespace Emulator {
                 return read_current_word();
 
             case AddressingMode::ABSOLUTE_X:
-                return add_word(read_current_word(), X);
+                return add_word(read_current_word(), X, takeCycleWhenNotCrossingPage);
 
             case AddressingMode::ABSOLUTE_Y:
-                return add_word(read_current_word(), Y);
+                return add_word(read_current_word(), Y, takeCycleWhenNotCrossingPage);
 
             case AddressingMode::INDIRECT:
                 return read_reversed_word(read_current_word());
 
             case AddressingMode::INDIRECT_X:
-                return read_reversed_word(read_zero_page_address_and_add(X));
+                return read_reversed_word(add_word(read_current_byte(), X, true));
 
             case AddressingMode::INDIRECT_Y:
-                return add_word(read_reversed_word(read_zero_page_address_and_add(std::nullopt)), Y);
+                return add_word(read_reversed_word(read_current_byte()), Y);
         }
 
         throw std::runtime_error("Some addressing modes were not handled");
@@ -302,15 +305,17 @@ namespace Emulator {
     void MOS6502::shift_left_accumulator() {
         SR[CARRY] = get_bit(AC, 7);
         set_register(Register::AC, get_register(Register::AC) << 1);
+        cycle++;
     }
 
 
     void MOS6502::shift_left_memory(AddressingMode mode) {
-        Word address = determine_address(mode);
+        Word address = determine_address(mode, true);
         Byte value = read_byte(address);
 
         SR[CARRY] = get_bit(value, 7);
         write_byte(value << 1, address, true);
+        cycle++;
     }
 
 
@@ -943,11 +948,11 @@ namespace Emulator {
     }
 
 
-    Word MOS6502::add_word(Word word, Byte byte) {
+    Word MOS6502::add_word(Word word, Byte byte, bool takeCycleIfLowNotOverflowed) {
         WordToBytes buf(word);
         bool carry = false;
         buf.low = add_bytes(buf.low, byte, carry);
-        if (carry) cycle++;
+        if (carry || takeCycleIfLowNotOverflowed) cycle++;
         buf.high = add_bytes(buf.high, 0, carry);
         return buf.word;
     }
@@ -964,14 +969,14 @@ namespace Emulator {
         return result;
     }
 
-    Word MOS6502::read_zero_page_address_and_add(std::optional<Byte> shift) {
-        Byte address = read_current_byte();
-        if (shift.has_value()) {
-            address += shift.value();
-            cycle++;
-        }
-        return address;
-    }
+//    Word MOS6502::read_zero_page_address_and_add(std::optional<Byte> shift) {
+//        Byte address = read_current_byte();
+//        if (shift.has_value()) {
+//            address += shift.value();
+//            cycle++;
+//        }
+//        return address;
+//    }
 
 
 }
