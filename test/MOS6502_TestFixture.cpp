@@ -100,6 +100,14 @@ void MOS6502_TestFixture::test_instruction(const InstructionArguments &instructi
         write_argument(arithmetics->memory, addressing);
         obtainedResultPtr = &AC;
     }
+
+    else if (const auto logical = std::get_if<Logical>(&instruction)) {
+        expectedResult = instruction_result(*logical);
+        write_argument(logical->AC, Accumulator{});
+        write_argument(logical->memory, addressing);
+        obtainedResultPtr = &AC;
+    }
+
     else if (const auto shiftLeft = std::get_if<ShiftLeft>(&instruction)) {
         expectedResult = instruction_result(*shiftLeft);
         write_argument(shiftLeft->value, addressing);
@@ -113,7 +121,7 @@ void MOS6502_TestFixture::test_instruction(const InstructionArguments &instructi
     ss << "instruction: " << instruction << "; addressing: " << addressing;
 
     if (expectedResult.has_value()) {
-        assert(obtainedResultPtr != nullptr);
+        ASSERT_FALSE(obtainedResultPtr == nullptr);
         EXPECT_EQ(*obtainedResultPtr, expectedResult.value()) << ss.str();
     }
     EXPECT_EQ(SR, instruction_flags(instruction)) << ss.str();
