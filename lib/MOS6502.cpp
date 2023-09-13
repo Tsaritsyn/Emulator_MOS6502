@@ -441,504 +441,501 @@ namespace Emulator {
         switch (opCode) {
             case OpCode::ADC_IMMEDIATE:
                 add_with_carry(AddressingMode::IMMEDIATE);
-                break;
+                return;
             case OpCode::ADC_ZERO_PAGE:
                 add_with_carry(AddressingMode::ZERO_PAGE);
-                break;
+                return;
             case OpCode::ADC_ZERO_PAGE_X:
                 add_with_carry(AddressingMode::ZERO_PAGE_X);
-                break;
+                return;
             case OpCode::ADC_ABSOLUTE:
                 add_with_carry(AddressingMode::ABSOLUTE);
-                break;
+                return;
             case OpCode::ADC_ABSOLUTE_X:
                 add_with_carry(AddressingMode::ABSOLUTE_X);
-                break;
+                return;
             case OpCode::ADC_ABSOLUTE_Y:
                 add_with_carry(AddressingMode::ABSOLUTE_Y);
-                break;
+                return;
             case OpCode::ADC_INDIRECT_X:
                 add_with_carry(AddressingMode::INDIRECT_X);
-                break;
+                return;
             case OpCode::ADC_INDIRECT_Y:
                 add_with_carry(AddressingMode::INDIRECT_Y);
-                break;
+                return;
 
             case OpCode::AND_IMMEDIATE:
                 logical(LogicalOperation::AND, AddressingMode::IMMEDIATE);
-                break;
+                return;
             case OpCode::AND_ZERO_PAGE:
                 logical(LogicalOperation::AND, AddressingMode::ZERO_PAGE);
-                break;
+                return;
             case OpCode::AND_ZERO_PAGE_X:
                 logical(LogicalOperation::AND, AddressingMode::ZERO_PAGE_X);
-                break;
+                return;
             case OpCode::AND_ABSOLUTE:
                 logical(LogicalOperation::AND, AddressingMode::ABSOLUTE);
-                break;
+                return;
             case OpCode::AND_ABSOLUTE_X:
                 logical(LogicalOperation::AND, AddressingMode::ABSOLUTE_X);
-                break;
+                return;
             case OpCode::AND_ABSOLUTE_Y:
                 logical(LogicalOperation::AND, AddressingMode::ABSOLUTE_Y);
-                break;
+                return;
             case OpCode::AND_INDIRECT_X:
                 logical(LogicalOperation::AND, AddressingMode::INDIRECT_X);
-                break;
+                return;
             case OpCode::AND_INDIRECT_Y:
                 logical(LogicalOperation::AND, AddressingMode::INDIRECT_Y);
-                break;
+                return;
 
             case OpCode::ASL_ACCUMULATOR:
                 shift_left_accumulator();
-                break;
+                return;
             case OpCode::ASL_ZERO_PAGE:
                 shift_left_memory(AddressingMode::ZERO_PAGE);
-                break;
+                return;
             case OpCode::ASL_ZERO_PAGE_X:
                 shift_left_memory(AddressingMode::ZERO_PAGE_X);
-                break;
+                return;
             case OpCode::ASL_ABSOLUTE:
                 shift_left_memory(AddressingMode::ABSOLUTE);
-                break;
+                return;
             case OpCode::ASL_ABSOLUTE_X:
                 shift_left_memory(AddressingMode::ABSOLUTE_X);
-                break;
+                return;
 
             case OpCode::BCC:
                 branch_if(CARRY, CLEAR);
-                break;
+                return;
             case OpCode::BCS:
                 branch_if(CARRY, SET);
-                break;
+                return;
             case OpCode::BEQ:
                 branch_if(ZERO, SET);
-                break;
+                return;
             case OpCode::BMI:
                 branch_if(NEGATIVE, SET);
-                break;
+                return;
             case OpCode::BNE:
                 branch_if(ZERO, CLEAR);
-                break;
+                return;
             case OpCode::BPL:
                 branch_if(NEGATIVE, CLEAR);
-                break;
+                return;
             case OpCode::BVC:
                 branch_if(OVERFLOW, CLEAR);
-                break;
+                return;
             case OpCode::BVS:
                 branch_if(OVERFLOW, SET);
-                break;
+                return;
 
             case OpCode::BIT_ZERO_PAGE:
                 bit_test(AddressingMode::ZERO_PAGE);
-                break;
+                return;
             case OpCode::BIT_ABSOLUTE:
                 bit_test(AddressingMode::ABSOLUTE);
-                break;
+                return;
 
             case OpCode::BRK:
                 force_interrupt();
-                break;
+                return;
 
             case OpCode::CLC:
                 SR[CARRY] = CLEAR;
-                break;
+                return;
             case OpCode::CLD:
                 SR[DECIMAL] = CLEAR;
-                break;
+                return;
             case OpCode::CLI:
                 SR[INTERRUPT_DISABLE] = CLEAR;
-                break;
+                return;
             case OpCode::CLV:
                 SR[OVERFLOW] = CLEAR;
-                break;
+                return;
 
             case OpCode::CMP_IMMEDIATE:
                 compare_register(Register::AC, AddressingMode::IMMEDIATE);
-                break;
+                return;
             case OpCode::CMP_ZERO_PAGE:
                 compare_register(Register::AC, AddressingMode::ZERO_PAGE);
-                break;
+                return;
             case OpCode::CMP_ZERO_PAGE_X:
                 compare_register(Register::AC, AddressingMode::ZERO_PAGE_X);
-                break;
+                return;
             case OpCode::CMP_ABSOLUTE:
                 compare_register(Register::AC, AddressingMode::ABSOLUTE);
-                break;
+                return;
             case OpCode::CMP_ABSOLUTE_X:
                 compare_register(Register::AC, AddressingMode::ABSOLUTE_X);
-                break;
+                return;
             case OpCode::CMP_ABSOLUTE_Y:
                 compare_register(Register::AC, AddressingMode::ABSOLUTE_Y);
-                break;
+                return;
             case OpCode::CMP_INDIRECT_X:
                 compare_register(Register::AC, AddressingMode::INDIRECT_X);
-                break;
+                return;
             case OpCode::CMP_INDIRECT_Y:
                 compare_register(Register::AC, AddressingMode::INDIRECT_Y);
-                break;
+                return;
 
             case OpCode::CPX_IMMEDIATE:
                 compare_register(Register::X, AddressingMode::IMMEDIATE);
-                break;
+                return;
             case OpCode::CPX_ZERO_PAGE:
                 compare_register(Register::X, AddressingMode::ZERO_PAGE);
-                break;
+                return;
             case OpCode::CPX_ABSOLUTE:
                 compare_register(Register::X, AddressingMode::ABSOLUTE);
-                break;
+                return;
 
             case OpCode::CPY_IMMEDIATE:
                 compare_register(Register::Y, AddressingMode::IMMEDIATE);
-                break;
+                return;
             case OpCode::CPY_ZERO_PAGE:
                 compare_register(Register::Y, AddressingMode::ZERO_PAGE);
-                break;
+                return;
             case OpCode::CPY_ABSOLUTE:
                 compare_register(Register::Y, AddressingMode::ABSOLUTE);
-                break;
+                return;
 
             case OpCode::DEC_ZER0_PAGE:
                 decrement_memory(AddressingMode::ZERO_PAGE);
-                break;
+                return;
             case OpCode::DEC_ZERO_PAGE_X:
                 decrement_memory(AddressingMode::ZERO_PAGE_X);
-                break;
+                return;
             case OpCode::DEC_ABSOLUTE:
                 decrement_memory(AddressingMode::ABSOLUTE);
-                break;
+                return;
             case OpCode::DEC_ABSOLUTE_X:
                 decrement_memory(AddressingMode::ABSOLUTE_X);
-                break;
+                return;
 
             case OpCode::DEX:
                 decrement_register(Register::X);
-                break;
+                return;
             case OpCode::DEY:
                 decrement_register(Register::Y);
-                break;
+                return;
 
             case OpCode::EOR_IMMEDIATE:
                 logical(LogicalOperation::XOR, AddressingMode::IMMEDIATE);
-                break;
+                return;
             case OpCode::EOR_ZERO_PAGE:
                 logical(LogicalOperation::XOR, AddressingMode::ZERO_PAGE);
-                break;
+                return;
             case OpCode::EOR_ZERO_PAGE_X:
                 logical(LogicalOperation::XOR, AddressingMode::ZERO_PAGE_X);
-                break;
+                return;
             case OpCode::EOR_ABSOLUTE:
                 logical(LogicalOperation::XOR, AddressingMode::ABSOLUTE);
-                break;
+                return;
             case OpCode::EOR_ABSOLUTE_X:
                 logical(LogicalOperation::XOR, AddressingMode::ABSOLUTE_X);
-                break;
+                return;
             case OpCode::EOR_ABSOLUTE_Y:
                 logical(LogicalOperation::XOR, AddressingMode::ABSOLUTE_Y);
-                break;
+                return;
             case OpCode::EOR_INDIRECT_X:
                 logical(LogicalOperation::XOR, AddressingMode::INDIRECT_X);
-                break;
+                return;
             case OpCode::EOR_INDIRECT_Y:
                 logical(LogicalOperation::XOR, AddressingMode::INDIRECT_Y);
-                break;
+                return;
 
             case OpCode::INC_ZERO_PAGE:
                 increment_memory(AddressingMode::ZERO_PAGE);
-                break;
+                return;
             case OpCode::INC_ZERO_PAGE_X:
                 increment_memory(AddressingMode::ZERO_PAGE_X);
-                break;
+                return;
             case OpCode::INC_ABSOLUTE:
                 increment_memory(AddressingMode::ABSOLUTE);
-                break;
+                return;
             case OpCode::INC_ABSOLUTE_X:
                 increment_memory(AddressingMode::ABSOLUTE_X);
-                break;
+                return;
 
             case OpCode::INX:
                 increment_register(Register::X);
-                break;
+                return;
             case OpCode::INY:
                 increment_register(Register::Y);
-                break;
+                return;
 
             case OpCode::JMP_ABSOLUTE:
                 jump(AddressingMode::ABSOLUTE);
-                break;
+                return;
             case OpCode::JMP_INDIRECT:
                 jump(AddressingMode::INDIRECT);
-                break;
+                return;
 
             case OpCode::JSR:
                 jump_to_subroutine();
-                break;
+                return;
 
             case OpCode::LDA_IMMEDIATE:
                 load_register(Register::AC, AddressingMode::IMMEDIATE);
-                break;
+                return;
             case OpCode::LDA_ZERO_PAGE:
                 load_register(Register::AC, AddressingMode::ZERO_PAGE);
-                break;
+                return;
             case OpCode::LDA_ZERO_PAGE_X:
                 load_register(Register::AC, AddressingMode::ZERO_PAGE_X);
-                break;
+                return;
             case OpCode::LDA_ABSOLUTE:
                 load_register(Register::AC, AddressingMode::ABSOLUTE);
-                break;
+                return;
             case OpCode::LDA_ABSOLUTE_X:
                 load_register(Register::AC, AddressingMode::ABSOLUTE_X);
-                break;
+                return;
             case OpCode::LDA_ABSOLUTE_Y:
                 load_register(Register::AC, AddressingMode::ABSOLUTE_Y);
-                break;
+                return;
             case OpCode::LDA_INDIRECT_X:
                 load_register(Register::AC, AddressingMode::INDIRECT_X);
-                break;
+                return;
             case OpCode::LDA_INDIRECT_Y:
                 load_register(Register::AC, AddressingMode::INDIRECT_Y);
-                break;
+                return;
 
             case OpCode::LDX_IMMEDIATE:
                 load_register(Register::X, AddressingMode::IMMEDIATE);
-                break;
+                return;
             case OpCode::LDX_ZERO_PAGE:
                 load_register(Register::X, AddressingMode::ZERO_PAGE);
-                break;
+                return;
             case OpCode::LDX_ZERO_PAGE_Y:
                 load_register(Register::X, AddressingMode::ZERO_PAGE_Y);
-                break;
+                return;
             case OpCode::LDX_ABSOLUTE:
                 load_register(Register::X, AddressingMode::ABSOLUTE);
-                break;
+                return;
             case OpCode::LDX_ABSOLUTE_Y:
                 load_register(Register::X, AddressingMode::ABSOLUTE_Y);
-                break;
+                return;
 
             case OpCode::LDY_IMMEDIATE:
                 load_register(Register::Y, AddressingMode::IMMEDIATE);
-                break;
+                return;
             case OpCode::LDY_ZERO_PAGE:
                 load_register(Register::Y, AddressingMode::ZERO_PAGE);
-                break;
+                return;
             case OpCode::LDY_ZERO_PAGE_X:
                 load_register(Register::Y, AddressingMode::ZERO_PAGE_X);
-                break;
+                return;
             case OpCode::LDY_ABSOLUTE:
                 load_register(Register::Y, AddressingMode::ABSOLUTE);
-                break;
+                return;
             case OpCode::LDY_ABSOLUTE_X:
                 load_register(Register::Y, AddressingMode::ABSOLUTE_X);
-                break;
+                return;
 
             case OpCode::LSR_ACCUMULATOR:
                 shift_right_accumulator();
-                break;
+                return;
             case OpCode::LSR_ZERO_PAGE:
                 shift_right_memory(AddressingMode::ZERO_PAGE);
-                break;
+                return;
             case OpCode::LSR_ZERO_PAGE_X:
                 shift_right_memory(AddressingMode::ZERO_PAGE_X);
-                break;
+                return;
             case OpCode::LSR_ABSOLUTE:
                 shift_right_memory(AddressingMode::ABSOLUTE);
-                break;
+                return;
             case OpCode::LSR_ABSOLUTE_X:
                 shift_right_memory(AddressingMode::ABSOLUTE_X);
-                break;
+                return;
 
             case OpCode::NOP:
                 nop();
-                break;
+                return;
 
             case OpCode::ORA_IMMEDIATE:
                 logical(LogicalOperation::OR, AddressingMode::IMMEDIATE);
-                break;
+                return;
             case OpCode::ORA_ZERO_PAGE:
                 logical(LogicalOperation::OR, AddressingMode::ZERO_PAGE);
-                break;
+                return;
             case OpCode::ORA_ZERO_PAGE_X:
                 logical(LogicalOperation::OR, AddressingMode::ZERO_PAGE_X);
-                break;
+                return;
             case OpCode::ORA_ABSOLUTE:
                 logical(LogicalOperation::OR, AddressingMode::ABSOLUTE);
-                break;
+                return;
             case OpCode::ORA_ABSOLUTE_X:
                 logical(LogicalOperation::OR, AddressingMode::ABSOLUTE_X);
-                break;
+                return;
             case OpCode::ORA_ABSOLUTE_Y:
                 logical(LogicalOperation::OR, AddressingMode::ABSOLUTE_Y);
-                break;
+                return;
             case OpCode::ORA_INDIRECT_X:
                 logical(LogicalOperation::OR, AddressingMode::INDIRECT_X);
-                break;
+                return;
             case OpCode::ORA_INDIRECT_Y:
                 logical(LogicalOperation::OR, AddressingMode::INDIRECT_Y);
-                break;
+                return;
 
             case OpCode::PHA:
                 push_to_stack(Register::AC);
-                break;
+                return;
             case OpCode::PHP:
                 push_to_stack(Register::SR);
-                break;
+                return;
 
             case OpCode::PLA:
                 pull_from_stack(Register::AC);
-                break;
+                return;
             case OpCode::PLP:
                 pull_from_stack(Register::SR);
-                break;
+                return;
 
             case OpCode::ROL_ACCUMULATOR:
                 rotate_left_accumulator();
-                break;
+                return;
             case OpCode::ROL_ZERO_PAGE:
                 rotate_left_memory(AddressingMode::ZERO_PAGE);
-                break;
+                return;
             case OpCode::ROL_ZERO_PAGE_X:
                 rotate_left_memory(AddressingMode::ZERO_PAGE_X);
-                break;
+                return;
             case OpCode::ROL_ABSOLUTE:
                 rotate_left_memory(AddressingMode::ABSOLUTE);
-                break;
+                return;
             case OpCode::ROL_ABSOLUTE_X:
                 rotate_left_memory(AddressingMode::ABSOLUTE_X);
-                break;
+                return;
 
             case OpCode::ROR_ACCUMULATOR:
                 rotate_right_accumulator();
-                break;
+                return;
             case OpCode::ROR_ZERO_PAGE:
                 rotate_right_memory(AddressingMode::ZERO_PAGE);
-                break;
+                return;
             case OpCode::ROR_ZERO_PAGE_X:
                 rotate_right_memory(AddressingMode::ZERO_PAGE_X);
-                break;
+                return;
             case OpCode::ROR_ABSOLUTE:
                 rotate_right_memory(AddressingMode::ABSOLUTE);
-                break;
+                return;
             case OpCode::ROR_ABSOLUTE_X:
                 rotate_right_memory(AddressingMode::ABSOLUTE_X);
-                break;
+                return;
 
             case OpCode::RTI:
                 return_from_interrupt();
-                break;
+                return;
             case OpCode::RTS:
                 return_from_subroutine();
-                break;
+                return;
 
             case OpCode::SBC_IMMEDIATE:
                 subtract_with_carry(AddressingMode::IMMEDIATE);
-                break;
+                return;
             case OpCode::SBC_ZERO_PAGE:
                 subtract_with_carry(AddressingMode::ZERO_PAGE);
-                break;
+                return;
             case OpCode::SBC_ZERO_PAGE_X:
                 subtract_with_carry(AddressingMode::ZERO_PAGE_X);
-                break;
+                return;
             case OpCode::SBC_ABSOLUTE:
                 subtract_with_carry(AddressingMode::ABSOLUTE);
-                break;
+                return;
             case OpCode::SBC_ABSOLUTE_X:
                 subtract_with_carry(AddressingMode::ABSOLUTE_X);
-                break;
+                return;
             case OpCode::SBC_ABSOLUTE_Y:
                 subtract_with_carry(AddressingMode::ABSOLUTE_Y);
-                break;
+                return;
             case OpCode::SBC_INDIRECT_X:
                 subtract_with_carry(AddressingMode::INDIRECT_X);
-                break;
+                return;
             case OpCode::SBC_INDIRECT_Y:
                 subtract_with_carry(AddressingMode::INDIRECT_Y);
-                break;
+                return;
 
             case OpCode::SEC:
                 SR[CARRY] = SET;
-                break;
+                return;
             case OpCode::SED:
                 SR[DECIMAL] = SET;
-                break;
+                return;
             case OpCode::SEI:
                 SR[INTERRUPT_DISABLE] = SET;
-                break;
+                return;
 
             case OpCode::STA_ZERO_PAGE:
                 store_register(Register::AC, AddressingMode::ZERO_PAGE);
-                break;
+                return;
             case OpCode::STA_ZERO_PAGE_X:
                 store_register(Register::AC, AddressingMode::ZERO_PAGE_X);
-                break;
+                return;
             case OpCode::STA_ABSOLUTE:
                 store_register(Register::AC, AddressingMode::ABSOLUTE);
-                break;
+                return;
             case OpCode::STA_ABSOLUTE_X:
                 store_register(Register::AC, AddressingMode::ABSOLUTE_X);
-                break;
+                return;
             case OpCode::STA_ABSOLUTE_Y:
                 store_register(Register::AC, AddressingMode::ABSOLUTE_Y);
-                break;
+                return;
             case OpCode::STA_INDIRECT_X:
                 store_register(Register::AC, AddressingMode::INDIRECT_X);
-                break;
+                return;
             case OpCode::STA_INDIRECT_Y:
                 store_register(Register::AC, AddressingMode::INDIRECT_Y);
-                break;
+                return;
 
             case OpCode::STX_ZERO_PAGE:
                 store_register(Register::X, AddressingMode::ZERO_PAGE);
-                break;
+                return;
             case OpCode::STX_ZERO_PAGE_Y:
                 store_register(Register::X, AddressingMode::ZERO_PAGE_Y);
-                break;
+                return;
             case OpCode::STX_ABSOLUTE:
                 store_register(Register::X, AddressingMode::ABSOLUTE);
-                break;
+                return;
 
             case OpCode::STY_ZERO_PAGE:
                 store_register(Register::Y, AddressingMode::ZERO_PAGE);
-                break;
+                return;
             case OpCode::STY_ZERO_PAGE_X:
                 store_register(Register::Y, AddressingMode::ZERO_PAGE_X);
-                break;
+                return;
             case OpCode::STY_ABSOLUTE:
                 store_register(Register::Y, AddressingMode::ABSOLUTE);
-                break;
+                return;
 
             case OpCode::TAX:
                 transfer_registers(Register::AC, Register::X);
-                break;
+                return;
             case OpCode::TAY:
                 transfer_registers(Register::AC, Register::Y);
-                break;
+                return;
             case OpCode::TSX:
                 transfer_registers(Register::SP, Register::X);
-                break;
+                return;
             case OpCode::TXA:
                 transfer_registers(Register::X, Register::AC);
-                break;
+                return;
             case OpCode::TXS:
                 transfer_registers(Register::X, Register::SP);
-                break;
+                return;
             case OpCode::TYA:
                 transfer_registers(Register::Y, Register::AC);
-                break;
-
-            default:
-                std::stringstream ss;
-                ss << "Illegal op code " << HEX_BYTE((int)opCode) << " at the address " << HEX_WORD(PC);
-                throw std::runtime_error(ss.str());
+                return;
         }
+
+        std::stringstream ss;
+        ss << "Illegal op code " << HEX_BYTE(opCode) << " at the address " << HEX_WORD(PC);
+        throw std::runtime_error(ss.str());
     }
 
 
     void MOS6502::execute() {
-        while (true) {
-            auto opCode = OpCode{(read_current_byte())};
-            execute_command(opCode);
-        }
+        while (true)
+            execute_current_command();
     }
 
 
@@ -968,16 +965,6 @@ namespace Emulator {
         carry = result >= 0;
         return result;
     }
-
-//    Word MOS6502::read_zero_page_address_and_add(std::optional<Byte> shift) {
-//        Byte address = read_current_byte();
-//        if (shift.has_value()) {
-//            address += shift.value();
-//            cycle++;
-//        }
-//        return address;
-//    }
-
 
 }
 

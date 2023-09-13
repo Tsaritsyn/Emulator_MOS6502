@@ -19,7 +19,7 @@ std::ostream &operator<<(std::ostream &os, const InstructionArguments &instructi
         return os << "(AC: " << (int)arithmetics->AC << ", memory: " << (int)arithmetics->memory << ", carry: " << arithmetics->carry << ")";
     }
 
-    else if (const auto logical = std::get_if<Logical>(&instruction)) {
+    if (const auto logical = std::get_if<Logical>(&instruction)) {
         switch (logical->operation) {
             case Emulator::LogicalOperation::AND:
                 os << "AND";
@@ -34,10 +34,10 @@ std::ostream &operator<<(std::ostream &os, const InstructionArguments &instructi
         return os << "(AC: " << HEX_BYTE(logical->AC) << ", memory: " << HEX_BYTE(logical->memory) << ")";
     }
 
-    else if (const auto shiftLeft = std::get_if<ShiftLeft>(&instruction))
-        return os << "ASL(value: " << shiftLeft->value << ")";
+    if (const auto shiftLeft = std::get_if<ShiftLeft>(&instruction))
+        return os << "ASL(value: " << HEX_BYTE(shiftLeft->value) << ")";
 
-    else if (const auto branch = std::get_if<Branch>(&instruction)) {
+    if (const auto branch = std::get_if<Branch>(&instruction)) {
         switch (branch->flag) {
             case Emulator::CARRY:
                 return os << (branch->targetValue ? "BCS" : "BCC") << "(carry: " << branch->value << ")";
@@ -52,13 +52,13 @@ std::ostream &operator<<(std::ostream &os, const InstructionArguments &instructi
         }
     }
 
-    else if (const auto bitTest = std::get_if<BitTest>(&instruction))
-        return os << "BIT(AC: " << bitTest->AC << ", memory: " << bitTest->memory << ")";
+    if (const auto bitTest = std::get_if<BitTest>(&instruction))
+        return os << "BIT(AC: " << HEX_BYTE(bitTest->AC) << ", memory: " << HEX_BYTE(bitTest->memory) << ")";
 
-    else if (std::get_if<ForceInterrupt>(&instruction))
+    if (std::get_if<ForceInterrupt>(&instruction))
         return os << "BRK";
 
-    else if (const auto setFlag = std::get_if<SetFlag>(&instruction)) {
+    if (const auto setFlag = std::get_if<SetFlag>(&instruction)) {
         switch (setFlag->flag) {
             case Emulator::CARRY:
                 return os << (setFlag->value ? "SEC" : "CLC");
@@ -74,70 +74,70 @@ std::ostream &operator<<(std::ostream &os, const InstructionArguments &instructi
         }
     }
 
-    else if (const auto compare = std::get_if<Compare>(&instruction)) {
+    if (const auto compare = std::get_if<Compare>(&instruction)) {
         switch (compare->reg) {
             case Emulator::Register::AC:
-                return os << "CMP(AC: " << compare->value << ", memory: " << compare->memory << ")";
+                return os << "CMP(AC: " << (int)compare->value << ", memory: " << (int)compare->memory << ")";
             case Emulator::Register::X:
-                return os << "CPX(X: " << compare->value << ", memory: " << compare->memory << ")";
+                return os << "CPX(X: " << (int)compare->value << ", memory: " << (int)compare->memory << ")";
             case Emulator::Register::Y:
-                return os << "CPY(Y: " << compare->value << ", memory: " << compare->memory << ")";
+                return os << "CPY(Y: " << (int)compare->value << ", memory: " << (int)compare->memory << ")";
             default:
                 throw std::invalid_argument("operator<<: invalid register for Compare instruction");
         }
     }
 
-    else if (const auto decrementMemory = std::get_if<DecrementMemory>(&instruction))
-        return os << "DEC(memory: " << decrementMemory->memory << ")";
+    if (const auto decrementMemory = std::get_if<DecrementMemory>(&instruction))
+        return os << "DEC(memory: " << (int)decrementMemory->memory << ")";
 
-    else if (const auto decrementRegister = std::get_if<DecrementRegister>(&instruction))
+    if (const auto decrementRegister = std::get_if<DecrementRegister>(&instruction))
         switch (decrementRegister->reg) {
             case Emulator::Register::X:
-                return os << "DEX(X: " << decrementRegister->value << ")";
+                return os << "DEX(X: " << (int)decrementRegister->value << ")";
             case Emulator::Register::Y:
-                return os << "DEY(Y: " << decrementRegister->value << ")";
+                return os << "DEY(Y: " << (int)decrementRegister->value << ")";
             default:
                 throw std::invalid_argument("operator<<: invalid register for Decrement instruction");
         }
 
-    else if (const auto incrementMemory = std::get_if<IncrementMemory>(&instruction))
-        return os << "INC(memory: " << incrementMemory->memory << ")";
+    if (const auto incrementMemory = std::get_if<IncrementMemory>(&instruction))
+        return os << "INC(memory: " << (int)incrementMemory->memory << ")";
 
-    else if (const auto incrementRegister = std::get_if<IncrementRegister>(&instruction))
+    if (const auto incrementRegister = std::get_if<IncrementRegister>(&instruction))
         switch (incrementRegister->reg) {
             case Emulator::Register::X:
-                return os << "INX(X: " << incrementRegister->value << ")";
+                return os << "INX(X: " << (int)incrementRegister->value << ")";
             case Emulator::Register::Y:
-                return os << "INY(Y: " << incrementRegister->value << ")";
+                return os << "INY(Y: " << (int)incrementRegister->value << ")";
             default:
                 throw std::invalid_argument("operator<<: invalid register for Increment instruction");
         }
 
-    else if (std::get_if<Jump>(&instruction))
+    if (std::get_if<Jump>(&instruction))
         return os << "JMP";
 
-    else if (std::get_if<JumpToSubroutine>(&instruction))
+    if (std::get_if<JumpToSubroutine>(&instruction))
         return os << "JSR";
 
-    else if (const auto load = std::get_if<Load>(&instruction))
+    if (const auto load = std::get_if<Load>(&instruction))
         switch (load->reg) {
             case Emulator::Register::AC:
-                return os << "LDA(value: " << load->value << ")";
+                return os << "LDA(value: " << (int)load->value << ")";
             case Emulator::Register::X:
-                return os << "LDX(value: " << load->value << ")";
+                return os << "LDX(value: " << (int)load->value << ")";
             case Emulator::Register::Y:
-                return os << "LDY(value: " << load->value << ")";
+                return os << "LDY(value: " << (int)load->value << ")";
             default:
                 throw std::invalid_argument("operator<<: invalid register for Load instruction");
         }
 
-    else if (const auto shiftRight = std::get_if<ShiftRight>(&instruction))
-        return os << "LSR(value: " << shiftRight->value << ")";
+    if (const auto shiftRight = std::get_if<ShiftRight>(&instruction))
+        return os << "LSR(value: " << HEX_BYTE(shiftRight->value) << ")";
 
-    else if (std::get_if<NoOperation>(&instruction))
+    if (std::get_if<NoOperation>(&instruction))
         return os << "NOP";
 
-    else if (const auto push = std::get_if<Push>(&instruction)) {
+    if (const auto push = std::get_if<Push>(&instruction)) {
         switch (push->reg) {
             case Emulator::Register::AC:
                 os << "PHA";
@@ -148,10 +148,10 @@ std::ostream &operator<<(std::ostream &os, const InstructionArguments &instructi
             default:
                 throw std::invalid_argument("operator<<: invalid register for Push instruction");
         }
-        return os << "(value: " << push->value << ")";
+        return os << "(value: " << (int)push->value << ")";
     }
 
-    else if (const auto pull = std::get_if<Pull>(&instruction)) {
+    if (const auto pull = std::get_if<Pull>(&instruction)) {
         switch (pull->reg) {
             case Emulator::Register::AC:
                 os << "PLA";
@@ -162,53 +162,55 @@ std::ostream &operator<<(std::ostream &os, const InstructionArguments &instructi
             default:
                 throw std::invalid_argument("operator<<: invalid register for Push instruction");
         }
-        return os << "(value: " << pull->value << ")";
+        return os << "(value: " << (int)pull->value << ")";
     }
 
-    else if (const auto rotateLeft = std::get_if<RotateLeft>(&instruction))
-        return os << "ROL(value: " << rotateLeft->value << ")";
+    if (const auto rotateLeft = std::get_if<RotateLeft>(&instruction))
+        return os << "ROL(value: " << HEX_BYTE(rotateLeft->value) << ")";
 
-    else if (const auto rotateRight = std::get_if<RotateRight>(&instruction))
-        return os << "ROR(value: " << rotateRight->value << ")";
+    if (const auto rotateRight = std::get_if<RotateRight>(&instruction))
+        return os << "ROR(value: " << HEX_BYTE(rotateRight->value) << ")";
 
-    else if (std::get_if<ReturnFromInterrupt>(&instruction))
+    if (std::get_if<ReturnFromInterrupt>(&instruction))
         return os << "RTI";
 
-    else if (std::get_if<ReturnFromSubroutine>(&instruction))
+    if (std::get_if<ReturnFromSubroutine>(&instruction))
         return os << "RTS";
 
-    else if (const auto store = std::get_if<Store>(&instruction))
+    if (const auto store = std::get_if<Store>(&instruction))
         switch (store->reg) {
             case Emulator::Register::AC:
-                return os << "STA(value: " << store->value << ")";
+                return os << "STA(value: " << (int)store->value << ")";
             case Emulator::Register::X:
-                return os << "STX(value: " << store->value << ")";
+                return os << "STX(value: " << (int)store->value << ")";
             case Emulator::Register::Y:
-                return os << "STY(value: " << store->value << ")";
+                return os << "STY(value: " << (int)store->value << ")";
             default:
                 throw std::invalid_argument("operator<<: invalid register for Store instruction");
         }
 
-    else if (const auto transfer = std::get_if<Transfer>(&instruction))
+    if (const auto transfer = std::get_if<Transfer>(&instruction))
         switch (transfer->from) {
             case Emulator::Register::AC:
                 switch (transfer->to) {
                     case Emulator::Register::X:
-                        return os << "TAX(value: " << transfer->value << ")";
+                        return os << "TAX(value: " << (int)transfer->value << ")";
                     case Emulator::Register::Y:
-                        return os << "TAY(value: " << transfer->value << ")";
+                        return os << "TAY(value: " << (int)transfer->value << ")";
                     default:
                         throw std::invalid_argument("operator<<: invalid target register for Transfer instruction");
                 }
                 case Emulator::Register::X:
                     assert(transfer->to == Emulator::Register::AC);
-                    return os << "TXA(value: " << transfer->value << ")";
+                    return os << "TXA(value: " << (int)transfer->value << ")";
             case Emulator::Register::Y:
                 assert(transfer->to == Emulator::Register::AC);
-                return os << "TYA(value: " << transfer->value << ")";
+                return os << "TYA(value: " << (int)transfer->value << ")";
             default:
                 throw std::invalid_argument("operator<<: invalid source register for Transfer instruction");
         }
+
+    throw std::runtime_error("operator<<: unhandled InstructionArguments type");
 }
 
 
@@ -221,7 +223,8 @@ Instruction instruction_code(const InstructionArguments &args) {
                 return Instruction::SBC;
         }
     }
-    else if (const auto logical = std::get_if<Logical>(&args)) {
+
+    if (const auto logical = std::get_if<Logical>(&args)) {
         switch (logical->operation) {
             case LogicalOperation::AND:
                 return Instruction::AND;
@@ -231,9 +234,11 @@ Instruction instruction_code(const InstructionArguments &args) {
                 return Instruction::EOR;
         }
     }
-    else if (std::get_if<ShiftLeft>(&args))
+
+    if (std::get_if<ShiftLeft>(&args))
         return Emulator::Instruction::ASL;
-    else if (const auto branch = std::get_if<Branch>(&args)) {
+
+    if (const auto branch = std::get_if<Branch>(&args)) {
         switch (branch->flag) {
             case Emulator::CARRY:
                 return branch->value ? Instruction::BCS : Instruction::BCC;
@@ -247,11 +252,14 @@ Instruction instruction_code(const InstructionArguments &args) {
                 throw std::invalid_argument("instruction_code: invalid flag for Branch instruction");
         }
     }
-    else if (std::get_if<BitTest>(&args))
+
+    if (std::get_if<BitTest>(&args))
         return Instruction::BIT;
-    else if (std::get_if<ForceInterrupt>(&args))
+
+    if (std::get_if<ForceInterrupt>(&args))
         return Emulator::Instruction::BRK;
-    else if (const auto setFlag = std::get_if<SetFlag>(&args)) {
+
+    if (const auto setFlag = std::get_if<SetFlag>(&args)) {
         switch (setFlag->flag) {
             case Emulator::CARRY:
                 return setFlag->value ? Emulator::Instruction::SEC : Emulator::Instruction::CLC;
@@ -265,7 +273,8 @@ Instruction instruction_code(const InstructionArguments &args) {
                 throw std::invalid_argument("instruction_code: invalid flag for SetFlag instruction");
         }
     }
-    else if (const auto compare = std::get_if<Compare>(&args)) {
+
+    if (const auto compare = std::get_if<Compare>(&args)) {
         switch (compare->reg) {
             case Emulator::Register::AC:
                 return Emulator::Instruction::CMP;
@@ -277,9 +286,11 @@ Instruction instruction_code(const InstructionArguments &args) {
                 throw std::invalid_argument("instruction_code: invalid register for Compare instruction");
         }
     }
-    else if (std::get_if<DecrementMemory>(&args))
+
+    if (std::get_if<DecrementMemory>(&args))
         return Emulator::Instruction::DEC;
-    else if (const auto decrement = std::get_if<DecrementRegister>(&args)) {
+
+    if (const auto decrement = std::get_if<DecrementRegister>(&args)) {
         switch (decrement->reg) {
             case Emulator::Register::X:
                 return Emulator::Instruction::DEX;
@@ -289,9 +300,11 @@ Instruction instruction_code(const InstructionArguments &args) {
                 throw std::invalid_argument("instruction_code: invalid register for Decrement instruction");
         }
     }
-    else if (std::get_if<IncrementMemory>(&args))
+
+    if (std::get_if<IncrementMemory>(&args))
         return Emulator::Instruction::INC;
-    else if (const auto increment = std::get_if<IncrementRegister>(&args)) {
+
+    if (const auto increment = std::get_if<IncrementRegister>(&args)) {
         switch (increment->reg) {
             case Emulator::Register::X:
                 return Emulator::Instruction::INX;
@@ -301,11 +314,14 @@ Instruction instruction_code(const InstructionArguments &args) {
                 throw std::invalid_argument("instruction_code: invalid register for Increment instruction");
         }
     }
-    else if (std::get_if<Jump>(&args))
+
+    if (std::get_if<Jump>(&args))
         return Emulator::Instruction::JMP;
-    else if (std::get_if<JumpToSubroutine>(&args))
+
+    if (std::get_if<JumpToSubroutine>(&args))
         return Emulator::Instruction::JSR;
-    else if (const auto load = std::get_if<Load>(&args)) {
+
+    if (const auto load = std::get_if<Load>(&args)) {
         switch (load->reg) {
             case Emulator::Register::AC:
                 return Emulator::Instruction::LDA;
@@ -317,11 +333,14 @@ Instruction instruction_code(const InstructionArguments &args) {
                 throw std::invalid_argument("instruction_code: invalid register for Load instruction");
         }
     }
-    else if (std::get_if<ShiftRight>(&args))
+
+    if (std::get_if<ShiftRight>(&args))
         return Emulator::Instruction::LSR;
-    else if (std::get_if<NoOperation>(&args))
+
+    if (std::get_if<NoOperation>(&args))
         return Emulator::Instruction::NOP;
-    else if (const auto pull = std::get_if<Pull>(&args)) {
+
+    if (const auto pull = std::get_if<Pull>(&args)) {
         switch (pull->reg) {
             case Emulator::Register::AC:
                 return Emulator::Instruction::PLA;
@@ -331,15 +350,20 @@ Instruction instruction_code(const InstructionArguments &args) {
                 throw std::invalid_argument("instruction_code: invalid register for Pull instruction");
         }
     }
-    else if (std::get_if<RotateLeft>(&args))
+
+    if (std::get_if<RotateLeft>(&args))
         return Emulator::Instruction::ROL;
-    else if (std::get_if<RotateRight>(&args))
+
+    if (std::get_if<RotateRight>(&args))
         return Emulator::Instruction::ROR;
-    else if (std::get_if<ReturnFromInterrupt>(&args))
+
+    if (std::get_if<ReturnFromInterrupt>(&args))
         return Emulator::Instruction::RTI;
-    else if (std::get_if<ReturnFromSubroutine>(&args))
+
+    if (std::get_if<ReturnFromSubroutine>(&args))
         return Emulator::Instruction::RTS;
-    else if (const auto store = std::get_if<Store>(&args)) {
+
+    if (const auto store = std::get_if<Store>(&args)) {
         switch (store->reg) {
             case Emulator::Register::AC:
                 return Emulator::Instruction::STA;
@@ -351,7 +375,8 @@ Instruction instruction_code(const InstructionArguments &args) {
                 throw std::invalid_argument("instruction_code: invalid register for Store instruction");
         }
     }
-    else if (const auto transfer = std::get_if<Transfer>(&args)) {
+
+    if (const auto transfer = std::get_if<Transfer>(&args)) {
         switch (transfer->from) {
             case Emulator::Register::AC:
                 switch (transfer->to) {
@@ -372,35 +397,41 @@ Instruction instruction_code(const InstructionArguments &args) {
                 throw std::invalid_argument("instruction_code: invalid source register for Transfer instruction");
         }
     }
-    else throw std::invalid_argument("instruction: no instruction with given arguments");
+
+    throw std::invalid_argument("instruction: no instruction with given arguments");
 }
 
 
 bool page_crossed(const Addressing &addressing) {
     if (const auto absoluteX = std::get_if<AbsoluteX>(&addressing))
         return (Word)WordToBytes{absoluteX->address}.low + absoluteX->X >= UINT8_MAX;
-    else if (const auto absoluteY = std::get_if<AbsoluteY>(&addressing))
+
+    if (const auto absoluteY = std::get_if<AbsoluteY>(&addressing))
         return (Word)WordToBytes{absoluteY->address}.low + absoluteY->Y >= UINT8_MAX;
-    else if (const auto indirectY = std::get_if<IndirectY>(&addressing))
+
+    if (const auto indirectY = std::get_if<IndirectY>(&addressing))
         return (Word)WordToBytes{indirectY->targetAddress}.low + indirectY->Y >= UINT8_MAX;
-    else if (const auto relative = std::get_if<Relative>(&addressing)) {
+
+    if (const auto relative = std::get_if<Relative>(&addressing)) {
         const int newPC = (int)WordToBytes{relative->PC}.low + relative->offset;
         return newPC >= UINT8_MAX || newPC < 0;
     }
-    else return false;
+
+    return false;
 }
 
 
 size_t arithmetic_duration(const Addressing &addressing) {
     if (std::get_if<Immediate>(&addressing)) return 2;
-    else if (std::get_if<ZeroPage>(&addressing)) return 3;
-    else if (std::get_if<ZeroPageX>(&addressing)) return 4;
-    else if (std::get_if<Absolute>(&addressing)) return 4;
-    else if (std::get_if<AbsoluteX>(&addressing)) return 4 + page_crossed(addressing);
-    else if (const auto absoluteY = std::get_if<AbsoluteY>(&addressing)) return 4 + page_crossed(addressing);
-    else if (std::get_if<IndirectX>(&addressing)) return 6;
-    else if (const auto indirectY = std::get_if<IndirectY>(&addressing)) return 5 + page_crossed(addressing);
-    else throw std::invalid_argument("instruction_duration: unsupported addressing for Arithmetics or Logical instructions");
+    if (std::get_if<ZeroPage>(&addressing)) return 3;
+    if (std::get_if<ZeroPageX>(&addressing)) return 4;
+    if (std::get_if<Absolute>(&addressing)) return 4;
+    if (std::get_if<AbsoluteX>(&addressing)) return 4 + page_crossed(addressing);
+    if (const auto absoluteY = std::get_if<AbsoluteY>(&addressing)) return 4 + page_crossed(addressing);
+    if (std::get_if<IndirectX>(&addressing)) return 6;
+    if (const auto indirectY = std::get_if<IndirectY>(&addressing)) return 5 + page_crossed(addressing);
+
+    throw std::invalid_argument("instruction_duration: unsupported addressing for Arithmetics or Logical instructions");
 }
 
 
@@ -409,48 +440,49 @@ size_t instruction_duration(const InstructionArguments &instruction, const Addre
         std::get_if<Logical>(&instruction))
         return arithmetic_duration(addressing);
 
-    else if (std::get_if<ShiftLeft>(&instruction) ||
+    if (std::get_if<ShiftLeft>(&instruction) ||
              std::get_if<ShiftRight>(&instruction) ||
              std::get_if<RotateRight>(&instruction)) {
         if (std::get_if<Accumulator>(&addressing)) return 2;
-        else if (std::get_if<ZeroPage>(&addressing)) return 5;
-        else if (std::get_if<ZeroPageX>(&addressing)) return 6;
-        else if (std::get_if<Absolute>(&addressing)) return 6;
-        else if (std::get_if<AbsoluteX>(&addressing)) return 7;
+        if (std::get_if<ZeroPage>(&addressing)) return 5;
+        if (std::get_if<ZeroPageX>(&addressing)) return 6;
+        if (std::get_if<Absolute>(&addressing)) return 6;
+        if (std::get_if<AbsoluteX>(&addressing)) return 7;
     }
 
-    else if (const auto branch = std::get_if<Branch>(&instruction)) {
+    if (const auto branch = std::get_if<Branch>(&instruction)) {
         assert(std::get_if<Relative>(&addressing) != nullptr);
-        if (branch->value != branch->targetValue) return 2;
-        else return 3 + page_crossed(addressing);
+        return (branch->value == branch->targetValue) ? 3 + page_crossed(addressing) : 2;
     }
 
-    else if (std::get_if<BitTest>(&instruction)) {
+    if (std::get_if<BitTest>(&instruction)) {
         if (std::get_if<ZeroPage>(&addressing)) return 3;
-        else if (std::get_if<Absolute>(&addressing)) return 4;
-        else throw std::invalid_argument("instruction_duration: unsupported addressing for BitTest instructions");
+        if (std::get_if<Absolute>(&addressing)) return 4;
+
+        throw std::invalid_argument("instruction_duration: unsupported addressing for BitTest instructions");
     }
 
-    else if (std::get_if<ForceInterrupt>(&instruction)) {
+    if (std::get_if<ForceInterrupt>(&instruction)) {
         assert(std::get_if<Implicit>(&addressing) != nullptr);
         return 7;
     }
 
-    else if (std::get_if<SetFlag>(&instruction)) {
+    if (std::get_if<SetFlag>(&instruction)) {
         assert(std::get_if<Implicit>(&addressing) != nullptr);
         return 2;
     }
 
-    else if (const auto compare = std::get_if<Compare>(&instruction)) {
+    if (const auto compare = std::get_if<Compare>(&instruction)) {
         switch (compare->reg) {
             case Emulator::Register::AC:
                 return arithmetic_duration(addressing);
 
             case Emulator::Register::X: case Emulator::Register::Y: {
                 if (std::get_if<Immediate>(&addressing)) return 2;
-                else if (std::get_if<ZeroPage>(&addressing)) return 3;
-                else if (std::get_if<Absolute>(&addressing)) return 4;
-                else throw std::invalid_argument("instruction_duration: unsupported addressing for CMP instruction");
+                if (std::get_if<ZeroPage>(&addressing)) return 3;
+                if (std::get_if<Absolute>(&addressing)) return 4;
+
+                throw std::invalid_argument("instruction_duration: unsupported addressing for CMP instruction");
             }
 
             default:
@@ -458,105 +490,120 @@ size_t instruction_duration(const InstructionArguments &instruction, const Addre
         }
     }
 
-    else if (std::get_if<DecrementMemory>(&instruction) ||
+    if (std::get_if<DecrementMemory>(&instruction) ||
              std::get_if<IncrementMemory>(&instruction)) {
         if (std::get_if<ZeroPage>(&addressing)) return 5;
-        else if (std::get_if<ZeroPageX>(&addressing)) return 6;
-        else if (std::get_if<Absolute>(&addressing)) return 6;
-        else if (std::get_if<AbsoluteX>(&addressing)) return 7;
-        else throw std::invalid_argument("instruction_duration: unsupported addressing for DEC or INC instruction");
+        if (std::get_if<ZeroPageX>(&addressing)) return 6;
+        if (std::get_if<Absolute>(&addressing)) return 6;
+        if (std::get_if<AbsoluteX>(&addressing)) return 7;
+
+        throw std::invalid_argument("instruction_duration: unsupported addressing for DEC or INC instruction");
     }
 
-    else if (std::get_if<DecrementRegister>(&instruction) ||
+    if (std::get_if<DecrementRegister>(&instruction) ||
              std::get_if<IncrementRegister>(&instruction)) {
         assert(std::get_if<Implicit>(&addressing) != nullptr);
         return 2;
     }
 
-    else if (std::get_if<Jump>(&instruction)) {
+    if (std::get_if<Jump>(&instruction)) {
         if (std::get_if<Absolute>(&addressing)) return 3;
-        else if (std::get_if<Indirect>(&addressing)) return 5;
-        else throw std::invalid_argument("instruction_duration: unsupported addressing for JMP instruction");
+        if (std::get_if<Indirect>(&addressing)) return 5;
+
+        throw std::invalid_argument("instruction_duration: unsupported addressing for JMP instruction");
     }
 
-    else if (std::get_if<JumpToSubroutine>(&instruction)) {
+    if (std::get_if<JumpToSubroutine>(&instruction)) {
         assert(std::get_if<Absolute>(&addressing) != nullptr);
         return 6;
     }
 
-    else if (const auto load = std::get_if<Load>(&instruction)) {
+    if (const auto load = std::get_if<Load>(&instruction)) {
         switch (load->reg) {
             case Emulator::Register::AC:
                 return arithmetic_duration(addressing);
             case Emulator::Register::X: {
                 if (std::get_if<Immediate>(&addressing)) return 2;
-                else if (std::get_if<ZeroPage>(&addressing)) return 3;
-                else if (std::get_if<ZeroPageY>(&addressing)) return 4;
-                else if (std::get_if<Absolute>(&addressing)) return 4;
-                else if (const auto absoluteY = std::get_if<AbsoluteY>(&addressing)) return 4 + page_crossed(addressing);
-                else throw std::invalid_argument("instruction_duration: invalid addressing for LDX instruction");
+                if (std::get_if<ZeroPage>(&addressing)) return 3;
+                if (std::get_if<ZeroPageY>(&addressing)) return 4;
+                if (std::get_if<Absolute>(&addressing)) return 4;
+                if (const auto absoluteY = std::get_if<AbsoluteY>(&addressing)) return 4 + page_crossed(addressing);
+
+                throw std::invalid_argument("instruction_duration: invalid addressing for LDX instruction");
             }
             case Emulator::Register::Y: {
                 if (std::get_if<Immediate>(&addressing)) return 2;
-                else if (std::get_if<ZeroPage>(&addressing)) return 3;
-                else if (std::get_if<ZeroPageX>(&addressing)) return 4;
-                else if (std::get_if<Absolute>(&addressing)) return 4;
-                else if (const auto absoluteX = std::get_if<AbsoluteX>(&addressing)) return 4 + page_crossed(addressing);
-                else throw std::invalid_argument("instruction_duration: invalid addressing for LDY instruction");
+                if (std::get_if<ZeroPage>(&addressing)) return 3;
+                if (std::get_if<ZeroPageX>(&addressing)) return 4;
+                if (std::get_if<Absolute>(&addressing)) return 4;
+                if (const auto absoluteX = std::get_if<AbsoluteX>(&addressing)) return 4 + page_crossed(addressing);
+
+                throw std::invalid_argument("instruction_duration: invalid addressing for LDY instruction");
             }
+
+            default:
+                throw std::invalid_argument("instruction_duration: invalid register for loading");
         }
     }
 
-    else if (std::get_if<NoOperation>(&instruction))
+    if (std::get_if<NoOperation>(&instruction))
         return 2;
 
-    else if (std::get_if<Push>(&instruction)) {
+    if (std::get_if<Push>(&instruction)) {
         assert(std::get_if<Implicit>(&addressing));
         return 3;
     }
 
-    else if (std::get_if<Pull>(&instruction)) {
+    if (std::get_if<Pull>(&instruction)) {
         assert(std::get_if<Implicit>(&addressing));
         return 4;
     }
 
-    else if (std::get_if<ReturnFromInterrupt>(&instruction) ||
+    if (std::get_if<ReturnFromInterrupt>(&instruction) ||
              std::get_if<ReturnFromSubroutine>(&instruction)) {
         assert(std::get_if<Implicit>(&addressing));
         return 6;
     }
 
-    else if (const auto store = std::get_if<Store>(&instruction)) {
+    if (const auto store = std::get_if<Store>(&instruction)) {
         switch (store->reg) {
             case Emulator::Register::AC: {
                 if (std::get_if<ZeroPage>(&addressing)) return 3;
-                else if (std::get_if<ZeroPageX>(&addressing)) return 4;
-                else if (std::get_if<Absolute>(&addressing)) return 4;
-                else if (std::get_if<AbsoluteX>(&addressing)) return 5;
-                else if (std::get_if<AbsoluteY>(&addressing)) return 5;
-                else if (std::get_if<IndirectX>(&addressing)) return 6;
-                else if (std::get_if<IndirectY>(&addressing)) return 6;
-                else throw std::invalid_argument("instruction_duration: invalid addressing for STA instruction");
+                if (std::get_if<ZeroPageX>(&addressing)) return 4;
+                if (std::get_if<Absolute>(&addressing)) return 4;
+                if (std::get_if<AbsoluteX>(&addressing)) return 5;
+                if (std::get_if<AbsoluteY>(&addressing)) return 5;
+                if (std::get_if<IndirectX>(&addressing)) return 6;
+                if (std::get_if<IndirectY>(&addressing)) return 6;
+
+                throw std::invalid_argument("instruction_duration: invalid addressing for STA instruction");
             }
             case Emulator::Register::X: {
                 if (std::get_if<ZeroPage>(&addressing)) return 3;
-                else if (std::get_if<ZeroPageY>(&addressing)) return 4;
-                else if (std::get_if<Absolute>(&addressing)) return 4;
-                else throw std::invalid_argument("instruction_duration: invalid addressing for STX instruction");
+                if (std::get_if<ZeroPageY>(&addressing)) return 4;
+                if (std::get_if<Absolute>(&addressing)) return 4;
+
+                throw std::invalid_argument("instruction_duration: invalid addressing for STX instruction");
             }
             case Emulator::Register::Y: {
                 if (std::get_if<ZeroPage>(&addressing)) return 3;
-                else if (std::get_if<ZeroPageX>(&addressing)) return 4;
-                else if (std::get_if<Absolute>(&addressing)) return 4;
-                else throw std::invalid_argument("instruction_duration: invalid addressing for STY instruction");
+                if (std::get_if<ZeroPageX>(&addressing)) return 4;
+                if (std::get_if<Absolute>(&addressing)) return 4;
+
+                throw std::invalid_argument("instruction_duration: invalid addressing for STY instruction");
             }
+
+            default:
+                throw std::invalid_argument("instruction_duration: invalid register for storing");
         }
     }
 
-    else if (std::get_if<Transfer>(&instruction)) {
+    if (std::get_if<Transfer>(&instruction)) {
         assert(std::get_if<Implicit>(&addressing));
         return 2;
     }
+
+    throw std::runtime_error("instruction_duration: unhandled instruction arguments type");
 }
 
 
@@ -588,19 +635,19 @@ ProcessorStatus instruction_flags(const InstructionArguments &instruction) {
             }
         }
 
-    else if (const auto logical = std::get_if<Logical>(&instruction))
+    if (const auto logical = std::get_if<Logical>(&instruction))
         return set_register_flags(instruction_result(*logical).value());
 
-    else if (const auto shiftLeft = std::get_if<ShiftLeft>(&instruction)) {
+    if (const auto shiftLeft = std::get_if<ShiftLeft>(&instruction)) {
         ProcessorStatus flags{};
         flags[CARRY] = get_bit(shiftLeft->value, 7);
         return flags | set_register_flags(shiftLeft->value << 1);
     }
 
-    else if (std::get_if<Branch>(&instruction))
+    if (std::get_if<Branch>(&instruction))
         return {0};
 
-    else if (const auto bitTest = std::get_if<BitTest>(&instruction)) {
+    if (const auto bitTest = std::get_if<BitTest>(&instruction)) {
         const Byte result = bitTest->AC & bitTest->memory;
         ProcessorStatus flags{};
         flags[ZERO] = result == 0;
@@ -609,19 +656,19 @@ ProcessorStatus instruction_flags(const InstructionArguments &instruction) {
         return flags;
     }
 
-    else if (std::get_if<ForceInterrupt>(&instruction)) {
+    if (std::get_if<ForceInterrupt>(&instruction)) {
         ProcessorStatus flags{};
         flags[BREAK] = SET;
         return flags;
     }
 
-    else if (const auto setFlag = std::get_if<SetFlag>(&instruction)) {
+    if (const auto setFlag = std::get_if<SetFlag>(&instruction)) {
         ProcessorStatus flags{};
         flags[setFlag->flag] = setFlag->value;
         return flags;
     }
 
-    else if (const auto compare = std::get_if<Compare>(&instruction)) {
+    if (const auto compare = std::get_if<Compare>(&instruction)) {
         ProcessorStatus flags{};
         flags[CARRY] = compare->value >= compare->memory;
         flags[ZERO] = compare->value == compare->memory;
@@ -629,60 +676,61 @@ ProcessorStatus instruction_flags(const InstructionArguments &instruction) {
         return flags;
     }
 
-    else if (std::get_if<DecrementMemory>(&instruction) ||
+    if (std::get_if<DecrementMemory>(&instruction) ||
             std::get_if<DecrementRegister>(&instruction) ||
             std::get_if<IncrementMemory>(&instruction) ||
             std::get_if<IncrementRegister>(&instruction))
         return set_register_flags(instruction_result(instruction).value());
 
-    else if (std::get_if<Jump>(&instruction))
+    if (std::get_if<Jump>(&instruction))
         return {0};
 
-    else if (std::get_if<JumpToSubroutine>(&instruction))
+    if (std::get_if<JumpToSubroutine>(&instruction))
         return {0};
 
-    else if (const auto load = std::get_if<Load>(&instruction))
+    if (const auto load = std::get_if<Load>(&instruction))
         return set_register_flags(load->value);
 
-    else if (const auto shiftRight = std::get_if<ShiftRight>(&instruction)) {
+    if (const auto shiftRight = std::get_if<ShiftRight>(&instruction)) {
         ProcessorStatus flags{};
         flags[CARRY] = get_bit(shiftRight->value, 0);
         return flags | set_register_flags(shiftRight->value >> 1);
     }
 
-    else if (std::get_if<NoOperation>(&instruction))
+    if (std::get_if<NoOperation>(&instruction))
         return {0};
 
-    else if (std::get_if<Push>(&instruction))
+    if (std::get_if<Push>(&instruction))
         return {0};
 
-    else if (const auto pull = std::get_if<Pull>(&instruction))
-        if (pull->reg == Emulator::Register::SR) return {pull->value};
-        else return set_register_flags(pull->value);
+    if (const auto pull = std::get_if<Pull>(&instruction))
+        return (pull->reg == Emulator::Register::SR) ? pull->value : set_register_flags(pull->value);
 
-    else if (const auto rotateLeft = std::get_if<RotateLeft>(&instruction)) {
+    if (const auto rotateLeft = std::get_if<RotateLeft>(&instruction)) {
         ProcessorStatus flags{};
         flags[CARRY] = get_bit(rotateLeft->value, 7);
         return flags | set_register_flags(instruction_result(instruction).value());
     }
 
-    else if (const auto rotateRight = std::get_if<RotateRight>(&instruction)){
+    if (const auto rotateRight = std::get_if<RotateRight>(&instruction)){
         ProcessorStatus flags{};
         flags[CARRY] = get_bit(rotateRight->value, 0);
         return flags | set_register_flags(instruction_result(instruction).value());
     }
 
-    else if (std::get_if<ReturnFromInterrupt>(&instruction))
+    if (std::get_if<ReturnFromInterrupt>(&instruction))
         return {0};
 
-    else if (std::get_if<ReturnFromSubroutine>(&instruction))
+    if (std::get_if<ReturnFromSubroutine>(&instruction))
         return {0};
 
-    else if (const auto store = std::get_if<Store>(&instruction))
+    if (const auto store = std::get_if<Store>(&instruction))
         return {0};
 
-    else if (const auto transfer = std::get_if<Transfer>(&instruction))
+    if (const auto transfer = std::get_if<Transfer>(&instruction))
         return set_register_flags(transfer->value);
+
+    throw std::runtime_error("instruction_flags: unhandled instruction arguments type");
 }
 
 
@@ -696,7 +744,7 @@ std::optional<Byte> instruction_result(const InstructionArguments &instruction) 
         }
     }
 
-    else if (const auto logical = std::get_if<Logical>(&instruction)) {
+    if (const auto logical = std::get_if<Logical>(&instruction)) {
         switch (logical->operation) {
             case LogicalOperation::AND:
                 return logical->AC & logical->memory;
@@ -707,79 +755,81 @@ std::optional<Byte> instruction_result(const InstructionArguments &instruction) 
         }
     }
 
-    else if (const auto shiftLeft = std::get_if<ShiftLeft>(&instruction))
+    if (const auto shiftLeft = std::get_if<ShiftLeft>(&instruction))
         return shiftLeft->value << 1;
 
-    else if (std::get_if<Branch>(&instruction))
+    if (std::get_if<Branch>(&instruction))
         return std::nullopt;
 
-    else if (const auto bitTest = std::get_if<BitTest>(&instruction))
+    if (const auto bitTest = std::get_if<BitTest>(&instruction))
         return std::nullopt;
 
-    else if (std::get_if<ForceInterrupt>(&instruction))
+    if (std::get_if<ForceInterrupt>(&instruction))
         return std::nullopt;
 
-    else if (const auto setFlag = std::get_if<SetFlag>(&instruction))
+    if (const auto setFlag = std::get_if<SetFlag>(&instruction))
         return std::nullopt;
 
-    else if (const auto compare = std::get_if<Compare>(&instruction))
+    if (const auto compare = std::get_if<Compare>(&instruction))
         return std::nullopt;
 
-    else if (const auto decrementMemory = std::get_if<DecrementMemory>(&instruction))
+    if (const auto decrementMemory = std::get_if<DecrementMemory>(&instruction))
         return decrementMemory->memory - 1;
 
-    else if (const auto decrement = std::get_if<DecrementRegister>(&instruction))
+    if (const auto decrement = std::get_if<DecrementRegister>(&instruction))
         return decrement->value - 1;
 
-    else if (const auto incrementMemory = std::get_if<IncrementMemory>(&instruction))
+    if (const auto incrementMemory = std::get_if<IncrementMemory>(&instruction))
         return incrementMemory->memory + 1;
 
-    else if (const auto increment = std::get_if<IncrementRegister>(&instruction))
+    if (const auto increment = std::get_if<IncrementRegister>(&instruction))
         return increment->value + 1;
 
-    else if (std::get_if<Jump>(&instruction))
+    if (std::get_if<Jump>(&instruction))
         return std::nullopt;
 
-    else if (std::get_if<JumpToSubroutine>(&instruction))
+    if (std::get_if<JumpToSubroutine>(&instruction))
         return std::nullopt;
 
-    else if (const auto load = std::get_if<Load>(&instruction))
+    if (const auto load = std::get_if<Load>(&instruction))
         return load->value;
 
-    else if (const auto shiftRight = std::get_if<ShiftRight>(&instruction))
+    if (const auto shiftRight = std::get_if<ShiftRight>(&instruction))
         return shiftRight->value >> 1;
 
-    else if (std::get_if<NoOperation>(&instruction))
+    if (std::get_if<NoOperation>(&instruction))
         return std::nullopt;
 
-    else if (const auto pull = std::get_if<Pull>(&instruction))
+    if (const auto pull = std::get_if<Pull>(&instruction))
         return pull->value;
 
-    else if (const auto rotateLeft = std::get_if<RotateLeft>(&instruction)) {
+    if (const auto rotateLeft = std::get_if<RotateLeft>(&instruction)) {
         bool carry = get_bit(rotateLeft->value, 7);
         Byte result = rotateLeft->value << 1;
         set_bit(result, 0, carry);
         return result;
     }
 
-    else if (const auto rotateRight = std::get_if<RotateRight>(&instruction)){
+    if (const auto rotateRight = std::get_if<RotateRight>(&instruction)){
         bool carry = get_bit(rotateRight->value, 0);
         Byte result = rotateRight->value >> 1;
         set_bit(result, 7, carry);
         return result;
     }
 
-    else if (std::get_if<ReturnFromInterrupt>(&instruction))
+    if (std::get_if<ReturnFromInterrupt>(&instruction))
         return std::nullopt;
 
-    else if (std::get_if<ReturnFromSubroutine>(&instruction))
+    if (std::get_if<ReturnFromSubroutine>(&instruction))
         return std::nullopt;
 
-    else if (const auto store = std::get_if<Store>(&instruction))
+    if (const auto store = std::get_if<Store>(&instruction))
         return std::nullopt;
 
-    else if (const auto transfer = std::get_if<Transfer>(&instruction))
+    if (const auto transfer = std::get_if<Transfer>(&instruction))
         return transfer->value;
+
+    throw std::runtime_error("instruction_result: unhandled instruction arguments type");
 }
 
 

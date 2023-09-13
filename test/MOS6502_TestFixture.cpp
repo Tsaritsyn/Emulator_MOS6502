@@ -86,7 +86,9 @@ void MOS6502_TestFixture::test_instruction(const InstructionArguments &instructi
     cycle = 0;
     AC = 0;
 
-    memory[PC] = opcode(instruction_code(instruction), mode(addressing));
+    const auto opcodeOptional = opcode(instruction_code(instruction), mode(addressing));
+    assert(opcodeOptional.has_value());
+    memory[PC] = opcodeOptional.value();
 
     std::optional<Byte> expectedResult;
     const Byte* obtainedResultPtr = nullptr;

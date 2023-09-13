@@ -18,13 +18,6 @@ namespace Emulator {
     }
 
 
-    Byte flag_combination(const std::vector<Flag> &flags) {
-        Byte result = 0;
-        for (auto flag: flags) set_bit(result, flag);
-        return result;
-    }
-
-
     std::ostream &operator<<(std::ostream &os, AddressingMode mode) {
         switch (mode) {
             case AddressingMode::IMPLICIT:
@@ -99,7 +92,7 @@ namespace Emulator {
     }
 
 
-    OpCode opcode(Instruction instruction, AddressingMode mode) {
+    std::optional<OpCode> opcode(Instruction instruction, AddressingMode mode) {
         switch (instruction) {
             case Instruction::ADC:
                 switch (mode) {
@@ -121,7 +114,7 @@ namespace Emulator {
                         return ADC_INDIRECT_Y;
 
                     default:
-                        break;
+                        return std::nullopt;
                 }
 
             case Instruction::AND:
@@ -144,7 +137,7 @@ namespace Emulator {
                         return AND_INDIRECT_Y;
 
                     default:
-                        break;
+                        return std::nullopt;
                 }
 
             case Instruction::ASL:
@@ -161,20 +154,20 @@ namespace Emulator {
                         return ASL_ABSOLUTE_X;
 
                     default:
-                        break;
+                        return std::nullopt;
                 }
 
             case Instruction::BCC:
                 if (mode == AddressingMode::RELATIVE) return BCC;
-                else break;
+                else return std::nullopt;
 
             case Instruction::BCS:
                 if (mode == AddressingMode::RELATIVE) return BCS;
-                else break;
+                else return std::nullopt;
 
             case Instruction::BEQ:
                 if (mode == AddressingMode::RELATIVE) return BEQ;
-                else break;
+                else return std::nullopt;
 
             case Instruction::BIT:
                 switch (mode) {
@@ -184,48 +177,48 @@ namespace Emulator {
                         return BIT_ABSOLUTE;
 
                     default:
-                        break;
+                        return std::nullopt;
                 }
 
             case Instruction::BMI:
                 if (mode == AddressingMode::RELATIVE) return BMI;
-                else break;
+                else return std::nullopt;
 
             case Instruction::BNE:
                 if (mode == AddressingMode::RELATIVE) return BNE;
-                else break;
+                else return std::nullopt;
 
             case Instruction::BPL:
                 if (mode == AddressingMode::RELATIVE) return BPL;
-                else break;
+                else return std::nullopt;
 
             case Instruction::BRK:
                 if (mode == AddressingMode::IMPLICIT) return BRK;
-                else break;
+                else return std::nullopt;
 
             case Instruction::BVC:
                 if (mode == AddressingMode::RELATIVE) return BVC;
-                else break;
+                else return std::nullopt;
 
             case Instruction::BVS:
                 if (mode == AddressingMode::RELATIVE) return BVS;
-                else break;
+                else return std::nullopt;
 
             case Instruction::CLC:
                 if (mode == AddressingMode::IMPLICIT) return CLC;
-                else break;
+                else return std::nullopt;
 
             case Instruction::CLD:
                 if (mode == AddressingMode::IMPLICIT) return CLD;
-                else break;
+                else return std::nullopt;
 
             case Instruction::CLI:
                 if (mode == AddressingMode::IMPLICIT) return CLI;
-                else break;
+                else return std::nullopt;
 
             case Instruction::CLV:
                 if (mode == AddressingMode::IMPLICIT) return CLV;
-                else break;
+                else return std::nullopt;
 
             case Instruction::CMP:
                 switch (mode) {
@@ -247,7 +240,7 @@ namespace Emulator {
                         return CMP_INDIRECT_Y;
 
                     default:
-                        break;
+                        return std::nullopt;
                 }
 
             case Instruction::CPX:
@@ -260,7 +253,7 @@ namespace Emulator {
                         return CPX_ABSOLUTE;
 
                     default:
-                        break;
+                        return std::nullopt;
                 }
 
             case Instruction::CPY:
@@ -273,7 +266,7 @@ namespace Emulator {
                         return CPY_ABSOLUTE;
 
                     default:
-                        break;
+                        return std::nullopt;
                 }
 
             case Instruction::DEC:
@@ -288,16 +281,16 @@ namespace Emulator {
                         return DEC_ABSOLUTE_X;
 
                     default:
-                        break;
+                        return std::nullopt;
                 }
 
             case Instruction::DEX:
                 if (mode == AddressingMode::IMPLICIT) return DEX;
-                else break;
+                else return std::nullopt;
 
             case Instruction::DEY:
                 if (mode == AddressingMode::IMPLICIT) return DEY;
-                else break;
+                else return std::nullopt;
 
             case Instruction::EOR:
                 switch (mode) {
@@ -319,7 +312,7 @@ namespace Emulator {
                         return EOR_INDIRECT_Y;
 
                     default:
-                        break;
+                        return std::nullopt;
                 }
 
             case Instruction::INC:
@@ -334,16 +327,16 @@ namespace Emulator {
                         return INC_ABSOLUTE_X;
 
                     default:
-                        break;
+                        return std::nullopt;
                 }
 
             case Instruction::INX:
                 if (mode == AddressingMode::IMPLICIT) return INX;
-                else break;
+                else return std::nullopt;
 
             case Instruction::INY:
                 if (mode == AddressingMode::IMPLICIT) return INY;
-                else break;
+                else return std::nullopt;
 
             case Instruction::JMP:
                 switch (mode) {
@@ -353,12 +346,12 @@ namespace Emulator {
                         return JMP_INDIRECT;
 
                     default:
-                        break;
+                        return std::nullopt;
                 }
 
             case Instruction::JSR:
                 if (mode == AddressingMode::ABSOLUTE) return JSR;
-                else break;
+                else return std::nullopt;
 
             case Instruction::LDA:
                 switch (mode) {
@@ -380,7 +373,7 @@ namespace Emulator {
                         return LDA_INDIRECT_Y;
 
                     default:
-                        break;
+                        return std::nullopt;
                 }
 
             case Instruction::LDX:
@@ -397,7 +390,7 @@ namespace Emulator {
                         return LDX_ABSOLUTE_Y;
 
                     default:
-                        break;
+                        return std::nullopt;
                 }
 
             case Instruction::LDY:
@@ -414,7 +407,7 @@ namespace Emulator {
                         return LDY_ABSOLUTE_X;
 
                     default:
-                        break;
+                        return std::nullopt;
                 }
 
             case Instruction::LSR:
@@ -431,12 +424,12 @@ namespace Emulator {
                         return LSR_ABSOLUTE_X;
 
                     default:
-                        break;
+                        return std::nullopt;
                 }
 
             case Instruction::NOP:
                 if (mode == AddressingMode::IMPLICIT) return NOP;
-                else break;
+                else return std::nullopt;
 
             case Instruction::ORA:
                 switch (mode) {
@@ -458,24 +451,24 @@ namespace Emulator {
                         return ORA_INDIRECT_Y;
 
                     default:
-                        break;
+                        return std::nullopt;
                 }
 
             case Instruction::PHA:
                 if (mode == AddressingMode::IMPLICIT) return PHA;
-                else break;
+                else return std::nullopt;
 
             case Instruction::PHP:
                 if (mode == AddressingMode::IMPLICIT) return PHP;
-                else break;
+                else return std::nullopt;
 
             case Instruction::PLA:
                 if (mode == AddressingMode::IMPLICIT) return PLA;
-                else break;
+                else return std::nullopt;
 
             case Instruction::PLP:
                 if (mode == AddressingMode::IMPLICIT) return PLP;
-                else break;
+                else return std::nullopt;
 
             case Instruction::ROL:
                 switch (mode) {
@@ -491,7 +484,7 @@ namespace Emulator {
                         return ROL_ABSOLUTE_X;
 
                     default:
-                        break;
+                        return std::nullopt;
                 }
 
             case Instruction::ROR:
@@ -508,16 +501,16 @@ namespace Emulator {
                         return ROR_ABSOLUTE_X;
 
                     default:
-                        break;
+                        return std::nullopt;
                 }
 
             case Instruction::RTI:
                 if (mode == AddressingMode::IMPLICIT) return RTI;
-                else break;
+                else return std::nullopt;
 
             case Instruction::RTS:
                 if (mode == AddressingMode::IMPLICIT) return RTS;
-                else break;
+                else return std::nullopt;
 
             case Instruction::SBC:
                 switch (mode) {
@@ -539,20 +532,20 @@ namespace Emulator {
                         return SBC_INDIRECT_Y;
 
                     default:
-                        break;
+                        return std::nullopt;
                 }
 
             case Instruction::SEC:
                 if (mode == AddressingMode::IMPLICIT) return SEC;
-                else break;
+                else return std::nullopt;
 
             case Instruction::SED:
                 if (mode == AddressingMode::IMPLICIT) return SED;
-                else break;
+                else return std::nullopt;
 
             case Instruction::SEI:
                 if (mode == AddressingMode::IMPLICIT) return SEI;
-                else break;
+                else return std::nullopt;
 
             case Instruction::STA:
                 switch (mode) {
@@ -572,7 +565,7 @@ namespace Emulator {
                         return STA_INDIRECT_Y;
 
                     default:
-                        break;
+                        return std::nullopt;
                 }
 
             case Instruction::STX:
@@ -585,7 +578,7 @@ namespace Emulator {
                         return STX_ABSOLUTE;
 
                     default:
-                        break;
+                        return std::nullopt;
                 }
 
             case Instruction::STY:
@@ -598,36 +591,35 @@ namespace Emulator {
                         return STY_ABSOLUTE;
 
                     default:
-                        break;
+                        return std::nullopt;
                 }
 
             case Instruction::TAX:
                 if (mode == AddressingMode::IMPLICIT) return TAX;
-                else break;
+                else return std::nullopt;
 
             case Instruction::TAY:
                 if (mode == AddressingMode::IMPLICIT) return TAY;
-                else break;
+                else return std::nullopt;
 
             case Instruction::TSX:
                 if (mode == AddressingMode::IMPLICIT) return TSX;
-                else break;
+                else return std::nullopt;
 
             case Instruction::TXA:
                 if (mode == AddressingMode::IMPLICIT) return TXA;
-                else break;
+                else return std::nullopt;
 
             case Instruction::TXS:
                 if (mode == AddressingMode::IMPLICIT) return TXS;
-                else break;
+                else return std::nullopt;
 
             case Instruction::TYA:
                 if (mode == AddressingMode::IMPLICIT) return TYA;
-                else break;
+                else return std::nullopt;
         }
 
-        std::cerr << "Invalid instruction (" << instruction << ") and addressing mode (" << mode << ") pair\n";
-        throw std::invalid_argument("Cannot determine opcode");
+        throw std::runtime_error("opcode: unhandled instruction code");
     }
 
 

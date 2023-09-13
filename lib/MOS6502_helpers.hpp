@@ -8,6 +8,7 @@
 #include <vector>
 #include <ostream>
 #include <iostream>
+#include <optional>
 
 #include "MOS6502_definitions.hpp"
 
@@ -16,8 +17,6 @@ namespace Emulator {
     void set_bit(Byte &byte, int number, bool value = true);
 
     bool get_bit(Byte byte, int number);
-
-    Byte flag_combination(const std::vector<Flag> &flags);
 
     std::ostream &operator<<(std::ostream &os, AddressingMode mode);
 
@@ -71,7 +70,7 @@ namespace Emulator {
         return {result, overflow};
     }
 
-    OpCode opcode(Instruction instruction, AddressingMode mode);
+    std::optional<OpCode> opcode(Instruction instruction, AddressingMode mode);
 }
 
 #endif //EMULATOR_MOS6502_MOS6502_HELPERS_HPP
