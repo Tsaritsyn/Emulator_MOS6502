@@ -26,6 +26,10 @@ struct MOS6502_TestFixture: public ::testing::Test, public MOS6502 {
 
     void write_argument(Byte value, const Addressing &addressing);
 
+    Word PC_after(Word PCBefore, const InstructionArguments &instruction, const Addressing &addressing);
+
+    ProcessorStatus flags_after(const ProcessorStatus &flagsBefore, const InstructionArguments &instruction, const Addressing &addressing);
+
 
 
     /**

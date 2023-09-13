@@ -6,7 +6,6 @@
 #include <iomanip>
 #include <bitset>
 #include <iostream>
-#include <optional>
 
 #include "MOS6502.hpp"
 #include "MOS6502_helpers.hpp"

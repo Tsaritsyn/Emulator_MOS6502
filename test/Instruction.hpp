@@ -23,7 +23,7 @@ enum class ArithmeticOperation {
 struct Arithmetics { ArithmeticOperation operation; Byte AC, memory; bool carry; };
 struct Logical { LogicalOperation operation; Byte AC, memory; };
 struct ShiftLeft { Byte value; };
-struct Branch { Flag flag; bool value, targetValue; };
+struct Branch { Flag flag; bool targetValue, givenValue; };
 struct BitTest { Byte AC, memory; };
 struct ForceInterrupt {};
 struct SetFlag { Flag flag; bool value; };

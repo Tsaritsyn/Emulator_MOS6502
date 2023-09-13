@@ -40,13 +40,13 @@ std::ostream &operator<<(std::ostream &os, const InstructionArguments &instructi
     if (const auto branch = std::get_if<Branch>(&instruction)) {
         switch (branch->flag) {
             case Emulator::CARRY:
-                return os << (branch->targetValue ? "BCS" : "BCC") << "(carry: " << branch->value << ")";
+                return os << (branch->givenValue ? "BCS" : "BCC") << "(carry: " << branch->targetValue << ")";
             case Emulator::ZERO:
-                return os << (branch->targetValue ? "BEQ" : "BNE") << "(zero: " << branch->value << ")";
+                return os << (branch->givenValue ? "BEQ" : "BNE") << "(zero: " << branch->targetValue << ")";
             case Emulator::NEGATIVE:
-                return os << (branch->targetValue ? "BMI" : "BPL") << "(negative: " << branch->value << ")";
+                return os << (branch->givenValue ? "BMI" : "BPL") << "(negative: " << branch->targetValue << ")";
             case Emulator::OVERFLOW:
-                return os << (branch->targetValue ? "BVS" : "BVC") << "(overflow: " << branch->value << ")";
+                return os << (branch->givenValue ? "BVS" : "BVC") << "(overflow: " << branch->targetValue << ")";
             default:
                 throw std::invalid_argument("operator<<: invalid flag for Branch instruction");
         }
@@ -241,13 +241,13 @@ Instruction instruction_code(const InstructionArguments &args) {
     if (const auto branch = std::get_if<Branch>(&args)) {
         switch (branch->flag) {
             case Emulator::CARRY:
-                return branch->value ? Instruction::BCS : Instruction::BCC;
+                return branch->targetValue ? Instruction::BCS : Instruction::BCC;
             case Emulator::ZERO:
-                return branch->value ? Instruction::BEQ : Instruction::BNE;
+                return branch->targetValue ? Instruction::BEQ : Instruction::BNE;
             case Emulator::NEGATIVE:
-                return branch->value ? Instruction::BMI : Instruction::BPL;
+                return branch->targetValue ? Instruction::BMI : Instruction::BPL;
             case Emulator::OVERFLOW:
-                return branch->value ? Instruction::BVS : Instruction::BVC;
+                return branch->targetValue ? Instruction::BVS : Instruction::BVC;
             default:
                 throw std::invalid_argument("instruction_code: invalid flag for Branch instruction");
         }
@@ -452,7 +452,7 @@ size_t instruction_duration(const InstructionArguments &instruction, const Addre
 
     if (const auto branch = std::get_if<Branch>(&instruction)) {
         assert(std::get_if<Relative>(&addressing) != nullptr);
-        return (branch->value == branch->targetValue) ? 3 + page_crossed(addressing) : 2;
+        return (branch->targetValue == branch->givenValue) ? 3 + page_crossed(addressing) : 2;
     }
 
     if (std::get_if<BitTest>(&instruction)) {
@@ -644,8 +644,11 @@ ProcessorStatus instruction_flags(const InstructionArguments &instruction) {
         return flags | set_register_flags(shiftLeft->value << 1);
     }
 
-    if (std::get_if<Branch>(&instruction))
-        return {0};
+    if (const auto branch = std::get_if<Branch>(&instruction)) {
+        ProcessorStatus flags{};
+        flags[branch->flag] = branch->givenValue;
+        return flags;
+    }
 
     if (const auto bitTest = std::get_if<BitTest>(&instruction)) {
         const Byte result = bitTest->AC & bitTest->memory;

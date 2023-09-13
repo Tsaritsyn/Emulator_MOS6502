@@ -81,20 +81,28 @@ void MOS6502_TestFixture::write_argument(Byte value, const Addressing &addressin
 void MOS6502_TestFixture::test_instruction(const InstructionArguments &instruction,
                                            const Addressing &addressing) {
     // setup
-    SR = 0;
-    PC = 0;
+    constexpr ProcessorStatus initialSR{0};
+    const Word initialPC = [&instruction, &addressing]() -> Word {
+        if (std::get_if<Branch>(&instruction)) {
+            const auto relative = std::get_if<Relative>(&addressing);
+            assert(relative != nullptr);
+            return relative->PC;
+        }
+        return 0;
+    }();
+
+    SR = initialSR;
+    PC = initialPC;
     cycle = 0;
     AC = 0;
 
     const auto opcodeOptional = opcode(instruction_code(instruction), mode(addressing));
     assert(opcodeOptional.has_value());
-    memory[PC] = opcodeOptional.value();
 
-    std::optional<Byte> expectedResult;
+    std::optional<Byte> expectedResult = instruction_result(instruction);
     const Byte* obtainedResultPtr = nullptr;
 
     if (const auto arithmetics = std::get_if<Arithmetics>(&instruction)) {
-        expectedResult = instruction_result(*arithmetics);
         SR[CARRY] = arithmetics->carry;
         write_argument(arithmetics->AC, Accumulator{});
         write_argument(arithmetics->memory, addressing);
@@ -102,19 +110,22 @@ void MOS6502_TestFixture::test_instruction(const InstructionArguments &instructi
     }
 
     else if (const auto logical = std::get_if<Logical>(&instruction)) {
-        expectedResult = instruction_result(*logical);
         write_argument(logical->AC, Accumulator{});
         write_argument(logical->memory, addressing);
         obtainedResultPtr = &AC;
     }
 
     else if (const auto shiftLeft = std::get_if<ShiftLeft>(&instruction)) {
-        expectedResult = instruction_result(*shiftLeft);
         write_argument(shiftLeft->value, addressing);
         obtainedResultPtr = point_to_value(addressing);
     }
 
+    else if (const auto branch = std::get_if<Branch>(&instruction)) {
+        SR[branch->flag] = branch->givenValue;
+    }
 
+
+    memory[PC] = opcodeOptional.value();
     execute_current_command();
 
     std::stringstream ss;
@@ -124,10 +135,10 @@ void MOS6502_TestFixture::test_instruction(const InstructionArguments &instructi
         ASSERT_FALSE(obtainedResultPtr == nullptr);
         EXPECT_EQ(*obtainedResultPtr, expectedResult.value()) << ss.str();
     }
-    EXPECT_EQ(SR, instruction_flags(instruction)) << ss.str();
+    EXPECT_EQ(SR, flags_after(initialSR, instruction, addressing)) << ss.str();
 
     EXPECT_EQ(cycle, instruction_duration(instruction, addressing)) << ss.str();
-    ASSERT_EQ(PC, size(addressing)) << ss.str();
+    ASSERT_EQ(PC, PC_after(initialPC, instruction, addressing)) << ss.str();
 }
 
 const Byte *MOS6502_TestFixture::point_to_value(const Addressing &addressing) const {
