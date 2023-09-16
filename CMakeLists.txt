@@ -29,17 +29,15 @@ add_executable(Emulator_MOS6502_Test
         lib/MOS6502_definitions.hpp
         lib/MOS6502_helpers.cpp
         lib/MOS6502_helpers.hpp
-        test/MOS6502_TestFixture.hpp
-        test/MOS6502_TestADC.cpp
         test/MOS6502_TestFixture.cpp
-        test/Addressing.hpp
-        test/Instruction.hpp
-        test/Instruction.cpp
+        test/MOS6502_TestFixture.hpp
         test/Addressing.cpp
-        test/MOS6502_TestSBC.cpp
-        test/MOS6502_TestASL.cpp
-        test/MOS6502_TestAND.cpp
-        test/MOS6502_TestBCC.cpp
+        test/Addressing.hpp
+        test/MOS6502_TestLDA.cpp
+        test/helpers.cpp
+        test/helpers.hpp
+        test/MOS6502_TestLDX.cpp
+        test/MOS6502_TestLDY.cpp
 )
 
 target_include_directories(Emulator_MOS6502_Test PRIVATE lib test)

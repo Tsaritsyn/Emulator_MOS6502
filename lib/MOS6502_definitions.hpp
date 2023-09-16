@@ -30,6 +30,7 @@ namespace Emulator {
 
 
     struct WordToBytes {
+        // TODO: depend on the endianness https://stackoverflow.com/questions/1001307/detecting-endianness-programmatically-in-a-c-program
         Byte &low = converter.bytes[0];
         Byte &high = converter.bytes[1];
         Word &word = converter.word;
@@ -662,24 +663,24 @@ namespace Emulator {
         ASL_ABSOLUTE    = 0x0E,
         ASL_ABSOLUTE_X  = 0x1E,
 
-        BCC             = 0x90,
-        BCS             = 0xB0,
-        BEQ             = 0xF0,
-        BMI             = 0x30,
-        BNE             = 0xD0,
-        BPL             = 0x10,
-        BVC             = 0x50,
-        BVS             = 0x70,
+        BCC_RELATIVE    = 0x90,
+        BCS_RELATIVE    = 0xB0,
+        BEQ_RELATIVE    = 0xF0,
+        BMI_RELATIVE    = 0x30,
+        BNE_RELATIVE    = 0xD0,
+        BPL_RELATIVE    = 0x10,
+        BVC_RELATIVE    = 0x50,
+        BVS_RELATIVE    = 0x70,
 
         BIT_ZERO_PAGE   = 0x24,
         BIT_ABSOLUTE    = 0X2C,
 
-        BRK             = 0x00,
+        BRK_IMPLICIT             = 0x00,
 
-        CLC             = 0x18,
-        CLD             = 0xD8,
-        CLI             = 0x58,
-        CLV             = 0xB8,
+        CLC_IMPLICIT             = 0x18,
+        CLD_IMPLICIT             = 0xD8,
+        CLI_IMPLICIT             = 0x58,
+        CLV_IMPLICIT             = 0xB8,
 
         CMP_IMMEDIATE   = 0xC9,
         CMP_ZERO_PAGE   = 0xC5,
@@ -703,8 +704,8 @@ namespace Emulator {
         DEC_ABSOLUTE    = 0xCE,
         DEC_ABSOLUTE_X  = 0xDE,
 
-        DEX             = 0xCA,
-        DEY             = 0x88,
+        DEX_IMPLICIT    = 0xCA,
+        DEY_IMPLICIT    = 0x88,
 
         EOR_IMMEDIATE   = 0x49,
         EOR_ZERO_PAGE   = 0x45,
@@ -720,13 +721,13 @@ namespace Emulator {
         INC_ABSOLUTE    = 0xEE,
         INC_ABSOLUTE_X  = 0xFE,
 
-        INX             = 0xE8,
-        INY             = 0xC8,
+        INX_IMPLICIT    = 0xE8,
+        INY_IMPLICIT    = 0xC8,
 
         JMP_ABSOLUTE    = 0x4C,
         JMP_INDIRECT    = 0x6C,
 
-        JSR             = 0x20,
+        JSR_ABSOLUTE    = 0x20,
 
         LDA_IMMEDIATE   = 0xA9,
         LDA_ZERO_PAGE   = 0xA5,
@@ -755,7 +756,7 @@ namespace Emulator {
         LSR_ABSOLUTE    = 0x4E,
         LSR_ABSOLUTE_X  = 0X5E,
 
-        NOP             = 0xEA,
+        NOP_IMPLICIT    = 0xEA,
 
         ORA_IMMEDIATE   = 0x09,
         ORA_ZERO_PAGE   = 0x05,
@@ -766,11 +767,11 @@ namespace Emulator {
         ORA_INDIRECT_X  = 0x01,
         ORA_INDIRECT_Y  = 0x11,
 
-        PHA             = 0x48,
-        PHP             = 0x08,
+        PHA_IMPLICIT    = 0x48,
+        PHP_IMPLICIT    = 0x08,
 
-        PLA             = 0x68,
-        PLP             = 0x28,
+        PLA_IMPLICIT    = 0x68,
+        PLP_IMPLICIT    = 0x28,
 
         ROL_ACCUMULATOR = 0x2A,
         ROL_ZERO_PAGE   = 0x26,
@@ -784,8 +785,8 @@ namespace Emulator {
         ROR_ABSOLUTE    = 0x6E,
         ROR_ABSOLUTE_X  = 0x7E,
 
-        RTI             = 0x40,
-        RTS             = 0x60,
+        RTI_IMPLICIT    = 0x40,
+        RTS_IMPLICIT    = 0x60,
 
         SBC_IMMEDIATE   = 0xE9,
         SBC_ZERO_PAGE   = 0xE5,
@@ -796,9 +797,9 @@ namespace Emulator {
         SBC_INDIRECT_X  = 0xE1,
         SBC_INDIRECT_Y  = 0xF1,
 
-        SEC             = 0x38,
-        SED             = 0xF8,
-        SEI             = 0x78,
+        SEC_IMPLICIT    = 0x38,
+        SED_IMPLICIT    = 0xF8,
+        SEI_IMPLICIT    = 0x78,
 
         STA_ZERO_PAGE   = 0x85,
         STA_ZERO_PAGE_X = 0x95,
@@ -816,12 +817,12 @@ namespace Emulator {
         STY_ZERO_PAGE_X = 0x94,
         STY_ABSOLUTE    = 0x8C,
 
-        TAX             = 0xAA,
-        TAY             = 0xA8,
-        TSX             = 0xBA,
-        TXA             = 0x8A,
-        TXS             = 0x9A,
-        TYA             = 0x98
+        TAX_IMPLICIT    = 0xAA,
+        TAY_IMPLICIT    = 0xA8,
+        TSX_IMPLICIT    = 0xBA,
+        TXA_IMPLICIT    = 0x8A,
+        TXS_IMPLICIT    = 0x9A,
+        TYA_IMPLICIT    = 0x98
     };
 
 

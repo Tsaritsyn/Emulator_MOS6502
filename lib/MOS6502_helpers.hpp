@@ -33,44 +33,6 @@ namespace Emulator {
         os << '}';
         return os;
     }
-
-    template <class T>
-    std::pair<T, bool> add_and_clip(
-            T a,
-            T b,
-            bool carry,
-            T min,
-            T max
-            ) {
-        T range = max - min;
-        T result = a + b + carry;
-
-        bool overflow = result >= max || result < min;
-        while (result >= max) result -= range;
-        while (result < min) result += range;
-
-        return {result, overflow};
-    }
-
-    template <class T>
-    std::pair<T, bool> subtract_and_clip(
-            T a,
-            T b,
-            bool carry,
-            T min,
-            T max
-    ) {
-        T range = max - min;
-        T result = a - b - !carry;
-
-        bool overflow = result >= max || result < min;
-        while (result >= max) result -= range;
-        while (result < min) result += range;
-
-        return {result, overflow};
-    }
-
-    std::optional<OpCode> opcode(Instruction instruction, AddressingMode mode);
 }
 
 #endif //EMULATOR_MOS6502_MOS6502_HELPERS_HPP

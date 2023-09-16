@@ -1,36 +1,84 @@
 //
-// Created by Mikhail on 04/09/2023.
+// Created by Mikhail on 14/09/2023.
 //
 
 #ifndef EMULATOR_MOS6502_ADDRESSING_HPP
 #define EMULATOR_MOS6502_ADDRESSING_HPP
 
-#include <variant>
+#include <optional>
+#include <ostream>
 
 #include "MOS6502_definitions.hpp"
+#include "helpers.hpp"
 
 using namespace Emulator;
 
-// Addressing mode cases
-struct Implicit {};
-struct Accumulator {};
-struct Immediate {};
-struct ZeroPage { Byte address; };
-struct ZeroPageX { Byte address, X; };
-struct ZeroPageY { Byte address, Y; };
-struct Relative { Word PC; char offset; };
-struct Absolute { Word address; };
-struct AbsoluteX { Word address; Byte X; };
-struct AbsoluteY { Word address; Byte Y; };
-struct Indirect { Word address, newAddress; };
-struct IndirectX { Byte tableAddress; Word targetAddress; Byte X; };
-struct IndirectY { Byte tableAddress; Word targetAddress; Byte Y; };
-using Addressing = std::variant<Implicit, Accumulator, Immediate, ZeroPage, ZeroPageX, ZeroPageY, Relative, Absolute, AbsoluteX, AbsoluteY, Indirect, IndirectX, IndirectY>;
 
-Word size(const Addressing &addressing);
+struct Addressing {
+    using EmptyT = struct {};
+    using SimpleT = struct { Word address; };
+    using IndexedT = struct { Word address; Byte index; };
+    using RelativeT = struct { Word PC; char offset; };
+    using IndirectT = struct { Word tableAddress, targetAddress; };
+    using IndirectIndexedT = struct { Byte tableAddress; Word targetAddress; Byte index; };
 
-AddressingMode mode(const Addressing &addressing);
 
-std::ostream& operator<<(std::ostream &os, Addressing addressing);
+    static Addressing Implicit() noexcept;
+    static Addressing Accumulator() noexcept;
+    static Addressing Immediate() noexcept;
+    static Addressing ZeroPage(Byte address) noexcept;
+    static Addressing ZeroPageX(Byte address, Byte X) noexcept;
+    static Addressing ZeroPageY(Byte Address, Byte Y) noexcept;
+    static Addressing Relative(Word PC, char offset) noexcept;
+    static Addressing Absolute(Word address) noexcept;
+    static Addressing AbsoluteX(Word address, Byte X) noexcept;
+    static Addressing AbsoluteY(Word address, Byte Y) noexcept;
+    static Addressing Indirect(Word tableAddress, Word targetAddress) noexcept;
+    static Addressing IndirectX(Byte tableAddress, Word targetAddress, Byte X) noexcept;
+    static Addressing IndirectY(Byte tableAddress, Word targetAddress, Byte Y) noexcept;
+
+
+    [[nodiscard]] AddressingMode getMode() const { return mode; }
+
+    [[nodiscard]] std::optional<EmptyT> getImplicit() const noexcept;
+    [[nodiscard]] std::optional<EmptyT> getAccumulator() const noexcept;
+    [[nodiscard]] std::optional<EmptyT> getImmediate() const noexcept;
+    [[nodiscard]] std::optional<SimpleT> getZeroPage() const noexcept;
+    [[nodiscard]] std::optional<IndexedT> getZeroPageX() const noexcept;
+    [[nodiscard]] std::optional<IndexedT> getZeroPageY() const noexcept;
+    [[nodiscard]] std::optional<RelativeT> getRelative() const noexcept;
+    [[nodiscard]] std::optional<SimpleT> getAbsolute() const noexcept;
+    [[nodiscard]] std::optional<IndexedT> getAbsoluteX() const noexcept;
+    [[nodiscard]] std::optional<IndexedT> getAbsoluteY() const noexcept;
+    [[nodiscard]] std::optional<IndirectT> getIndirect() const noexcept;
+    [[nodiscard]] std::optional<IndirectIndexedT> getIndirectX() const noexcept;
+    [[nodiscard]] std::optional<IndirectIndexedT> getIndirectY() const noexcept;
+
+
+    [[nodiscard]] int PC_shift() const noexcept;
+    [[nodiscard]] bool page_crossed() const noexcept;
+
+
+    friend std::ostream &operator<<(std::ostream &os, const Addressing &addressing);
+
+
+private:
+    Addressing(AddressingMode mode): mode{mode} { args.none = {}; };
+
+    AddressingMode mode;
+
+private:
+
+    union {
+        EmptyT none;
+        SimpleT simple;
+        IndexedT indexed;
+        RelativeT relative;
+        IndirectT indirect;
+        IndirectIndexedT indirectIndexed;
+    } args{};
+
+};
+
 
 #endif //EMULATOR_MOS6502_ADDRESSING_HPP

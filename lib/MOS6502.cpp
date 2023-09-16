@@ -15,8 +15,7 @@
 namespace Emulator {
 
     Byte MOS6502::read_current_byte() {
-        Byte result = read_byte(PC++);
-        return result;
+        return read_byte(PC++);
     }
 
 
@@ -43,10 +42,7 @@ namespace Emulator {
 
 
     void MOS6502::load_register(Register reg, AddressingMode mode) {
-        // TODO: check for forbidden register-mode pairs
-        Word address = determine_address(mode);
-        Byte value = read_byte(address);
-        set_register(reg, value);
+        set_register(reg, read_byte(mode));
     }
 
 
@@ -160,7 +156,7 @@ namespace Emulator {
                 return add_word(read_current_byte(), Y, true);
 
             case AddressingMode::RELATIVE:
-                return PC + read_current_byte();
+                return PC + (char)read_current_byte();
 
             case AddressingMode::ABSOLUTE:
                 return read_current_word();
@@ -175,7 +171,8 @@ namespace Emulator {
                 return read_reversed_word(read_current_word());
 
             case AddressingMode::INDIRECT_X:
-                return read_reversed_word(add_word(read_current_byte(), X, true));
+                cycle++;
+                return read_reversed_word((Byte)(read_current_byte() + X));
 
             case AddressingMode::INDIRECT_Y:
                 return add_word(read_reversed_word(read_current_byte()), Y);
@@ -504,28 +501,28 @@ namespace Emulator {
                 shift_left_memory(AddressingMode::ABSOLUTE_X);
                 return;
 
-            case OpCode::BCC:
+            case OpCode::BCC_RELATIVE:
                 branch_if(CARRY, CLEAR);
                 return;
-            case OpCode::BCS:
+            case OpCode::BCS_RELATIVE:
                 branch_if(CARRY, SET);
                 return;
-            case OpCode::BEQ:
+            case OpCode::BEQ_RELATIVE:
                 branch_if(ZERO, SET);
                 return;
-            case OpCode::BMI:
+            case OpCode::BMI_RELATIVE:
                 branch_if(NEGATIVE, SET);
                 return;
-            case OpCode::BNE:
+            case OpCode::BNE_RELATIVE:
                 branch_if(ZERO, CLEAR);
                 return;
-            case OpCode::BPL:
+            case OpCode::BPL_RELATIVE:
                 branch_if(NEGATIVE, CLEAR);
                 return;
-            case OpCode::BVC:
+            case OpCode::BVC_RELATIVE:
                 branch_if(OVERFLOW, CLEAR);
                 return;
-            case OpCode::BVS:
+            case OpCode::BVS_RELATIVE:
                 branch_if(OVERFLOW, SET);
                 return;
 
@@ -536,20 +533,20 @@ namespace Emulator {
                 bit_test(AddressingMode::ABSOLUTE);
                 return;
 
-            case OpCode::BRK:
+            case OpCode::BRK_IMPLICIT:
                 force_interrupt();
                 return;
 
-            case OpCode::CLC:
+            case OpCode::CLC_IMPLICIT:
                 SR[CARRY] = CLEAR;
                 return;
-            case OpCode::CLD:
+            case OpCode::CLD_IMPLICIT:
                 SR[DECIMAL] = CLEAR;
                 return;
-            case OpCode::CLI:
+            case OpCode::CLI_IMPLICIT:
                 SR[INTERRUPT_DISABLE] = CLEAR;
                 return;
-            case OpCode::CLV:
+            case OpCode::CLV_IMPLICIT:
                 SR[OVERFLOW] = CLEAR;
                 return;
 
@@ -611,10 +608,10 @@ namespace Emulator {
                 decrement_memory(AddressingMode::ABSOLUTE_X);
                 return;
 
-            case OpCode::DEX:
+            case OpCode::DEX_IMPLICIT:
                 decrement_register(Register::X);
                 return;
-            case OpCode::DEY:
+            case OpCode::DEY_IMPLICIT:
                 decrement_register(Register::Y);
                 return;
 
@@ -656,10 +653,10 @@ namespace Emulator {
                 increment_memory(AddressingMode::ABSOLUTE_X);
                 return;
 
-            case OpCode::INX:
+            case OpCode::INX_IMPLICIT:
                 increment_register(Register::X);
                 return;
-            case OpCode::INY:
+            case OpCode::INY_IMPLICIT:
                 increment_register(Register::Y);
                 return;
 
@@ -670,7 +667,7 @@ namespace Emulator {
                 jump(AddressingMode::INDIRECT);
                 return;
 
-            case OpCode::JSR:
+            case OpCode::JSR_ABSOLUTE:
                 jump_to_subroutine();
                 return;
 
@@ -747,7 +744,7 @@ namespace Emulator {
                 shift_right_memory(AddressingMode::ABSOLUTE_X);
                 return;
 
-            case OpCode::NOP:
+            case OpCode::NOP_IMPLICIT:
                 nop();
                 return;
 
@@ -776,17 +773,17 @@ namespace Emulator {
                 logical(LogicalOperation::OR, AddressingMode::INDIRECT_Y);
                 return;
 
-            case OpCode::PHA:
+            case OpCode::PHA_IMPLICIT:
                 push_to_stack(Register::AC);
                 return;
-            case OpCode::PHP:
+            case OpCode::PHP_IMPLICIT:
                 push_to_stack(Register::SR);
                 return;
 
-            case OpCode::PLA:
+            case OpCode::PLA_IMPLICIT:
                 pull_from_stack(Register::AC);
                 return;
-            case OpCode::PLP:
+            case OpCode::PLP_IMPLICIT:
                 pull_from_stack(Register::SR);
                 return;
 
@@ -822,10 +819,10 @@ namespace Emulator {
                 rotate_right_memory(AddressingMode::ABSOLUTE_X);
                 return;
 
-            case OpCode::RTI:
+            case OpCode::RTI_IMPLICIT:
                 return_from_interrupt();
                 return;
-            case OpCode::RTS:
+            case OpCode::RTS_IMPLICIT:
                 return_from_subroutine();
                 return;
 
@@ -854,13 +851,13 @@ namespace Emulator {
                 subtract_with_carry(AddressingMode::INDIRECT_Y);
                 return;
 
-            case OpCode::SEC:
+            case OpCode::SEC_IMPLICIT:
                 SR[CARRY] = SET;
                 return;
-            case OpCode::SED:
+            case OpCode::SED_IMPLICIT:
                 SR[DECIMAL] = SET;
                 return;
-            case OpCode::SEI:
+            case OpCode::SEI_IMPLICIT:
                 SR[INTERRUPT_DISABLE] = SET;
                 return;
 
@@ -906,22 +903,22 @@ namespace Emulator {
                 store_register(Register::Y, AddressingMode::ABSOLUTE);
                 return;
 
-            case OpCode::TAX:
+            case OpCode::TAX_IMPLICIT:
                 transfer_registers(Register::AC, Register::X);
                 return;
-            case OpCode::TAY:
+            case OpCode::TAY_IMPLICIT:
                 transfer_registers(Register::AC, Register::Y);
                 return;
-            case OpCode::TSX:
+            case OpCode::TSX_IMPLICIT:
                 transfer_registers(Register::SP, Register::X);
                 return;
-            case OpCode::TXA:
+            case OpCode::TXA_IMPLICIT:
                 transfer_registers(Register::X, Register::AC);
                 return;
-            case OpCode::TXS:
+            case OpCode::TXS_IMPLICIT:
                 transfer_registers(Register::X, Register::SP);
                 return;
-            case OpCode::TYA:
+            case OpCode::TYA_IMPLICIT:
                 transfer_registers(Register::Y, Register::AC);
                 return;
         }

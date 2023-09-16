@@ -1,175 +1,221 @@
 //
-// Created by Mikhail on 04/09/2023.
+// Created by Mikhail on 14/09/2023.
 //
 
 #include "MOS6502_TestFixture.hpp"
+#include "helpers.hpp"
 
-
-void MOS6502_TestFixture::write_argument(Byte value, const Addressing &addressing) {
-    if (const auto implicit = std::get_if<Implicit>(&addressing))
-        return;
-    if (const auto accumulator = std::get_if<Accumulator>(&addressing)) {
-        AC = value;
-        return;
-    }
-    if (const auto immediate = std::get_if<Immediate>(&addressing)) {
-        memory[PC + 1] = value;
-        return;
-    }
-    if (const auto zeroPage = std::get_if<ZeroPage>(&addressing)) {
-        memory[zeroPage->address] = value;
-        memory[PC + 1] = zeroPage->address;
-        return;
-    }
-    if (const auto zeroPageX = std::get_if<ZeroPageX>(&addressing)) {
-        X = zeroPageX->X;
-        memory[zeroPageX->address + zeroPageX->X] = value;
-        memory[PC + 1] = zeroPageX->address;
-        return;
-    }
-    if (const auto zeroPageY = std::get_if<ZeroPageY>(&addressing)) {
-        Y = zeroPageY->Y;
-        memory[zeroPageY->address + zeroPageY->Y] = value;
-        memory[PC + 1] = zeroPageY->address;
-        return;
-    }
-    if (const auto relative = std::get_if<Relative>(&addressing)) {
-        PC += relative->offset + 1;
-        return;
-    }
-    if (const auto absolute = std::get_if<Absolute>(&addressing)) {
-        memory[absolute->address] = value;
-        write_word(absolute->address, PC + 1);
-        return;
-    }
-    if (const auto absoluteX = std::get_if<AbsoluteX>(&addressing)) {
-        X = absoluteX->X;
-        memory[absoluteX->address + absoluteX->X] = value;
-        write_word(absoluteX->address, PC + 1);
-        return;
-    }
-    if (const auto absoluteY = std::get_if<AbsoluteY>(&addressing)) {
-        Y = absoluteY->Y;
-        memory[absoluteY->address + absoluteY->Y] = value;
-        write_word(absoluteY->address, PC + 1);
-        return;
-    }
-    if (const auto indirect = std::get_if<Indirect>(&addressing)) {
-        write_word(indirect->address, PC + 1);
-        write_word(indirect->newAddress, indirect->address);
-        return;
-    }
-    if (const auto indirectX = std::get_if<IndirectX>(&addressing)) {
-        X = indirectX->X;
-        memory[indirectX->targetAddress] = value;
-        write_word(indirectX->targetAddress, indirectX->tableAddress + indirectX->X);
-        memory[PC + 1] = indirectX->tableAddress;
-        return;
-    }
-    if (const auto indirectY = std::get_if<IndirectY>(&addressing)) {
-        Y = indirectY->Y;
-        write_word(indirectY->targetAddress, indirectY->tableAddress);
-        memory[indirectY->targetAddress + Y] = value;
-        memory[PC + 1] = indirectY->tableAddress;
-        return;
-    }
-
-    throw std::runtime_error("write_argument: unhandled addressing mode type");
+void MOS6502_TestFixture::write_word(Word word, Word address) noexcept {
+    const WordToBytes buf(word);
+    memory[address] = buf.low;
+    memory[address + 1] = buf.high;
 }
 
 
-void MOS6502_TestFixture::test_instruction(const InstructionArguments &instruction,
-                                           const Addressing &addressing) {
-    // setup
-    constexpr ProcessorStatus initialSR{0};
-    const Word initialPC = [&instruction, &addressing]() -> Word {
-        if (std::get_if<Branch>(&instruction)) {
-            const auto relative = std::get_if<Relative>(&addressing);
-            assert(relative != nullptr);
-            return relative->PC;
+void MOS6502_TestFixture::write_to_memory(Byte value, const Addressing &addressing) noexcept {
+    switch (addressing.getMode()) {
+        case AddressingMode::IMPLICIT:
+            return;
+        case AddressingMode::ACCUMULATOR:
+            AC = value;
+            return;
+        case AddressingMode::IMMEDIATE:
+            memory[PC + 1] = value;
+            return;
+        case AddressingMode::ZERO_PAGE: {
+            const auto [address] = addressing.getZeroPage().value();
+            memory[address] = value;
+            memory[PC + 1] = address;
+            return;
         }
-        return 0;
+        case AddressingMode::ZERO_PAGE_X: {
+            const auto [address, index] = addressing.getZeroPageX().value();
+            X = index;
+            memory[address + index] = value;
+            memory[PC + 1] = address;
+            return;
+        }
+        case AddressingMode::ZERO_PAGE_Y: {
+            const auto [address, index] = addressing.getZeroPageY().value();
+            Y = index;
+            memory[address + index] = value;
+            memory[PC + 1] = address;
+            return;
+        }
+        case AddressingMode::RELATIVE: {
+            const auto [PC_, offset] = addressing.getRelative().value();
+            PC = PC_;
+            memory[PC + 1] = offset;
+            return;
+        }
+        case AddressingMode::ABSOLUTE: {
+            const auto [address] = addressing.getAbsolute().value();
+            memory[address] = value;
+            write_word(address, PC + 1);
+            return;
+        }
+        case AddressingMode::ABSOLUTE_X: {
+            const auto [address, index] = addressing.getAbsoluteX().value();
+            X = index;
+            memory[address + index] = value;
+            write_word(address, PC + 1);
+            return;
+        }
+        case AddressingMode::ABSOLUTE_Y: {
+            const auto [address, index] = addressing.getAbsoluteY().value();
+            Y = index;
+            memory[address + index] = value;
+            write_word(address, PC + 1);
+            return;
+        }
+        case AddressingMode::INDIRECT: {
+            const auto [tableAddress, targetAddress] = addressing.getIndirect().value();
+            memory[targetAddress] = value;
+            write_word(targetAddress, tableAddress);
+            write_word(tableAddress, PC + 1);
+            return;
+        }
+        case AddressingMode::INDIRECT_X: {
+            const auto [tableAddress, targetAddress, index] = addressing.getIndirectX().value();
+            X = index;
+            memory[targetAddress] = value;
+            write_word(targetAddress, (Byte)(tableAddress + index));
+            memory[PC + 1] = tableAddress;
+            return;
+        }
+        case AddressingMode::INDIRECT_Y: {
+            const auto [tableAddress, targetAddress, index] = addressing.getIndirectY().value();
+            Y = index;
+            memory[targetAddress + index] = value;
+            write_word(targetAddress, tableAddress);
+            memory[PC + 1] = tableAddress;
+            return;
+        }
+    }
+
+    std::unreachable();
+}
+
+
+void MOS6502_TestFixture::test_load_accumulator(Byte value, const Addressing& addressing) {
+    reset();
+
+    write_to_memory(value, addressing);
+
+    const auto [opcode, duration] = [&addressing]() -> std::pair<OpCode, size_t> {
+        switch (addressing.getMode()) {
+            case AddressingMode::IMMEDIATE:
+                return {LDA_IMMEDIATE, 2};
+            case AddressingMode::ZERO_PAGE:
+                return {LDA_ZERO_PAGE, 3};
+            case AddressingMode::ZERO_PAGE_X:
+                return {LDA_ZERO_PAGE_X, 4};
+            case AddressingMode::ABSOLUTE:
+                return {LDA_ABSOLUTE, 4};
+            case AddressingMode::ABSOLUTE_X:
+                return {LDA_ABSOLUTE_X, 4 + addressing.page_crossed()};
+            case AddressingMode::ABSOLUTE_Y:
+                return {LDA_ABSOLUTE_Y, 4 + addressing.page_crossed()};
+            case AddressingMode::INDIRECT_X:
+                return {LDA_INDIRECT_X, 6};
+            case AddressingMode::INDIRECT_Y:
+                return {LDA_INDIRECT_Y, 5 + addressing.page_crossed()};
+
+            default:
+                std::cerr << "test_load_accumulator: provided addressing mode " << addressing.getMode() << " is not supported by LDA instruction\n";
+                throw std::runtime_error("unsupported addressing mode");
+        }
     }();
 
-    SR = initialSR;
-    PC = initialPC;
-    cycle = 0;
-    AC = 0;
-
-    const auto opcodeOptional = opcode(instruction_code(instruction), mode(addressing));
-    assert(opcodeOptional.has_value());
-
-    std::optional<Byte> expectedResult = instruction_result(instruction);
-    const Byte* obtainedResultPtr = nullptr;
-
-    if (const auto arithmetics = std::get_if<Arithmetics>(&instruction)) {
-        SR[CARRY] = arithmetics->carry;
-        write_argument(arithmetics->AC, Accumulator{});
-        write_argument(arithmetics->memory, addressing);
-        obtainedResultPtr = &AC;
-    }
-
-    else if (const auto logical = std::get_if<Logical>(&instruction)) {
-        write_argument(logical->AC, Accumulator{});
-        write_argument(logical->memory, addressing);
-        obtainedResultPtr = &AC;
-    }
-
-    else if (const auto shiftLeft = std::get_if<ShiftLeft>(&instruction)) {
-        write_argument(shiftLeft->value, addressing);
-        obtainedResultPtr = point_to_value(addressing);
-    }
-
-    else if (const auto branch = std::get_if<Branch>(&instruction)) {
-        SR[branch->flag] = branch->givenValue;
-    }
-
-
-    memory[PC] = opcodeOptional.value();
+    memory[PC] = opcode;
     execute_current_command();
 
-    std::stringstream ss;
-    ss << "instruction: " << instruction << "; addressing: " << addressing;
+    std::stringstream testID;
+    testID << "Test LDA(value: " << (int)value << ", addressing: " << addressing << ")";
 
-    if (expectedResult.has_value()) {
-        ASSERT_FALSE(obtainedResultPtr == nullptr);
-        EXPECT_EQ(*obtainedResultPtr, expectedResult.value()) << ss.str();
-    }
-    EXPECT_EQ(SR, flags_after(initialSR, instruction, addressing)) << ss.str();
-
-    EXPECT_EQ(cycle, instruction_duration(instruction, addressing)) << ss.str();
-    ASSERT_EQ(PC, PC_after(initialPC, instruction, addressing)) << ss.str();
+    EXPECT_EQ(AC, value) << testID.str();
+    EXPECT_EQ(SR, set_register_flags_for(value)) << testID.str();
+    EXPECT_EQ(PC, addressing.PC_shift()) << testID.str();
+    EXPECT_EQ(cycle, duration) << testID.str();
 }
 
-const Byte *MOS6502_TestFixture::point_to_value(const Addressing &addressing) const {
-    if (const auto implicit = std::get_if<Implicit>(&addressing))
-        return nullptr;
-    if (const auto accumulator = std::get_if<Accumulator>(&addressing))
-        return &AC;
-    if (const auto immediate = std::get_if<Immediate>(&addressing))
-        return &memory[PC + 1];
-    if (const auto zeroPage = std::get_if<ZeroPage>(&addressing))
-        return &memory[zeroPage->address];
-    if (const auto zeroPageX = std::get_if<ZeroPageX>(&addressing))
-        return &memory[zeroPageX->address + zeroPageX->X];
-    if (const auto zeroPageY = std::get_if<ZeroPageY>(&addressing))
-        return &memory[zeroPageY->address + zeroPageY->Y];
-    if (const auto relative = std::get_if<Relative>(&addressing))
-        return &memory[PC + relative->offset + 1];
-    if (const auto absolute = std::get_if<Absolute>(&addressing))
-        return &memory[absolute->address];
-    if (const auto absoluteX = std::get_if<AbsoluteX>(&addressing))
-        return &memory[absoluteX->address + absoluteX->X];
-    if (const auto absoluteY = std::get_if<AbsoluteY>(&addressing))
-        return &memory[absoluteY->address + absoluteY->Y];
-    if (const auto indirect = std::get_if<Indirect>(&addressing))
-        return &memory[indirect->newAddress];
-    if (const auto indirectX = std::get_if<IndirectX>(&addressing))
-        return &memory[indirectX->targetAddress];
-    if (const auto indirectY = std::get_if<IndirectY>(&addressing))
-        return &memory[indirectY->targetAddress + Y];
+void MOS6502_TestFixture::test_load_X(Byte value, const Addressing &addressing) {
+    reset();
 
-    throw std::runtime_error("point_to_value: unhandled addressing mode type");
+    write_to_memory(value, addressing);
+
+    const auto [opcode, duration] = [&addressing]() -> std::pair<OpCode, size_t> {
+        switch (addressing.getMode()) {
+            case AddressingMode::IMMEDIATE:
+                return {LDX_IMMEDIATE, 2};
+            case AddressingMode::ZERO_PAGE:
+                return {LDX_ZERO_PAGE, 3};
+            case AddressingMode::ZERO_PAGE_Y:
+                return {LDX_ZERO_PAGE_Y, 4};
+            case AddressingMode::ABSOLUTE:
+                return {LDX_ABSOLUTE, 4};
+            case AddressingMode::ABSOLUTE_Y:
+                return {LDX_ABSOLUTE_Y, 4 + addressing.page_crossed()};
+
+            default:
+                std::cerr << "test_load_X: provided addressing mode " << addressing.getMode() << " is not supported by LDX instruction\n";
+                throw std::runtime_error("unsupported addressing mode");
+        }
+    }();
+
+    memory[PC] = opcode;
+    execute_current_command();
+
+    std::stringstream testID;
+    testID << "Test LDX(value: " << (int)value << ", addressing: " << addressing << ")";
+
+    EXPECT_EQ(X, value) << testID.str();
+    EXPECT_EQ(SR, set_register_flags_for(value)) << testID.str();
+    EXPECT_EQ(PC, addressing.PC_shift()) << testID.str();
+    EXPECT_EQ(cycle, duration) << testID.str();
 }
 
+void MOS6502_TestFixture::test_load_Y(Byte value, const Addressing &addressing) {
+    reset();
 
+    write_to_memory(value, addressing);
+
+    const auto [opcode, duration] = [&addressing]() -> std::pair<OpCode, size_t> {
+        switch (addressing.getMode()) {
+            case AddressingMode::IMMEDIATE:
+                return {LDY_IMMEDIATE, 2};
+            case AddressingMode::ZERO_PAGE:
+                return {LDY_ZERO_PAGE, 3};
+            case AddressingMode::ZERO_PAGE_X:
+                return {LDY_ZERO_PAGE_X, 4};
+            case AddressingMode::ABSOLUTE:
+                return {LDY_ABSOLUTE, 4};
+            case AddressingMode::ABSOLUTE_X:
+                return {LDY_ABSOLUTE_X, 4 + addressing.page_crossed()};
+
+            default:
+                std::cerr << "test_load_Y: provided addressing mode " << addressing.getMode() << " is not supported by LDY instruction\n";
+                throw std::runtime_error("unsupported addressing mode");
+        }
+    }();
+
+    memory[PC] = opcode;
+    execute_current_command();
+
+    std::stringstream testID;
+    testID << "Test LDY(value: " << (int)value << ", addressing: " << addressing << ")";
+
+    EXPECT_EQ(Y, value) << testID.str();
+    EXPECT_EQ(SR, set_register_flags_for(value)) << testID.str();
+    EXPECT_EQ(PC, addressing.PC_shift()) << testID.str();
+    EXPECT_EQ(cycle, duration) << testID.str();
+}
+
+void MOS6502_TestFixture::reset() noexcept {
+    PC = 0;
+    cycle = 0;
+    AC = 0;
+    X = 0;
+    Y = 0;
+    SR = 0;
+}
