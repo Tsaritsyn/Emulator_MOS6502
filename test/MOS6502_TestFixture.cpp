@@ -355,7 +355,7 @@ void MOS6502_TestFixture::test_push_to_stack(Register reg, Byte value) {
             case Register::AC: return {PHA_IMPLICIT, "PHA"};
             case Register::SR: return {PHP_IMPLICIT, "PHP"};
             default:
-                std::cerr << "test_storage: unsupported register " << reg << " for stack push instruction\n";
+                std::cerr << "test_push_to_stack: unsupported register " << reg << " for stack push instruction\n";
                 throw std::runtime_error("unsupported register");
         }
     }();
@@ -374,4 +374,27 @@ void MOS6502_TestFixture::test_push_to_stack(Register reg, Byte value) {
 
 Byte &MOS6502_TestFixture::stack(Byte address) {
     return memory[STACK_BOTTOM + address];
+}
+
+void MOS6502_TestFixture::test_pull_from_stack(Register reg, Byte value) {
+    reset();
+
+    const auto &[opCode, commandName] = [reg]() -> std::pair<OpCode, std::string>{
+        switch (reg) {
+            case Register::AC: return {PLA_IMPLICIT, "PLA"};
+            case Register::SR: return {PLP_IMPLICIT, "PLP"};
+            default:
+                std::cerr << "test_pull_from_stack: unsupported register " << reg << " for stack pull instruction\n";
+                throw std::runtime_error("unsupported register");
+        }
+    }();
+
+    stack(SP--) = value;
+    memory[PC] = opCode;
+    execute_current_command();
+
+    EXPECT_EQ((reg == Emulator::Register::AC) ? AC : SR, value);
+    EXPECT_EQ(SP, 255);
+    EXPECT_EQ(cycle, 4);
+    EXPECT_EQ(PC, 1);
 }

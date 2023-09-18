@@ -194,11 +194,12 @@ namespace Emulator {
 
 
     Byte MOS6502::pull_byte_from_stack() {
-        return read_byte(add_word(STACK_BOTTOM, SP++, true));
+        return read_byte(add_word(STACK_BOTTOM, ++SP, true));
     }
 
 
     void MOS6502::pull_from_stack(Register to) {
+        cycle++;
         set_register(to, pull_byte_from_stack());
     }
 

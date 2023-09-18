@@ -44,6 +44,8 @@ public:
     void test_transfer(Register from, Register to, Byte value);
 
     void test_push_to_stack(Register reg, Byte value);
+
+    void test_pull_from_stack(Register reg, Byte value);
 };
 
 
