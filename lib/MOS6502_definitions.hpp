@@ -9,6 +9,7 @@
 #include <array>
 #include <iomanip>
 #include <bitset>
+#include <variant>
 
 #define HEX_BYTE(byte) "0x" << std::uppercase << std::setfill('0') << std::setw(2) << std::hex << ((int)byte)
 #define HEX_WORD(word) "0x" << std::uppercase << std::setfill('0') << std::setw(4) << std::hex << ((int)word)
@@ -830,6 +831,8 @@ namespace Emulator {
 
 
     enum class Register { AC, X, Y, SP, SR };
+
+    using Address = std::variant<Word, Register>;
 
 }
 

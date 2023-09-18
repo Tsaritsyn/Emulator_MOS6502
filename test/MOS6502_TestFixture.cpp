@@ -318,3 +318,59 @@ void MOS6502_TestFixture::test_store_Y(Byte value, const Addressing &addressing)
     EXPECT_EQ(PC, addressing.PC_shift()) << testID.str();
     EXPECT_EQ(cycle, duration) << testID.str();
 }
+
+void MOS6502_TestFixture::test_register_transfer(Byte value, Register from, Register to) {
+    reset();
+
+    const auto &[opcode, name] = [from, to] -> std::pair<OpCode, std::string>{
+        switch (from) {
+            case Register::AC:
+                switch (to) {
+                    case Register::Y:
+                        return {TAY_IMPLICIT, "TAY"};
+                    case Register::X:
+                        return {TAX_IMPLICIT, "TAX"};
+                    default:
+                        std::cerr << "test_register_transfer: cannot move value from AC to " << to << '\n';
+                        throw std::invalid_argument("Invalid target register");
+                }
+            case Register::SP:
+                if (to != Register::X) {
+                    std::cerr << "test_register_transfer: cannot move value from SP to " << to << '\n';
+                    throw std::invalid_argument("Invalid target register");
+                }
+                return {TSX_IMPLICIT, "TSX"};
+            case Register::X:
+                switch (to) {
+                    case Register::AC:
+                        return {TXA_IMPLICIT, "TXA"};
+                    case Register::SP:
+                        return {TXS_IMPLICIT, "TXS"};
+                    default:
+                        std::cerr << "test_register_transfer: cannot move value from X to " << to << '\n';
+                        throw std::invalid_argument("Invalid target register");
+                }
+            case Register::Y:
+                if (to != Register::AC) {
+                    std::cerr << "test_register_transfer: cannot move value from Y to " << to << '\n';
+                    throw std::invalid_argument("Invalid target register");
+                }
+                return {TYA_IMPLICIT, "TYA"};
+            default:
+                std::cerr << "test_register_transfer: cannot move value from " << from << '\n';
+                throw std::invalid_argument("Invalid source register");
+        }
+    }();
+
+    (*this)[from] = value;
+    memory[PC] = opcode;
+    execute_current_command();
+
+    std::stringstream testID;
+    testID << "Test " << name << "(value: " << (int)value << ")";
+
+    EXPECT_EQ((*this)[to], value) << testID.str();
+    EXPECT_EQ(SR, (to == Register::SP) ? 0 : set_register_flags_for(value)) << testID.str();
+    EXPECT_EQ(PC, 1) << testID.str();
+    EXPECT_EQ(cycle, 2) << testID.str();
+}

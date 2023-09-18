@@ -31,9 +31,12 @@ public:
     void test_load_accumulator(Byte value, const Addressing& addressing);
     void test_load_X(Byte value, const Addressing& addressing);
     void test_load_Y(Byte value, const Addressing& addressing);
+
     void test_store_accumulator(Byte value, const Addressing& addressing);
     void test_store_X(Byte value, const Addressing& addressing);
     void test_store_Y(Byte value, const Addressing& addressing);
+
+    void test_register_transfer(Byte value, Register from, Register to);
 };
 
 

@@ -6,6 +6,7 @@
 #include <iomanip>
 #include <bitset>
 #include <iostream>
+#include <utility>
 
 #include "MOS6502.hpp"
 #include "MOS6502_helpers.hpp"
@@ -960,6 +961,30 @@ namespace Emulator {
         int result = target - other - !carry;
         carry = result >= 0;
         return result;
+    }
+
+    Byte &MOS6502::operator[](const Address &address) {
+        if (const auto memoryAddress = std::get_if<Word>(&address)) return memory[*memoryAddress];
+        if (const auto reg = std::get_if<Register>(&address))
+            switch (*reg) {
+            case Register::AC: return AC;
+            case Register::X: return X;
+                case Register::Y: return Y;
+                case Register::SP: return SP;
+                case Register::SR: throw std::invalid_argument("SR cannot be set via subscript operator");
+            }
+        std::unreachable();
+    }
+
+    Byte MOS6502::operator[](const Address &address) const {
+        if (const auto memoryAddress = std::get_if<Word>(&address)) return memory[*memoryAddress];
+        if (const auto reg = std::get_if<Register>(&address)) return get_register(*reg);
+        std::unreachable();
+    }
+
+    void MOS6502::transfer_registers(Register from, Register to) {
+        cycle++;
+        set_register(to, get_register(from));
     }
 
 }

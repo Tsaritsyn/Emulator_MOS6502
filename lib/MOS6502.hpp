@@ -42,6 +42,10 @@ namespace Emulator {
 
         [[noreturn]] void execute();
 
+        Byte& operator [](const Address& address);
+
+        Byte operator [](const Address& address) const;
+
 
     protected:
         friend class MOS6502_TestFixture;
@@ -54,7 +58,7 @@ namespace Emulator {
 
         void store_register(Register reg, AddressingMode mode);
 
-        void transfer_registers(Register from, Register to) { set_register(to, get_register(from)); };
+        void transfer_registers(Register from, Register to);
 
 
 
