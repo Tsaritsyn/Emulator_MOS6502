@@ -11,9 +11,9 @@
 #include <bitset>
 #include <variant>
 
-#define HEX_BYTE(byte) "0x" << std::uppercase << std::setfill('0') << std::setw(2) << std::hex << ((int)byte)
-#define HEX_WORD(word) "0x" << std::uppercase << std::setfill('0') << std::setw(4) << std::hex << ((int)word)
-#define HEX_CULL_BYTE(byte) std::uppercase << std::setfill('0') << std::setw(2) << std::hex << ((int)byte)
+#define HEX_BYTE(byte) "0x" << std::uppercase << std::setfill('0') << std::setw(2) << std::hex << ((int)(byte))
+#define HEX_WORD(word) "0x" << std::uppercase << std::setfill('0') << std::setw(4) << std::hex << ((int)(word))
+#define HEX_CULL_BYTE(byte) std::uppercase << std::setfill('0') << std::setw(2) << std::hex << ((int)(byte))
 
 
 namespace Emulator {
@@ -21,8 +21,6 @@ namespace Emulator {
     using Word = uint16_t;
     using ROM = std::array<Byte, UINT16_MAX>;
     using ProcessorStatus = std::bitset<8>;
-
-    constexpr Word STACK_LEFT_ADDR = 0x0100;
 
 
     constexpr bool CLEAR = false;

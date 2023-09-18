@@ -34,12 +34,16 @@ private:
     std::pair<OpCode, size_t> storage_parameters(Register reg, const Addressing& addressing);
     void check_register_storage(Word address, Byte expectedValue, Word expectedPCShift, size_t expectedDuration, const std::string& testID);
 
+    Byte& stack(Byte address);
+
 public:
     void test_loading(Register reg, Byte value, const Addressing& addressing);
 
     void test_storage(Register reg, Byte value, const Addressing& addressing);
 
     void test_transfer(Register from, Register to, Byte value);
+
+    void test_push_to_stack(Register reg, Byte value);
 };
 
 

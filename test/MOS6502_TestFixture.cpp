@@ -18,6 +18,7 @@ void MOS6502_TestFixture::reset() noexcept {
     X = 0;
     Y = 0;
     SR = 0;
+    SP = 255;
 }
 
 std::optional<Address> MOS6502_TestFixture::prepare_memory(const Addressing &addressing) {
@@ -344,4 +345,33 @@ void MOS6502_TestFixture::check_register_storage(Word address, Byte expectedValu
     EXPECT_EQ(SR, 0) << testID;
     EXPECT_EQ(PC, expectedPCShift) << testID;
     EXPECT_EQ(cycle, expectedDuration) << testID;
+}
+
+void MOS6502_TestFixture::test_push_to_stack(Register reg, Byte value) {
+    reset();
+
+    const auto &[opCode, commandName] = [reg]() -> std::pair<OpCode, std::string>{
+        switch (reg) {
+            case Register::AC: return {PHA_IMPLICIT, "PHA"};
+            case Register::SR: return {PHP_IMPLICIT, "PHP"};
+            default:
+                std::cerr << "test_storage: unsupported register " << reg << " for stack push instruction\n";
+                throw std::runtime_error("unsupported register");
+        }
+    }();
+
+    if (reg == Emulator::Register::AC) AC = value;
+    else SR = value;
+
+    memory[PC] = opCode;
+    execute_current_command();
+
+    EXPECT_EQ(stack(SP + 1), value);
+    EXPECT_EQ(SP, 254);
+    EXPECT_EQ(cycle, 3);
+    EXPECT_EQ(PC, 1);
+}
+
+Byte &MOS6502_TestFixture::stack(Byte address) {
+    return memory[STACK_BOTTOM + address];
 }

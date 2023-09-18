@@ -240,6 +240,11 @@ namespace Emulator {
         /// stack pointer
         Byte SP;
 
+        static constexpr Word STACK_BOTTOM = 0x0100;
+        static constexpr Word INTERRUPT_HANDLER = 0xFFFA;
+        static constexpr Word RESET_LOCATION = 0xFFFC;
+        static constexpr Word BRK_HANDLER = 0xFFFE;
+
         /**
          * CPU memory storing processor stack and instructions referenced by program counter.
          *
@@ -249,9 +254,6 @@ namespace Emulator {
          *  0xFFFC-0xFFFD - address of power on reset location,
          *  0xFFFE-0xFFFF - address of BRK/interrupt request handler.
          */
-        static constexpr Word INTERRUPT_HANDLER = 0xFFFA;
-        static constexpr Word RESET_LOCATION = 0xFFFC;
-        static constexpr Word BRK_HANDLER = 0xFFFE;
         ROM memory;
 
         /// current cycle of the processor

@@ -189,12 +189,12 @@ namespace Emulator {
 
 
     void MOS6502::push_byte_to_stack(Byte value) {
-        write_byte(value, STACK_LEFT_ADDR + SP--);
+        write_byte(value, add_word(STACK_BOTTOM, SP--, true));
     }
 
 
     Byte MOS6502::pull_byte_from_stack() {
-        return read_byte(STACK_LEFT_ADDR + SP++);
+        return read_byte(add_word(STACK_BOTTOM, SP++, true));
     }
 
 
