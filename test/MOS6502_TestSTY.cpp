@@ -19,5 +19,5 @@ static std::array<Addressing, 4> testedAddressings {
 TEST_F(MOS6502_TestFixture, Test_STY) {
     for (auto value: testedInputs)
         for (const auto& addressing: testedAddressings)
-            test_store_Y(value, addressing);
+            test_storage(Emulator::Register::Y, value, addressing);
 }

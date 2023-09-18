@@ -28,5 +28,5 @@ static std::array<Addressing, 13> testedAddressings {
 TEST_F(MOS6502_TestFixture, Test_LDA) {
     for (auto value: testedInputs)
         for (const auto& addressing: testedAddressings)
-            test_load_accumulator(value, addressing);
+            test_loading(Emulator::Register::AC, value, addressing);
 }

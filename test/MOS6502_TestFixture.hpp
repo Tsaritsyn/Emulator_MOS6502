@@ -25,18 +25,21 @@ private:
      *
      * @return reference to the memory or register where the target value must be put to (or where to read it from), if any.
      */
-    Byte* const prepare_memory(const Addressing& addressing);
+    std::optional<Address> prepare_memory(const Addressing& addressing);
+    std::optional<Address> prepare_and_execute(OpCode opcode, std::optional<Byte> value, const Addressing& addressing);
+
+    void check_register_loading(Register reg, Byte expectedValue, Word expectedPCShift, size_t expectedDuration, const std::string& testID);
+    std::pair<OpCode, size_t> loading_parameters(Register reg, const Addressing& addressing);
+
+    std::pair<OpCode, size_t> storage_parameters(Register reg, const Addressing& addressing);
+    void check_register_storage(Word address, Byte expectedValue, Word expectedPCShift, size_t expectedDuration, const std::string& testID);
 
 public:
-    void test_load_accumulator(Byte value, const Addressing& addressing);
-    void test_load_X(Byte value, const Addressing& addressing);
-    void test_load_Y(Byte value, const Addressing& addressing);
+    void test_loading(Register reg, Byte value, const Addressing& addressing);
 
-    void test_store_accumulator(Byte value, const Addressing& addressing);
-    void test_store_X(Byte value, const Addressing& addressing);
-    void test_store_Y(Byte value, const Addressing& addressing);
+    void test_storage(Register reg, Byte value, const Addressing& addressing);
 
-    void test_register_transfer(Byte value, Register from, Register to);
+    void test_transfer(Register from, Register to, Byte value);
 };
 
 

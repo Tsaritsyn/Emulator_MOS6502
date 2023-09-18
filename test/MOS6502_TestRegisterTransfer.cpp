@@ -21,5 +21,5 @@ constexpr static std::array<std::pair<Register, Register>, 6> testedRegisters = 
 TEST_F(MOS6502_TestFixture, TestRegisterTransfer) {
     for (const auto value: testedInputs)
         for (const auto &[from, to]: testedRegisters)
-            test_register_transfer(value, from, to);
+            test_transfer(from, to, value);
 }
