@@ -4,7 +4,7 @@
 
 #include "MOS6502_TestFixture.hpp"
 
-constexpr std::array<Byte, 4> testedInputs {0, 1, 10, static_cast<unsigned char>(-10)};
+constexpr std::array<Byte, 4> testedInputsAND {0, 1, 10, static_cast<unsigned char>(-10)};
 
 static std::array<Addressing, 12> testedAddressings {
         // no page crossing
@@ -25,7 +25,7 @@ static std::array<Addressing, 12> testedAddressings {
 };
 
 TEST_F(MOS6502_TestFixture, Test_STA) {
-    for (auto value: testedInputs)
+    for (auto value: testedInputsAND)
         for (const auto& addressing: testedAddressings)
             test_storage(Emulator::Register::AC, value, addressing);
 }

@@ -6,7 +6,7 @@
 
 using namespace Emulator;
 
-constexpr static std::array<Byte, 5> testedInputs = {0, 1, 10, static_cast<unsigned char>(-10), 255};
+constexpr static std::array<Byte, 5> testedInputsAND = {0, 1, 10, static_cast<unsigned char>(-10), 255};
 
 constexpr static std::array<std::pair<Register, Register>, 6> testedRegisters = {
         std::pair<Register, Register>{Register::AC, Register::X},
@@ -19,7 +19,7 @@ constexpr static std::array<std::pair<Register, Register>, 6> testedRegisters = 
 
 
 TEST_F(MOS6502_TestFixture, TestRegisterTransfer) {
-    for (const auto value: testedInputs)
+    for (const auto value: testedInputsAND)
         for (const auto &[from, to]: testedRegisters)
             test_transfer(from, to, value);
 }

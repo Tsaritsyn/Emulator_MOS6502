@@ -158,8 +158,8 @@ std::optional<Address> MOS6502_TestFixture::prepare_and_execute(OpCode opcode, s
     return address;
 }
 
-void MOS6502_TestFixture::check_register_loading(Register reg, Byte expectedValue, Word expectedPCShift,
-                                                 size_t expectedDuration, const std::string &testID) {
+void MOS6502_TestFixture::check_register(Register reg, Byte expectedValue, Word expectedPCShift,
+                                         size_t expectedDuration, const std::string &testID) {
     EXPECT_EQ((*this)[reg], expectedValue) << testID;
     EXPECT_EQ(SR, set_register_flags_for(expectedValue)) << testID;
     EXPECT_EQ(PC, expectedPCShift) << testID;
@@ -252,7 +252,7 @@ void MOS6502_TestFixture::test_loading(Register reg, Byte value, const Addressin
     testID << "Test " << commandName << "(value: " << (int)value << ", addressing: " << addressing << ")";
 
     prepare_and_execute(opcode, value, addressing);
-    check_register_loading(reg, value, addressing.PC_shift(), duration, testID.str());
+    check_register(reg, value, addressing.PC_shift(), duration, testID.str());
 }
 
 void MOS6502_TestFixture::test_storage(Register reg, Byte value, const Addressing &addressing) {
@@ -277,7 +277,7 @@ void MOS6502_TestFixture::test_storage(Register reg, Byte value, const Addressin
     ASSERT_TRUE(address.has_value());
     const auto memAddress = std::get_if<Word>(&address.value());
     ASSERT_TRUE(memAddress != nullptr);
-    check_register_storage(*memAddress, value, addressing.PC_shift(), duration, testID.str());
+    check_memory(*memAddress, value, addressing.PC_shift(), duration, testID.str());
 }
 
 std::pair<OpCode, size_t> MOS6502_TestFixture::storage_parameters(Register reg, const Addressing &addressing) {
@@ -338,8 +338,8 @@ std::pair<OpCode, size_t> MOS6502_TestFixture::storage_parameters(Register reg, 
     }
 }
 
-void MOS6502_TestFixture::check_register_storage(Word address, Byte expectedValue, Word expectedPCShift,
-                                                 size_t expectedDuration, const std::string &testID) {
+void MOS6502_TestFixture::check_memory(Word address, Byte expectedValue, Word expectedPCShift,
+                                       size_t expectedDuration, const std::string &testID) {
 
     EXPECT_EQ(memory[address], expectedValue) << testID;
     EXPECT_EQ(SR, 0) << testID;
@@ -360,16 +360,19 @@ void MOS6502_TestFixture::test_push_to_stack(Register reg, Byte value) {
         }
     }();
 
+    std::stringstream testID;
+    testID << "Test " << commandName << "(value: " << (int)value << ")";
+
     if (reg == Emulator::Register::AC) AC = value;
     else SR = value;
 
     memory[PC] = opCode;
     execute_current_command();
 
-    EXPECT_EQ(stack(SP + 1), value);
-    EXPECT_EQ(SP, 254);
-    EXPECT_EQ(cycle, 3);
-    EXPECT_EQ(PC, 1);
+    EXPECT_EQ(stack(SP + 1), value) << testID.str();
+    EXPECT_EQ(SP, 254) << testID.str();
+    EXPECT_EQ(cycle, 3) << testID.str();
+    EXPECT_EQ(PC, 1) << testID.str();
 }
 
 Byte &MOS6502_TestFixture::stack(Byte address) {
@@ -389,12 +392,115 @@ void MOS6502_TestFixture::test_pull_from_stack(Register reg, Byte value) {
         }
     }();
 
+    std::stringstream testID;
+    testID << "Test " << commandName << "(value: " << (int)value << ")";
+
     stack(SP--) = value;
     memory[PC] = opCode;
     execute_current_command();
 
-    EXPECT_EQ((reg == Emulator::Register::AC) ? AC : SR, value);
-    EXPECT_EQ(SP, 255);
-    EXPECT_EQ(cycle, 4);
-    EXPECT_EQ(PC, 1);
+    EXPECT_EQ((reg == Emulator::Register::AC) ? AC : SR, value) << testID.str();
+    EXPECT_EQ(SP, 255) << testID.str();
+    EXPECT_EQ(cycle, 4) << testID.str();
+    EXPECT_EQ(PC, 1) << testID.str();
+}
+
+void MOS6502_TestFixture::test_logical(LogicalOperation operation, Byte value, Byte mem, const Addressing &addressing) {
+    reset();
+
+    const auto &[expectedResult, name] = [operation, value, mem]() -> std::pair<Byte, const char*> {
+        switch (operation) {
+            case LogicalOperation::AND: return {value & mem, "AND"};
+            case LogicalOperation::XOR: return {value ^ mem, "EOR"};
+            case LogicalOperation::OR: return {value | mem, "ORA"};
+        }
+
+        std::unreachable();
+    }();
+
+    const auto &[opCode, duration] = [operation, addressing]() -> std::pair<OpCode, size_t> {
+        switch (operation) {
+            case Emulator::LogicalOperation::AND:
+                switch (addressing.getMode()) {
+                    case Emulator::AddressingMode::IMMEDIATE:
+                        return {AND_IMMEDIATE, 2};
+                    case Emulator::AddressingMode::ZERO_PAGE:
+                        return {AND_ZERO_PAGE, 3};
+                    case Emulator::AddressingMode::ZERO_PAGE_X:
+                        return {AND_ZERO_PAGE_X, 4};
+                    case Emulator::AddressingMode::ABSOLUTE:
+                        return {AND_ABSOLUTE, 4};
+                    case Emulator::AddressingMode::ABSOLUTE_X:
+                        return {AND_ABSOLUTE_X, 4 + addressing.page_crossed()};
+                    case Emulator::AddressingMode::ABSOLUTE_Y:
+                        return {AND_ABSOLUTE_Y, 4 + addressing.page_crossed()};
+                    case Emulator::AddressingMode::INDIRECT_X:
+                        return {AND_INDIRECT_X, 6};
+                    case Emulator::AddressingMode::INDIRECT_Y:
+                        return {AND_INDIRECT_Y, 5 + addressing.page_crossed()};
+                    default:
+                        std::cerr << "test_logical: provided addressing mode " << addressing.getMode()
+                                  << " is not supported by AND instruction\n";
+                        throw std::runtime_error("unsupported addressing mode");
+                }
+
+            case Emulator::LogicalOperation::OR:
+                switch (addressing.getMode()) {
+                    case Emulator::AddressingMode::IMMEDIATE:
+                        return {ORA_IMMEDIATE, 2};
+                    case Emulator::AddressingMode::ZERO_PAGE:
+                        return {ORA_ZERO_PAGE, 3};
+                    case Emulator::AddressingMode::ZERO_PAGE_X:
+                        return {ORA_ZERO_PAGE_X, 4};
+                    case Emulator::AddressingMode::ABSOLUTE:
+                        return {ORA_ABSOLUTE, 4};
+                    case Emulator::AddressingMode::ABSOLUTE_X:
+                        return {ORA_ABSOLUTE_X, 4 + addressing.page_crossed()};
+                    case Emulator::AddressingMode::ABSOLUTE_Y:
+                        return {ORA_ABSOLUTE_Y, 4 + addressing.page_crossed()};
+                    case Emulator::AddressingMode::INDIRECT_X:
+                        return {ORA_INDIRECT_X, 6};
+                    case Emulator::AddressingMode::INDIRECT_Y:
+                        return {ORA_INDIRECT_Y, 5 + addressing.page_crossed()};
+                    default:
+                        std::cerr << "test_logical: provided addressing mode " << addressing.getMode()
+                                  << " is not supported by ORA instruction\n";
+                        throw std::runtime_error("unsupported addressing mode");
+                }
+
+            case Emulator::LogicalOperation::XOR:
+                switch (addressing.getMode()) {
+                    case Emulator::AddressingMode::IMMEDIATE:
+                        return {EOR_IMMEDIATE, 2};
+                    case Emulator::AddressingMode::ZERO_PAGE:
+                        return {EOR_ZERO_PAGE, 3};
+                    case Emulator::AddressingMode::ZERO_PAGE_X:
+                        return {EOR_ZERO_PAGE_X, 4};
+                    case Emulator::AddressingMode::ABSOLUTE:
+                        return {EOR_ABSOLUTE, 4};
+                    case Emulator::AddressingMode::ABSOLUTE_X:
+                        return {EOR_ABSOLUTE_X, 4 + addressing.page_crossed()};
+                    case Emulator::AddressingMode::ABSOLUTE_Y:
+                        return {EOR_ABSOLUTE_Y, 4 + addressing.page_crossed()};
+                    case Emulator::AddressingMode::INDIRECT_X:
+                        return {EOR_INDIRECT_X, 6};
+                    case Emulator::AddressingMode::INDIRECT_Y:
+                        return {EOR_INDIRECT_Y, 5 + addressing.page_crossed()};
+                    default:
+                        std::cerr << "test_logical: provided addressing mode " << addressing.getMode()
+                                  << " is not supported by EOR instruction\n";
+                        throw std::runtime_error("unsupported addressing mode");
+                }
+
+        }
+
+        std::unreachable();
+    }();
+
+    std::stringstream testID;
+    testID << "Test " << name << "(AC: " << HEX_BYTE(value) << ", memory: " << HEX_BYTE(mem) << ", addressing: " << addressing << ")";
+
+    AC = value;
+    prepare_and_execute(opCode, mem, addressing);
+    check_register(Emulator::Register::AC, expectedResult, addressing.PC_shift(), duration, testID.str());
 }

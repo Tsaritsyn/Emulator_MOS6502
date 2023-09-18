@@ -44,6 +44,7 @@ add_executable(Emulator_MOS6502_Test
         test/MOS6502_TestRegisterTransfer.cpp
         test/MOS6502_TestRegisterPush.cpp
         test/MOS6502_TestRegisterPull.cpp
+        test/MOS6502_TestLogical.cpp
 )
 
 target_include_directories(Emulator_MOS6502_Test PRIVATE lib test)
