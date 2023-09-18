@@ -20,12 +20,20 @@ private:
 
     void reset() noexcept override;
     void write_word(Word word, Word address) noexcept;
-    void write_to_memory(Byte value, const Addressing& addressing) noexcept;
+    /**
+     * Writes all intermediate values (if any) into memory necessary for reading/writing of the target value (if any).
+     *
+     * @return reference to the memory or register where the target value must be put to (or where to read it from), if any.
+     */
+    Byte* const prepare_memory(const Addressing& addressing);
 
 public:
     void test_load_accumulator(Byte value, const Addressing& addressing);
     void test_load_X(Byte value, const Addressing& addressing);
     void test_load_Y(Byte value, const Addressing& addressing);
+    void test_store_accumulator(Byte value, const Addressing& addressing);
+    void test_store_X(Byte value, const Addressing& addressing);
+    void test_store_Y(Byte value, const Addressing& addressing);
 };
 
 

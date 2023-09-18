@@ -38,6 +38,9 @@ add_executable(Emulator_MOS6502_Test
         test/helpers.hpp
         test/MOS6502_TestLDX.cpp
         test/MOS6502_TestLDY.cpp
+        test/MOS6502_TestSTA.cpp
+        test/MOS6502_TestSTX.cpp
+        test/MOS6502_TestSTY.cpp
 )
 
 target_include_directories(Emulator_MOS6502_Test PRIVATE lib test)

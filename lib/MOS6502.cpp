@@ -133,11 +133,11 @@ namespace Emulator {
 
 
     void MOS6502::store_register(Register reg, AddressingMode mode) {
-        write_byte(get_register(reg), determine_address(mode));
+        write_byte(get_register(reg), determine_address(mode, true));
     }
 
 
-    Word MOS6502::determine_address(AddressingMode mode, bool takeCycleWhenNotCrossingPage) {
+    Word MOS6502::determine_address(AddressingMode mode, bool elapseCycleWhenNotCrossingPage) {
         switch (mode) {
             case AddressingMode::IMPLICIT:
             case AddressingMode::ACCUMULATOR:
@@ -162,10 +162,10 @@ namespace Emulator {
                 return read_current_word();
 
             case AddressingMode::ABSOLUTE_X:
-                return add_word(read_current_word(), X, takeCycleWhenNotCrossingPage);
+                return add_word(read_current_word(), X, elapseCycleWhenNotCrossingPage);
 
             case AddressingMode::ABSOLUTE_Y:
-                return add_word(read_current_word(), Y, takeCycleWhenNotCrossingPage);
+                return add_word(read_current_word(), Y, elapseCycleWhenNotCrossingPage);
 
             case AddressingMode::INDIRECT:
                 return read_reversed_word(read_current_word());
@@ -175,7 +175,7 @@ namespace Emulator {
                 return read_reversed_word((Byte)(read_current_byte() + X));
 
             case AddressingMode::INDIRECT_Y:
-                return add_word(read_reversed_word(read_current_byte()), Y);
+                return add_word(read_reversed_word(read_current_byte()), Y, elapseCycleWhenNotCrossingPage);
         }
 
         throw std::runtime_error("Some addressing modes were not handled");

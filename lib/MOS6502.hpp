@@ -199,7 +199,7 @@ namespace Emulator {
 
         [[nodiscard]] Byte get_register(Register reg) const;
 
-        Word determine_address(AddressingMode mode, bool takeCycleWhenNotCrossingPage = false);
+        Word determine_address(AddressingMode mode, bool elapseCycleWhenNotCrossingPage = false);
 
         void push_byte_to_stack(Byte value);
 
