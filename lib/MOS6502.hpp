@@ -47,7 +47,7 @@ namespace Emulator {
         Byte operator [](const Address& address) const;
 
 
-    protected:
+    private:
         friend class MOS6502_TestFixture;
 
         // ******************* //
@@ -227,7 +227,7 @@ namespace Emulator {
 
 
 
-
+    protected:
 
         /// program counter
         Word PC;

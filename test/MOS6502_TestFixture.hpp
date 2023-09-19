@@ -5,11 +5,15 @@
 #ifndef EMULATOR_MOS6502_MOS6502_TESTFIXTURE_HPP
 #define EMULATOR_MOS6502_MOS6502_TESTFIXTURE_HPP
 
+#include <concepts>
+#include <functional>
+
 #include <gtest/gtest.h>
 
 #include "MOS6502.hpp"
 #include "Addressing.hpp"
 #include "MOS6502_helpers.hpp"
+#include "helpers.hpp"
 
 
 
@@ -29,7 +33,12 @@ private:
     std::optional<Address> prepare_and_execute(OpCode opcode, std::optional<Byte> value, const Addressing& addressing);
 
     static std::pair<OpCode, size_t> loading_parameters(Register reg, const Addressing& addressing);
-    void check_register(Register reg, Byte expectedValue, Word expectedPCShift, size_t expectedDuration, const std::string& testID);
+    void check_register(Register reg,
+                        Byte expectedValue,
+                        Word expectedPCShift,
+                        size_t expectedDuration,
+                        const std::string& testID,
+                        std::optional<ProcessorStatus> expectedFlags = std::nullopt);
 
     static std::pair<OpCode, size_t> storage_parameters(Register reg, const Addressing& addressing);
     void check_memory(Word address, Byte expectedValue, Word expectedPCShift, size_t expectedDuration, const std::string& testID);
@@ -37,6 +46,8 @@ private:
     Byte& stack(Byte address);
 
 public:
+    enum struct ArithmeticOperation {ADD, SUB};
+
     void test_loading(Register reg, Byte value, const Addressing& addressing);
 
     void test_storage(Register reg, Byte value, const Addressing& addressing);
@@ -50,6 +61,8 @@ public:
     void test_logical(LogicalOperation operation, Byte value, Byte mem, const Addressing &addressing);
 
     void test_bit_test(Byte value, Byte mem, const Addressing& addressing);
+
+    void test_arithmetics(ArithmeticOperation operation, Byte value, Byte mem, bool carry, const Addressing& addressing);
 };
 
 

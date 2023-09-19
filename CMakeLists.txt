@@ -46,6 +46,7 @@ add_executable(Emulator_MOS6502_Test
         test/MOS6502_TestRegisterPull.cpp
         test/MOS6502_TestLogical.cpp
         test/MOS6502_TestBIT.cpp
+        test/MOS6502_TestArithmetics.cpp
 )
 
 target_include_directories(Emulator_MOS6502_Test PRIVATE lib test)

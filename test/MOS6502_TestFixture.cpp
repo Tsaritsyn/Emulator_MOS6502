@@ -158,10 +158,14 @@ std::optional<Address> MOS6502_TestFixture::prepare_and_execute(OpCode opcode, s
     return address;
 }
 
-void MOS6502_TestFixture::check_register(Register reg, Byte expectedValue, Word expectedPCShift,
-                                         size_t expectedDuration, const std::string &testID) {
+void MOS6502_TestFixture::check_register(Register reg,
+                                         Byte expectedValue,
+                                         Word expectedPCShift,
+                                         size_t expectedDuration,
+                                         const std::string &testID,
+                                         std::optional<ProcessorStatus> expectedFlags) {
     EXPECT_EQ((*this)[reg], expectedValue) << testID;
-    EXPECT_EQ(SR, set_register_flags_for(expectedValue)) << testID;
+    EXPECT_EQ(SR, expectedFlags.value_or(set_register_flags_for(expectedValue))) << testID;
     EXPECT_EQ(PC, expectedPCShift) << testID;
     EXPECT_EQ(cycle, expectedDuration) << testID;
 }
@@ -517,8 +521,6 @@ void MOS6502_TestFixture::test_bit_test(Byte value, Byte mem, const Addressing &
                           << " is not supported by BIT instruction\n";
                 throw std::runtime_error("unsupported addressing mode");
         }
-
-        std::unreachable();
     }();
 
     std::stringstream testID;
@@ -535,4 +537,65 @@ void MOS6502_TestFixture::test_bit_test(Byte value, Byte mem, const Addressing &
     EXPECT_EQ(SR, expectedFlags) << testID.str();
     EXPECT_EQ(cycle, duration) << testID.str();
     EXPECT_EQ(PC, addressing.PC_shift()) << testID.str();
+}
+
+void MOS6502_TestFixture::test_arithmetics(MOS6502_TestFixture::ArithmeticOperation operation, Byte value, Byte mem,
+                                           bool carry, const Addressing &addressing) {
+    typedef std::function<std::pair<Byte, ProcessorStatus>(Byte, Byte, bool)> ArithmeticFn;
+
+    reset();
+
+    const auto &[name, arithmeticFn] = [operation]() -> std::pair<std::string, ArithmeticFn> {
+        switch (operation) {
+            case ArithmeticOperation::ADD: return {"ADD", ::add_with_carry};
+            case ArithmeticOperation::SUB: return {"SUB", ::subtract_with_carry};
+        }
+        std::unreachable();
+    }();
+
+    const auto &[expectedResult, expectedFlags] = arithmeticFn(value, mem, carry);
+
+    const auto &[opcode, duration] = [operation, &addressing, &name]() -> std::pair<OpCode, size_t> {
+        switch (operation) {
+            case ArithmeticOperation::ADD:
+                switch (addressing.getMode()) {
+                    case Emulator::AddressingMode::IMMEDIATE: return {ADC_IMMEDIATE, 2};
+                    case Emulator::AddressingMode::ZERO_PAGE: return {ADC_ZERO_PAGE, 3};
+                    case Emulator::AddressingMode::ZERO_PAGE_X: return {ADC_ZERO_PAGE_X, 4};
+                    case Emulator::AddressingMode::ABSOLUTE: return {ADC_ABSOLUTE, 4};
+                    case Emulator::AddressingMode::ABSOLUTE_X: return {ADC_ABSOLUTE_X, 4 + addressing.page_crossed()};
+                    case Emulator::AddressingMode::ABSOLUTE_Y: return {ADC_ABSOLUTE_Y, 4 + addressing.page_crossed()};
+                    case Emulator::AddressingMode::INDIRECT_X: return {ADC_INDIRECT_X, 6};
+                    case Emulator::AddressingMode::INDIRECT_Y: return {ADC_INDIRECT_Y, 5 + addressing.page_crossed()};
+                    default:
+                        std::cerr << "test_arithmetics: provided addressing mode " << addressing.getMode() << " is not supported by " << name << " instruction\n";
+                        throw std::runtime_error("unsupported addressing mode");
+                }
+
+            case ArithmeticOperation::SUB:
+                switch (addressing.getMode()) {
+                    case Emulator::AddressingMode::IMMEDIATE: return {SBC_IMMEDIATE, 2};
+                    case Emulator::AddressingMode::ZERO_PAGE: return {SBC_ZERO_PAGE, 3};
+                    case Emulator::AddressingMode::ZERO_PAGE_X: return {SBC_ZERO_PAGE_X, 4};
+                    case Emulator::AddressingMode::ABSOLUTE: return {SBC_ABSOLUTE, 4};
+                    case Emulator::AddressingMode::ABSOLUTE_X: return {SBC_ABSOLUTE_X, 4 + addressing.page_crossed()};
+                    case Emulator::AddressingMode::ABSOLUTE_Y: return {SBC_ABSOLUTE_Y, 4 + addressing.page_crossed()};
+                    case Emulator::AddressingMode::INDIRECT_X: return {SBC_INDIRECT_X, 6};
+                    case Emulator::AddressingMode::INDIRECT_Y: return {SBC_INDIRECT_Y, 5 + addressing.page_crossed()};
+                    default:
+                        std::cerr << "test_arithmetics: provided addressing mode " << addressing.getMode() << " is not supported by " << name << " instruction\n";
+                        throw std::runtime_error("unsupported addressing mode");
+                }
+        }
+
+        std::unreachable();
+    }();
+
+    std::stringstream testID;
+    testID << "Test " << name << "(AC: " << HEX_BYTE(value) << ", memory: " << HEX_BYTE(mem) << ", carry: " << carry << ", addressing: " << addressing << ")";
+
+    AC = value;
+    SR[CARRY] = carry;
+    prepare_and_execute(opcode, mem, addressing);
+    check_register(Emulator::Register::AC, expectedResult, addressing.PC_shift(), duration, testID.str(), expectedFlags);
 }
