@@ -61,7 +61,7 @@ static std::array<Addressing, 13> testedAddressings {
 
 
 TEST_F(MOS6502_TestFixture, Test_AND) {
-    for (auto [value1, value2]: testedInputsAND)
+    for (const auto &[value1, value2]: testedInputsAND)
         for (const auto& addressing: testedAddressings) {
             test_logical(LogicalOperation::AND, value1, value2, addressing);
             test_logical(LogicalOperation::AND, value2, value1, addressing);
@@ -69,7 +69,7 @@ TEST_F(MOS6502_TestFixture, Test_AND) {
 }
 
 TEST_F(MOS6502_TestFixture, Test_OR) {
-    for (auto [value1, value2]: testedInputsOR)
+    for (const auto &[value1, value2]: testedInputsOR)
         for (const auto& addressing: testedAddressings) {
             test_logical(LogicalOperation::OR, value1, value2, addressing);
             test_logical(LogicalOperation::OR, value2, value1, addressing);
@@ -77,7 +77,7 @@ TEST_F(MOS6502_TestFixture, Test_OR) {
 }
 
 TEST_F(MOS6502_TestFixture, Test_XOR) {
-    for (auto [value1, value2]: testedInputsXOR)
+    for (const auto &[value1, value2]: testedInputsXOR)
         for (const auto& addressing: testedAddressings) {
             test_logical(LogicalOperation::XOR, value1, value2, addressing);
             test_logical(LogicalOperation::XOR, value2, value1, addressing);

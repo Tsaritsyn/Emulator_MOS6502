@@ -418,7 +418,7 @@ void MOS6502_TestFixture::test_logical(LogicalOperation operation, Byte value, B
         std::unreachable();
     }();
 
-    const auto &[opCode, duration] = [operation, addressing]() -> std::pair<OpCode, size_t> {
+    const auto &[opCode, duration] = [operation, &addressing]() -> std::pair<OpCode, size_t> {
         switch (operation) {
             case Emulator::LogicalOperation::AND:
                 switch (addressing.getMode()) {
@@ -503,4 +503,36 @@ void MOS6502_TestFixture::test_logical(LogicalOperation operation, Byte value, B
     AC = value;
     prepare_and_execute(opCode, mem, addressing);
     check_register(Emulator::Register::AC, expectedResult, addressing.PC_shift(), duration, testID.str());
+}
+
+void MOS6502_TestFixture::test_bit_test(Byte value, Byte mem, const Addressing &addressing) {
+    reset();
+
+    const auto &[opcode, duration] = [&addressing]() -> std::pair<OpCode, size_t> {
+        switch (addressing.getMode()) {
+            case AddressingMode::ZERO_PAGE: return {BIT_ZERO_PAGE, 3};
+            case AddressingMode::ABSOLUTE: return {BIT_ABSOLUTE, 4};
+            default:
+                std::cerr << "test_bit_test: provided addressing mode " << addressing.getMode()
+                          << " is not supported by BIT instruction\n";
+                throw std::runtime_error("unsupported addressing mode");
+        }
+
+        std::unreachable();
+    }();
+
+    std::stringstream testID;
+    testID << "Test BIT(AC: " << HEX_BYTE(value) << ", memory: " << HEX_BYTE(mem) << ", addressing: " << addressing << ")";
+
+    AC = value;
+    prepare_and_execute(opcode, mem, addressing);
+
+    ProcessorStatus expectedFlags{};
+    expectedFlags[ZERO] = (value & mem) == 0;
+    expectedFlags[OVERFLOW] = get_bit(mem, OVERFLOW);
+    expectedFlags[NEGATIVE] = get_bit(mem, NEGATIVE);
+
+    EXPECT_EQ(SR, expectedFlags) << testID.str();
+    EXPECT_EQ(cycle, duration) << testID.str();
+    EXPECT_EQ(PC, addressing.PC_shift()) << testID.str();
 }
