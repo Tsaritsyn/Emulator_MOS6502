@@ -170,176 +170,87 @@ void MOS6502_TestFixture::check_register(Register reg,
     EXPECT_EQ(cycle, expectedDuration) << testID;
 }
 
-std::pair<OpCode, size_t> MOS6502_TestFixture::loading_parameters(Register reg, const Addressing &addressing) {
-    switch (reg) {
-        case Emulator::Register::AC:
-            switch (addressing.getMode()) {
-                case AddressingMode::IMMEDIATE:
-                    return {LDA_IMMEDIATE, 2};
-                case AddressingMode::ZERO_PAGE:
-                    return {LDA_ZERO_PAGE, 3};
-                case AddressingMode::ZERO_PAGE_X:
-                    return {LDA_ZERO_PAGE_X, 4};
-                case AddressingMode::ABSOLUTE:
-                    return {LDA_ABSOLUTE, 4};
-                case AddressingMode::ABSOLUTE_X:
-                    return {LDA_ABSOLUTE_X, 4 + addressing.page_crossed()};
-                case AddressingMode::ABSOLUTE_Y:
-                    return {LDA_ABSOLUTE_Y, 4 + addressing.page_crossed()};
-                case AddressingMode::INDIRECT_X:
-                    return {LDA_INDIRECT_X, 6};
-                case AddressingMode::INDIRECT_Y:
-                    return {LDA_INDIRECT_Y, 5 + addressing.page_crossed()};
-
-                default:
-                    std::cerr << "loading_parameters: provided addressing mode " << addressing.getMode() << " is not supported by load " << reg << " instruction\n";
-                    throw std::runtime_error("unsupported addressing mode");
-            }
-
-        case Emulator::Register::X:
-            switch (addressing.getMode()) {
-                case AddressingMode::IMMEDIATE:
-                    return {LDX_IMMEDIATE, 2};
-                case AddressingMode::ZERO_PAGE:
-                    return {LDX_ZERO_PAGE, 3};
-                case AddressingMode::ZERO_PAGE_Y:
-                    return {LDX_ZERO_PAGE_Y, 4};
-                case AddressingMode::ABSOLUTE:
-                    return {LDX_ABSOLUTE, 4};
-                case AddressingMode::ABSOLUTE_Y:
-                    return {LDX_ABSOLUTE_Y, 4 + addressing.page_crossed()};
-
-                default:
-                    std::cerr << "loading_parameters: provided addressing mode " << addressing.getMode() << " is not supported by load " << reg << " instruction\n";
-                    throw std::runtime_error("unsupported addressing mode");
-            }
-
-        case Emulator::Register::Y:
-            switch (addressing.getMode()) {
-                case AddressingMode::IMMEDIATE:
-                    return {LDY_IMMEDIATE, 2};
-                case AddressingMode::ZERO_PAGE:
-                    return {LDY_ZERO_PAGE, 3};
-                case AddressingMode::ZERO_PAGE_X:
-                    return {LDY_ZERO_PAGE_X, 4};
-                case AddressingMode::ABSOLUTE:
-                    return {LDY_ABSOLUTE, 4};
-                case AddressingMode::ABSOLUTE_X:
-                    return {LDY_ABSOLUTE_X, 4 + addressing.page_crossed()};
-
-                default:
-                    std::cerr << "loading_parameters: provided addressing mode " << addressing.getMode() << " is not supported by load " << reg << " instruction\n";
-                    throw std::runtime_error("unsupported addressing mode");
-            }
-
-        default:
-            std::cerr << "loading_parameters: unsupported register " << reg << " for load instruction\n";
-            throw std::runtime_error("unsupported register");
-    }
-}
-
 void MOS6502_TestFixture::test_loading(Register reg, Byte value, const Addressing &addressing) {
     reset();
 
-    const auto [opcode, duration] = loading_parameters(reg, addressing);
-    const std::string commandName = [reg](){
+    const auto instruction = [reg]() -> std::optional<Instruction> {
         switch (reg) {
-            case Emulator::Register::AC: return "LDA";
-            case Emulator::Register::X: return "LDX";
-            case Emulator::Register::Y: return "LDY";
+            case Register::AC: return Instruction::LDA;
+            case Register::X: return Instruction::LDX;
+            case Register::Y: return Instruction::LDY;
             default:
                 std::cerr << "test_loading: unsupported register " << reg << " for load instruction\n";
-                throw std::runtime_error("unsupported register");
+                return std::nullopt;
         }
     }();
-    std::stringstream testID;
-    testID << "Test " << commandName << "(value: " << (int)value << ", addressing: " << addressing << ")";
 
-    prepare_and_execute(opcode, value, addressing);
-    check_register(reg, value, addressing.PC_shift(), duration, testID.str());
+    const auto opCode = opcode(instruction.value(), addressing.getMode());
+
+    const auto duration = [&addressing, instruction]() -> std::optional<size_t> {
+        switch (addressing.getMode()) {
+            case AddressingMode::IMMEDIATE:   return 2;
+            case AddressingMode::ZERO_PAGE:   return 3;
+            case AddressingMode::ZERO_PAGE_X: [[fallthrough]];
+            case AddressingMode::ZERO_PAGE_Y: [[fallthrough]];
+            case AddressingMode::ABSOLUTE:    return 4;
+            case AddressingMode::ABSOLUTE_X:  [[fallthrough]];
+            case AddressingMode::ABSOLUTE_Y:  return 4 + addressing.page_crossed();
+            case AddressingMode::INDIRECT_X:  return 6;
+            case AddressingMode::INDIRECT_Y:  return 5 + addressing.page_crossed();
+            default:
+                std::cerr << "loading_parameters: provided addressing mode " << addressing.getMode() << " is not supported by " << instruction.value() << " instruction\n";
+                return std::nullopt;
+        }
+    }();
+
+    std::stringstream testID;
+    testID << "Test " << instruction << "(value: " << (int)value << ", addressing: " << addressing << ")";
+
+    prepare_and_execute(opCode.value(), value, addressing);
+    check_register(reg, value, addressing.PC_shift(), duration.value(), testID.str());
 }
 
 void MOS6502_TestFixture::test_storage(Register reg, Byte value, const Addressing &addressing) {
     reset();
 
-    const auto [opcode, duration] = storage_parameters(reg, addressing);
-    const std::string commandName = [reg](){
+    const auto instruction = [reg]() -> std::optional<Instruction> {
         switch (reg) {
-            case Emulator::Register::AC: return "STA";
-            case Emulator::Register::X: return "STX";
-            case Emulator::Register::Y: return "STY";
+            case Register::AC: return Instruction::STA;
+            case Register::X: return Instruction::STX;
+            case Register::Y: return Instruction::STY;
             default:
-                std::cerr << "test_storage: unsupported register " << reg << " for store instruction\n";
-                throw std::runtime_error("unsupported register");
+                std::cerr << "test_loading: unsupported register " << reg << " for store instruction\n";
+                return std::nullopt;
         }
     }();
+
+    const auto opCode = opcode(instruction.value(), addressing.getMode());
+
+    const auto duration = [&addressing, instruction]() -> std::optional<size_t> {
+        switch (addressing.getMode()) {
+            case AddressingMode::ZERO_PAGE:   return 3;
+            case AddressingMode::ZERO_PAGE_X: [[fallthrough]];
+            case AddressingMode::ZERO_PAGE_Y: [[fallthrough]];
+            case AddressingMode::ABSOLUTE:    return 4;
+            case AddressingMode::ABSOLUTE_X:  [[fallthrough]];
+            case AddressingMode::ABSOLUTE_Y:  return 5;
+            case AddressingMode::INDIRECT_X:  [[fallthrough]];
+            case AddressingMode::INDIRECT_Y:  return 6;
+            default:
+                std::cerr << "loading_parameters: provided addressing mode " << addressing.getMode() << " is not supported by " << instruction.value() << " instruction\n";
+                return std::nullopt;
+        }
+    }();
+
     std::stringstream testID;
-    testID << "Test " << commandName << "(value: " << (int)value << ", addressing: " << addressing << ")";
+    testID << "Test " << instruction << "(value: " << (int)value << ", addressing: " << addressing << ")";
 
     (*this)[reg] = value;
-    const auto address = prepare_and_execute(opcode, std::nullopt, addressing);
+    const auto address = prepare_and_execute(opCode.value(), std::nullopt, addressing);
     ASSERT_TRUE(address.has_value());
     const auto memAddress = std::get_if<Word>(&address.value());
     ASSERT_TRUE(memAddress != nullptr);
-    check_memory(*memAddress, value, addressing.PC_shift(), duration, testID.str());
-}
-
-std::pair<OpCode, size_t> MOS6502_TestFixture::storage_parameters(Register reg, const Addressing &addressing) {
-    switch (reg) {
-        case Register::AC:
-            switch (addressing.getMode()) {
-                case AddressingMode::ZERO_PAGE:
-                    return {STA_ZERO_PAGE, 3};
-                case AddressingMode::ZERO_PAGE_X:
-                    return {STA_ZERO_PAGE_X, 4};
-                case AddressingMode::ABSOLUTE:
-                    return {STA_ABSOLUTE, 4};
-                case AddressingMode::ABSOLUTE_X:
-                    return {STA_ABSOLUTE_X, 5};
-                case AddressingMode::ABSOLUTE_Y:
-                    return {STA_ABSOLUTE_Y, 5};
-                case AddressingMode::INDIRECT_X:
-                    return {STA_INDIRECT_X, 6};
-                case AddressingMode::INDIRECT_Y:
-                    return {STA_INDIRECT_Y, 6};
-
-                default:
-                    std::cerr << "test_store_accumulator: provided addressing mode " << addressing.getMode() << " is not supported by STA instruction\n";
-                    throw std::runtime_error("unsupported addressing mode");
-            }
-
-        case Register::X:
-            switch (addressing.getMode()) {
-                case AddressingMode::ZERO_PAGE:
-                    return {STX_ZERO_PAGE, 3};
-                case AddressingMode::ZERO_PAGE_Y:
-                    return {STX_ZERO_PAGE_Y, 4};
-                case AddressingMode::ABSOLUTE:
-                    return {STX_ABSOLUTE, 4};
-
-                default:
-                    std::cerr << "test_store_X: provided addressing mode " << addressing.getMode() << " is not supported by STX instruction\n";
-                    throw std::runtime_error("unsupported addressing mode");
-            }
-
-        case Register::Y:
-            switch (addressing.getMode()) {
-                case AddressingMode::ZERO_PAGE:
-                    return {STY_ZERO_PAGE, 3};
-                case AddressingMode::ZERO_PAGE_X:
-                    return {STY_ZERO_PAGE_X, 4};
-                case AddressingMode::ABSOLUTE:
-                    return {STY_ABSOLUTE, 4};
-
-                default:
-                    std::cerr << "test_store_Y: provided addressing mode " << addressing.getMode() << " is not supported by STY instruction\n";
-                    throw std::runtime_error("unsupported addressing mode");
-            }
-
-        default:
-            std::cerr << "test_storage: unsupported register " << reg << " for store instruction\n";
-            throw std::runtime_error("unsupported register");
-    }
+    check_memory(*memAddress, value, addressing.PC_shift(), duration.value(), testID.str());
 }
 
 void MOS6502_TestFixture::check_memory(Word address, Byte expectedValue, Word expectedPCShift,
@@ -354,23 +265,23 @@ void MOS6502_TestFixture::check_memory(Word address, Byte expectedValue, Word ex
 void MOS6502_TestFixture::test_push_to_stack(Register reg, Byte value) {
     reset();
 
-    const auto &[opCode, commandName] = [reg]() -> std::pair<OpCode, std::string>{
+    const auto instruction = [reg]() -> std::optional<Instruction> {
         switch (reg) {
-            case Register::AC: return {PHA_IMPLICIT, "PHA"};
-            case Register::SR: return {PHP_IMPLICIT, "PHP"};
+            case Register::AC: return Instruction::PHA;
+            case Register::SR: return Instruction::PHP;
             default:
                 std::cerr << "test_push_to_stack: unsupported register " << reg << " for stack push instruction\n";
-                throw std::runtime_error("unsupported register");
+                return std::nullopt;
         }
     }();
 
     std::stringstream testID;
-    testID << "Test " << commandName << "(value: " << (int)value << ")";
+    testID << "Test " << instruction << "(value: " << (int)value << ")";
 
     if (reg == Emulator::Register::AC) AC = value;
     else SR = value;
 
-    memory[PC] = opCode;
+    memory[PC] = opcode(instruction.value()).value();
     execute_current_command();
 
     EXPECT_EQ(stack(SP + 1), value) << testID.str();
@@ -386,21 +297,21 @@ Byte &MOS6502_TestFixture::stack(Byte address) {
 void MOS6502_TestFixture::test_pull_from_stack(Register reg, Byte value) {
     reset();
 
-    const auto &[opCode, commandName] = [reg]() -> std::pair<OpCode, std::string>{
+    const auto instruction = [reg]() -> std::optional<Instruction > {
         switch (reg) {
-            case Register::AC: return {PLA_IMPLICIT, "PLA"};
-            case Register::SR: return {PLP_IMPLICIT, "PLP"};
+            case Register::AC: return Instruction::PLA;
+            case Register::SR: return Instruction::PLP;
             default:
                 std::cerr << "test_pull_from_stack: unsupported register " << reg << " for stack pull instruction\n";
-                throw std::runtime_error("unsupported register");
+                return std::nullopt;
         }
     }();
 
     std::stringstream testID;
-    testID << "Test " << commandName << "(value: " << (int)value << ")";
+    testID << "Test " << instruction << "(value: " << (int)value << ")";
 
     stack(SP--) = value;
-    memory[PC] = opCode;
+    memory[PC] = opcode(instruction.value()).value();
     execute_current_command();
 
     EXPECT_EQ((reg == Emulator::Register::AC) ? AC : SR, value) << testID.str();
@@ -412,114 +323,51 @@ void MOS6502_TestFixture::test_pull_from_stack(Register reg, Byte value) {
 void MOS6502_TestFixture::test_logical(LogicalOperation operation, Byte value, Byte mem, const Addressing &addressing) {
     reset();
 
-    const auto &[expectedResult, name] = [operation, value, mem]() -> std::pair<Byte, const char*> {
+    const auto &[expectedResult, instruction] = [operation, value, mem]() -> std::pair<Byte, Instruction> {
         switch (operation) {
-            case LogicalOperation::AND: return {value & mem, "AND"};
-            case LogicalOperation::XOR: return {value ^ mem, "EOR"};
-            case LogicalOperation::OR: return {value | mem, "ORA"};
+            case LogicalOperation::AND: return {value & mem, Instruction::AND};
+            case LogicalOperation::XOR: return {value ^ mem, Instruction::EOR};
+            case LogicalOperation::OR:  return {value | mem, Instruction::ORA};
         }
-
         std::unreachable();
     }();
 
-    const auto &[opCode, duration] = [operation, &addressing]() -> std::pair<OpCode, size_t> {
-        switch (operation) {
-            case Emulator::LogicalOperation::AND:
-                switch (addressing.getMode()) {
-                    case Emulator::AddressingMode::IMMEDIATE:
-                        return {AND_IMMEDIATE, 2};
-                    case Emulator::AddressingMode::ZERO_PAGE:
-                        return {AND_ZERO_PAGE, 3};
-                    case Emulator::AddressingMode::ZERO_PAGE_X:
-                        return {AND_ZERO_PAGE_X, 4};
-                    case Emulator::AddressingMode::ABSOLUTE:
-                        return {AND_ABSOLUTE, 4};
-                    case Emulator::AddressingMode::ABSOLUTE_X:
-                        return {AND_ABSOLUTE_X, 4 + addressing.page_crossed()};
-                    case Emulator::AddressingMode::ABSOLUTE_Y:
-                        return {AND_ABSOLUTE_Y, 4 + addressing.page_crossed()};
-                    case Emulator::AddressingMode::INDIRECT_X:
-                        return {AND_INDIRECT_X, 6};
-                    case Emulator::AddressingMode::INDIRECT_Y:
-                        return {AND_INDIRECT_Y, 5 + addressing.page_crossed()};
-                    default:
-                        std::cerr << "test_logical: provided addressing mode " << addressing.getMode()
-                                  << " is not supported by AND instruction\n";
-                        throw std::runtime_error("unsupported addressing mode");
-                }
-
-            case Emulator::LogicalOperation::OR:
-                switch (addressing.getMode()) {
-                    case Emulator::AddressingMode::IMMEDIATE:
-                        return {ORA_IMMEDIATE, 2};
-                    case Emulator::AddressingMode::ZERO_PAGE:
-                        return {ORA_ZERO_PAGE, 3};
-                    case Emulator::AddressingMode::ZERO_PAGE_X:
-                        return {ORA_ZERO_PAGE_X, 4};
-                    case Emulator::AddressingMode::ABSOLUTE:
-                        return {ORA_ABSOLUTE, 4};
-                    case Emulator::AddressingMode::ABSOLUTE_X:
-                        return {ORA_ABSOLUTE_X, 4 + addressing.page_crossed()};
-                    case Emulator::AddressingMode::ABSOLUTE_Y:
-                        return {ORA_ABSOLUTE_Y, 4 + addressing.page_crossed()};
-                    case Emulator::AddressingMode::INDIRECT_X:
-                        return {ORA_INDIRECT_X, 6};
-                    case Emulator::AddressingMode::INDIRECT_Y:
-                        return {ORA_INDIRECT_Y, 5 + addressing.page_crossed()};
-                    default:
-                        std::cerr << "test_logical: provided addressing mode " << addressing.getMode()
-                                  << " is not supported by ORA instruction\n";
-                        throw std::runtime_error("unsupported addressing mode");
-                }
-
-            case Emulator::LogicalOperation::XOR:
-                switch (addressing.getMode()) {
-                    case Emulator::AddressingMode::IMMEDIATE:
-                        return {EOR_IMMEDIATE, 2};
-                    case Emulator::AddressingMode::ZERO_PAGE:
-                        return {EOR_ZERO_PAGE, 3};
-                    case Emulator::AddressingMode::ZERO_PAGE_X:
-                        return {EOR_ZERO_PAGE_X, 4};
-                    case Emulator::AddressingMode::ABSOLUTE:
-                        return {EOR_ABSOLUTE, 4};
-                    case Emulator::AddressingMode::ABSOLUTE_X:
-                        return {EOR_ABSOLUTE_X, 4 + addressing.page_crossed()};
-                    case Emulator::AddressingMode::ABSOLUTE_Y:
-                        return {EOR_ABSOLUTE_Y, 4 + addressing.page_crossed()};
-                    case Emulator::AddressingMode::INDIRECT_X:
-                        return {EOR_INDIRECT_X, 6};
-                    case Emulator::AddressingMode::INDIRECT_Y:
-                        return {EOR_INDIRECT_Y, 5 + addressing.page_crossed()};
-                    default:
-                        std::cerr << "test_logical: provided addressing mode " << addressing.getMode()
-                                  << " is not supported by EOR instruction\n";
-                        throw std::runtime_error("unsupported addressing mode");
-                }
-
+    const auto duration = [&addressing]() -> std::optional<size_t> {
+        switch (addressing.getMode()) {
+            case Emulator::AddressingMode::IMMEDIATE:   return 2;
+            case Emulator::AddressingMode::ZERO_PAGE:   return 3;
+            case Emulator::AddressingMode::ZERO_PAGE_X: [[fallthrough]];
+            case Emulator::AddressingMode::ABSOLUTE:    return 4;
+            case Emulator::AddressingMode::ABSOLUTE_X:  [[fallthrough]];
+            case Emulator::AddressingMode::ABSOLUTE_Y:  return 4 + addressing.page_crossed();
+            case Emulator::AddressingMode::INDIRECT_X:  return 6;
+            case Emulator::AddressingMode::INDIRECT_Y:  return 5 + addressing.page_crossed();
+            default:
+                std::cerr << "test_logical: provided addressing mode " << addressing.getMode()
+                          << " is not supported by EOR instruction\n";
+                return std::nullopt;
         }
-
-        std::unreachable();
     }();
 
     std::stringstream testID;
-    testID << "Test " << name << "(AC: " << HEX_BYTE(value) << ", memory: " << HEX_BYTE(mem) << ", addressing: " << addressing << ")";
+    testID << "Test " << instruction << "(AC: " << HEX_BYTE(value) << ", memory: " << HEX_BYTE(mem) << ", addressing: " << addressing << ")";
 
     AC = value;
-    prepare_and_execute(opCode, mem, addressing);
-    check_register(Emulator::Register::AC, expectedResult, addressing.PC_shift(), duration, testID.str());
+    prepare_and_execute(opcode(instruction, addressing.getMode()).value(), mem, addressing);
+    check_register(Emulator::Register::AC, expectedResult, addressing.PC_shift(), duration.value(), testID.str());
 }
 
 void MOS6502_TestFixture::test_bit_test(Byte value, Byte mem, const Addressing &addressing) {
     reset();
 
-    const auto &[opcode, duration] = [&addressing]() -> std::pair<OpCode, size_t> {
+    const auto duration = [&addressing]() -> std::optional<size_t> {
         switch (addressing.getMode()) {
-            case AddressingMode::ZERO_PAGE: return {BIT_ZERO_PAGE, 3};
-            case AddressingMode::ABSOLUTE: return {BIT_ABSOLUTE, 4};
+            case AddressingMode::ZERO_PAGE: return 3;
+            case AddressingMode::ABSOLUTE:  return 4;
             default:
                 std::cerr << "test_bit_test: provided addressing mode " << addressing.getMode()
                           << " is not supported by BIT instruction\n";
-                throw std::runtime_error("unsupported addressing mode");
+                return std::nullopt;
         }
     }();
 
@@ -527,7 +375,7 @@ void MOS6502_TestFixture::test_bit_test(Byte value, Byte mem, const Addressing &
     testID << "Test BIT(AC: " << HEX_BYTE(value) << ", memory: " << HEX_BYTE(mem) << ", addressing: " << addressing << ")";
 
     AC = value;
-    prepare_and_execute(opcode, mem, addressing);
+    prepare_and_execute(opcode(Instruction::BIT, addressing.getMode()).value(), mem, addressing);
 
     ProcessorStatus expectedFlags{};
     expectedFlags[ZERO] = (value & mem) == 0;
@@ -545,57 +393,39 @@ void MOS6502_TestFixture::test_arithmetics(MOS6502_TestFixture::ArithmeticOperat
 
     reset();
 
-    const auto &[name, arithmeticFn] = [operation]() -> std::pair<std::string, ArithmeticFn> {
+    const auto &[instruction, arithmeticFn] = [operation]() -> std::pair<Instruction, ArithmeticFn> {
         switch (operation) {
-            case ArithmeticOperation::ADD: return {"ADD", ::add_with_carry};
-            case ArithmeticOperation::SUB: return {"SUB", ::subtract_with_carry};
+            case ArithmeticOperation::ADD: return {Instruction::ADC, ::add_with_carry};
+            case ArithmeticOperation::SUB: return {Instruction::SBC, ::subtract_with_carry};
         }
         std::unreachable();
     }();
 
     const auto &[expectedResult, expectedFlags] = arithmeticFn(value, mem, carry);
 
-    const auto &[opcode, duration] = [operation, &addressing, &name]() -> std::pair<OpCode, size_t> {
-        switch (operation) {
-            case ArithmeticOperation::ADD:
-                switch (addressing.getMode()) {
-                    case Emulator::AddressingMode::IMMEDIATE: return {ADC_IMMEDIATE, 2};
-                    case Emulator::AddressingMode::ZERO_PAGE: return {ADC_ZERO_PAGE, 3};
-                    case Emulator::AddressingMode::ZERO_PAGE_X: return {ADC_ZERO_PAGE_X, 4};
-                    case Emulator::AddressingMode::ABSOLUTE: return {ADC_ABSOLUTE, 4};
-                    case Emulator::AddressingMode::ABSOLUTE_X: return {ADC_ABSOLUTE_X, 4 + addressing.page_crossed()};
-                    case Emulator::AddressingMode::ABSOLUTE_Y: return {ADC_ABSOLUTE_Y, 4 + addressing.page_crossed()};
-                    case Emulator::AddressingMode::INDIRECT_X: return {ADC_INDIRECT_X, 6};
-                    case Emulator::AddressingMode::INDIRECT_Y: return {ADC_INDIRECT_Y, 5 + addressing.page_crossed()};
-                    default:
-                        std::cerr << "test_arithmetics: provided addressing mode " << addressing.getMode() << " is not supported by " << name << " instruction\n";
-                        throw std::runtime_error("unsupported addressing mode");
-                }
-
-            case ArithmeticOperation::SUB:
-                switch (addressing.getMode()) {
-                    case Emulator::AddressingMode::IMMEDIATE: return {SBC_IMMEDIATE, 2};
-                    case Emulator::AddressingMode::ZERO_PAGE: return {SBC_ZERO_PAGE, 3};
-                    case Emulator::AddressingMode::ZERO_PAGE_X: return {SBC_ZERO_PAGE_X, 4};
-                    case Emulator::AddressingMode::ABSOLUTE: return {SBC_ABSOLUTE, 4};
-                    case Emulator::AddressingMode::ABSOLUTE_X: return {SBC_ABSOLUTE_X, 4 + addressing.page_crossed()};
-                    case Emulator::AddressingMode::ABSOLUTE_Y: return {SBC_ABSOLUTE_Y, 4 + addressing.page_crossed()};
-                    case Emulator::AddressingMode::INDIRECT_X: return {SBC_INDIRECT_X, 6};
-                    case Emulator::AddressingMode::INDIRECT_Y: return {SBC_INDIRECT_Y, 5 + addressing.page_crossed()};
-                    default:
-                        std::cerr << "test_arithmetics: provided addressing mode " << addressing.getMode() << " is not supported by " << name << " instruction\n";
-                        throw std::runtime_error("unsupported addressing mode");
-                }
+    const auto duration = [&addressing, instruction]() -> std::optional<size_t> {
+        switch (addressing.getMode()) {
+            case Emulator::AddressingMode::IMMEDIATE:   return 2;
+            case Emulator::AddressingMode::ZERO_PAGE:   return 3;
+            case Emulator::AddressingMode::ZERO_PAGE_X: [[fallthrough]];
+            case Emulator::AddressingMode::ABSOLUTE:    return 4;
+            case Emulator::AddressingMode::ABSOLUTE_X:  [[fallthrough]];
+            case Emulator::AddressingMode::ABSOLUTE_Y:  return 4 + addressing.page_crossed();
+            case Emulator::AddressingMode::INDIRECT_X:  return 6;
+            case Emulator::AddressingMode::INDIRECT_Y:  return 5 + addressing.page_crossed();
+            default:
+                std::cerr << "test_arithmetics: provided addressing mode " << addressing.getMode() << " is not supported by " << instruction << " instruction\n";
+                return std::nullopt;
         }
-
-        std::unreachable();
     }();
 
     std::stringstream testID;
-    testID << "Test " << name << "(AC: " << HEX_BYTE(value) << ", memory: " << HEX_BYTE(mem) << ", carry: " << carry << ", addressing: " << addressing << ")";
+    testID << "Test " << instruction << "(AC: " << HEX_BYTE(value) << ", memory: " << HEX_BYTE(mem) << ", carry: " << carry << ", addressing: " << addressing << ")";
 
     AC = value;
     SR[CARRY] = carry;
-    prepare_and_execute(opcode, mem, addressing);
-    check_register(Emulator::Register::AC, expectedResult, addressing.PC_shift(), duration, testID.str(), expectedFlags);
+    prepare_and_execute(opcode(instruction, addressing.getMode()).value(), mem, addressing);
+    check_register(Emulator::Register::AC, expectedResult, addressing.PC_shift(), duration.value(), testID.str(), expectedFlags);
 }
+
+

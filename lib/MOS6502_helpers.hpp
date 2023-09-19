@@ -9,6 +9,7 @@
 #include <ostream>
 #include <iostream>
 #include <optional>
+#include <utility>
 
 #include "MOS6502_definitions.hpp"
 
@@ -32,6 +33,14 @@ namespace Emulator {
         for (const auto &element: vec) os << element << ", ";
         os << '}';
         return os;
+    }
+
+    std::optional<OpCode> opcode(Instruction instruction, std::optional<AddressingMode> addressingMode = std::nullopt);
+
+    template<Printable T>
+    std::ostream &operator<<(std::ostream &os, std::optional<T> opt) {
+        if (opt.has_value()) return os << opt.value();
+        else return os << "nullopt";
     }
 }
 

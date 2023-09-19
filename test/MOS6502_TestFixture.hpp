@@ -32,7 +32,6 @@ private:
     std::optional<Address> prepare_memory(const Addressing& addressing);
     std::optional<Address> prepare_and_execute(OpCode opcode, std::optional<Byte> value, const Addressing& addressing);
 
-    static std::pair<OpCode, size_t> loading_parameters(Register reg, const Addressing& addressing);
     void check_register(Register reg,
                         Byte expectedValue,
                         Word expectedPCShift,
@@ -40,7 +39,6 @@ private:
                         const std::string& testID,
                         std::optional<ProcessorStatus> expectedFlags = std::nullopt);
 
-    static std::pair<OpCode, size_t> storage_parameters(Register reg, const Addressing& addressing);
     void check_memory(Word address, Byte expectedValue, Word expectedPCShift, size_t expectedDuration, const std::string& testID);
 
     Byte& stack(Byte address);
@@ -63,6 +61,38 @@ public:
     void test_bit_test(Byte value, Byte mem, const Addressing& addressing);
 
     void test_arithmetics(ArithmeticOperation operation, Byte value, Byte mem, bool carry, const Addressing& addressing);
+
+    void test_compare_register(Register reg, Byte registerValue, const Addressing& addressing, Byte memoryValue);
+
+    void test_increment_memory(Byte value, const Addressing& addressing);
+
+    void test_decrement_memory(Byte value, const Addressing& addressing);
+
+    void test_increment_register(Byte value, Register reg);
+
+    void test_decrement_register(Byte value, Register reg);
+
+    void test_shift_left(Byte value, const Addressing& addressing);
+
+    void test_shift_right(Byte value, const Addressing& addressing);
+
+    void test_rotate_left(Byte value, const Addressing& addressing);
+
+    void test_rotate_right(Byte value, const Addressing& addressing);
+
+    void test_jump(const Addressing& addressing);
+
+    void test_jump_to_subroutine(Word address);
+
+    void test_return_from_subroutine();
+
+    void test_branch(Flag flag, bool value, bool targetValue);
+
+    void test_force_interrupt();
+
+    void test_nop();
+
+    void test_return_from_interrupt();
 };
 
 

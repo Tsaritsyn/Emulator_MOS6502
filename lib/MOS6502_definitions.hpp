@@ -26,6 +26,9 @@ namespace Emulator {
     constexpr bool CLEAR = false;
     constexpr bool SET = true;
 
+    template <typename T>
+    concept Printable = requires(std::ostream& os, const T& a) { os << a; };
+
 
 
     struct WordToBytes {
@@ -674,12 +677,12 @@ namespace Emulator {
         BIT_ZERO_PAGE   = 0x24,
         BIT_ABSOLUTE    = 0X2C,
 
-        BRK_IMPLICIT             = 0x00,
+        BRK_IMPLICIT    = 0x00,
 
-        CLC_IMPLICIT             = 0x18,
-        CLD_IMPLICIT             = 0xD8,
-        CLI_IMPLICIT             = 0x58,
-        CLV_IMPLICIT             = 0xB8,
+        CLC_IMPLICIT    = 0x18,
+        CLD_IMPLICIT    = 0xD8,
+        CLI_IMPLICIT    = 0x58,
+        CLV_IMPLICIT    = 0xB8,
 
         CMP_IMMEDIATE   = 0xC9,
         CMP_ZERO_PAGE   = 0xC5,
@@ -826,7 +829,6 @@ namespace Emulator {
 
 
     enum class LogicalOperation { AND, OR, XOR };
-
 
     enum class Register { AC, X, Y, SP, SR };
 
