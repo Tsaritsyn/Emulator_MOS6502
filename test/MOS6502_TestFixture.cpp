@@ -428,4 +428,49 @@ void MOS6502_TestFixture::test_arithmetics(MOS6502_TestFixture::ArithmeticOperat
     check_register(Emulator::Register::AC, expectedResult, addressing.PC_shift(), duration.value(), testID.str(), expectedFlags);
 }
 
+void MOS6502_TestFixture::test_compare_register(Register reg, Byte registerValue, const Addressing &addressing,
+                                                Byte memoryValue) {
+    reset();
 
+    const auto instruction = [reg]() -> std::optional<Instruction> {
+        switch (reg) {
+            case Register::AC: return Instruction::CMP;
+            case Register::X:  return Instruction::CPX;
+            case Register::Y:  return Instruction::CPY;
+            default:
+                std::cerr << "test_compare_register: register " << reg << " cannot be used for comparison command\n";
+                return std::nullopt;
+        }
+    }();
+
+    const auto duration = [&addressing, instruction]() -> std::optional<size_t> {
+        switch (addressing.getMode()) {
+            case Emulator::AddressingMode::IMMEDIATE:   return 2;
+            case Emulator::AddressingMode::ZERO_PAGE:   return 3;
+            case Emulator::AddressingMode::ZERO_PAGE_X: [[fallthrough]];
+            case Emulator::AddressingMode::ABSOLUTE:    return 4;
+            case Emulator::AddressingMode::ABSOLUTE_X:  [[fallthrough]];
+            case Emulator::AddressingMode::ABSOLUTE_Y:  return 4 + addressing.page_crossed();
+            case Emulator::AddressingMode::INDIRECT_X:  return 6;
+            case Emulator::AddressingMode::INDIRECT_Y:  return 5 + addressing.page_crossed();
+            default:
+                std::cerr << "test_compare_register: provided addressing mode " << addressing.getMode() << " is not supported by " << instruction << " instruction\n";
+                return std::nullopt;
+        }
+    }();
+
+    std::stringstream testID;
+    testID << "Test " << instruction << "(register: " << HEX_BYTE(registerValue) << ", memory: " << HEX_BYTE(memoryValue) << ")";
+
+    (*this)[reg] = registerValue;
+    prepare_and_execute(opcode(instruction.value(), addressing.getMode()).value(), memoryValue, addressing);
+
+    ProcessorStatus expectedFlags{};
+    expectedFlags[ZERO] = registerValue == memoryValue;
+    expectedFlags[CARRY] = registerValue >= memoryValue;
+    expectedFlags[NEGATIVE] = registerValue < memoryValue;
+
+    EXPECT_EQ(cycle, duration.value());
+    EXPECT_EQ(PC, addressing.PC_shift());
+    EXPECT_EQ(SR, expectedFlags);
+}
