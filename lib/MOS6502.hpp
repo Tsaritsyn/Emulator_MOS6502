@@ -42,9 +42,9 @@ namespace Emulator {
 
         [[noreturn]] void execute();
 
-        Byte& operator [](const Address& address);
+        Byte& operator [](const Location& address);
 
-        Byte operator [](const Address& address) const;
+        Byte operator [](const Location& address) const;
 
 
     private:

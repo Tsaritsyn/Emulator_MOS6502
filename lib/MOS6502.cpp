@@ -306,7 +306,7 @@ namespace Emulator {
 
     void MOS6502::shift_left_accumulator() {
         SR[CARRY] = get_bit(AC, 7);
-        set_register(Register::AC, get_register(Register::AC) << 1);
+        set_register(Register::AC, AC << 1);
         cycle++;
     }
 
@@ -323,16 +323,18 @@ namespace Emulator {
 
     void MOS6502::shift_right_accumulator() {
         SR[CARRY] = get_bit(AC, 0);
-        set_register(Register::AC, get_register(Register::AC) >> 1);
+        set_register(Register::AC, AC >> 1);
+        cycle++;
     }
 
 
     void MOS6502::shift_right_memory(AddressingMode mode) {
-        Word address = determine_address(mode);
+        Word address = determine_address(mode, true);
         Byte value = read_byte(address);
 
         SR[CARRY] = get_bit(value, 0);
         write_byte(value >> 1, address, true);
+        cycle++;
     }
 
 
@@ -968,7 +970,7 @@ namespace Emulator {
         return result;
     }
 
-    Byte &MOS6502::operator[](const Address &address) {
+    Byte &MOS6502::operator[](const Location &address) {
         if (const auto memoryAddress = std::get_if<Word>(&address)) return memory[*memoryAddress];
         if (const auto reg = std::get_if<Register>(&address))
             switch (*reg) {
@@ -981,7 +983,7 @@ namespace Emulator {
         std::unreachable();
     }
 
-    Byte MOS6502::operator[](const Address &address) const {
+    Byte MOS6502::operator[](const Location &address) const {
         if (const auto memoryAddress = std::get_if<Word>(&address)) return memory[*memoryAddress];
         if (const auto reg = std::get_if<Register>(&address)) return get_register(*reg);
         std::unreachable();

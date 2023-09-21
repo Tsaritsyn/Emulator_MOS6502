@@ -29,22 +29,15 @@ private:
      *
      * @return reference to the memory or register where the target value must be put to (or where to read it from), if any.
      */
-    std::optional<Address> prepare_memory(const Addressing& addressing) noexcept;
-    std::optional<Address> prepare_and_execute(Instruction instruction, std::optional<Byte> value, std::optional<Addressing> addressing = std::nullopt) noexcept;
+    std::optional<Location> prepare_memory(const Addressing& addressing) noexcept;
+    std::optional<Location> prepare_and_execute(Instruction instruction, std::optional<Byte> value, std::optional<Addressing> addressing = std::nullopt) noexcept;
 
-    void check_register(Register reg,
+    void check_location(Location location,
                         Byte expectedValue,
-                        Word expectedPCShift,
-                        size_t expectedDuration,
+                        Word expectedPC,
+                        size_t expectedCycle,
                         const std::string& testID,
-                        std::optional<ProcessorStatus> expectedFlags = std::nullopt) const;
-
-    void check_memory(Word address,
-                      Byte expectedValue,
-                      Word expectedPCShift,
-                      size_t expectedDuration,
-                      const std::string &testID,
-                      ProcessorStatus expectedFlags = 0) const;
+                        ProcessorStatus expectedFlags = 0) const;
 
     Byte& stack(Byte address) noexcept;
 

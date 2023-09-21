@@ -832,7 +832,7 @@ namespace Emulator {
 
     enum class Register { AC, X, Y, SP, SR };
 
-    using Address = std::variant<Word, Register>;
+    using Location = std::variant<Word, Register>;
 
 }
 
