@@ -51,6 +51,7 @@ add_executable(Emulator_MOS6502_Test
         test/MOS6502_TestDeincrementMemory.cpp
         test/MOS6502_TestDeincrementRegisters.cpp
         test/MOS6502_TestShift.cpp
+        test/MOS6502_TestRotate.cpp
 )
 
 target_include_directories(Emulator_MOS6502_Test PRIVATE lib test)

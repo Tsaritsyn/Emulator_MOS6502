@@ -20,14 +20,18 @@ static std::array<Addressing, 7> testedAddressings {
 };
 
 
-TEST_F(MOS6502_TestFixture, TestASL) {
+TEST_F(MOS6502_TestFixture, TestROL) {
     for (const auto value: testedInputs)
-        for (const auto& addressing: testedAddressings)
-            test_shift(ShiftDirection::LEFT, value, addressing);
+        for (const auto& addressing: testedAddressings) {
+            test_rotate(ShiftDirection::LEFT, value, false, addressing);
+            test_rotate(ShiftDirection::LEFT, value, true, addressing);
+        }
 }
 
-TEST_F(MOS6502_TestFixture, TestLSR) {
+TEST_F(MOS6502_TestFixture, TestROR) {
     for (const auto value: testedInputs)
-        for (const auto& addressing: testedAddressings)
-            test_shift(ShiftDirection::RIGHT, value, addressing);
+        for (const auto& addressing: testedAddressings) {
+            test_rotate(ShiftDirection::RIGHT, value, false, addressing);
+            test_rotate(ShiftDirection::RIGHT, value, true, addressing);
+        }
 }

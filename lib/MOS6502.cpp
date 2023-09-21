@@ -339,40 +339,46 @@ namespace Emulator {
 
 
     void MOS6502::rotate_left_accumulator() {
-        SR[CARRY] = get_bit(AC, 7);
+        const bool newCarry = get_bit(AC, 7);
         set_register(Register::AC, (AC << 1) + SR[CARRY]);
+        SR[CARRY] = newCarry;
+        cycle++;
     }
 
 
     void MOS6502::rotate_left_memory(AddressingMode mode) {
-        Word address = determine_address(mode);
+        Word address = determine_address(mode, true);
         Byte value = read_byte(address);
 
-        SR[CARRY] = get_bit(value, 7);
+        const bool newCarry = get_bit(value, 7);
         write_byte((value << 1) + SR[CARRY], address, true);
+        SR[CARRY] = newCarry;
+        cycle++;
     }
 
 
     void MOS6502::rotate_right_accumulator() {
-        SR[CARRY] = get_bit(AC, CARRY);
-
         Byte value = AC;
         value >>= 1;
-
         set_bit(value, 7, SR[CARRY]);
+
+        const bool newCarry = get_bit(AC, 0);
         set_register(Register::AC, value);
+        SR[CARRY] = newCarry;
+        cycle++;
     }
 
 
     void MOS6502::rotate_right_memory(AddressingMode mode) {
-        Word address = determine_address(mode);
+        Word address = determine_address(mode, true);
         Byte value = read_byte(address);
-        SR[CARRY] = get_bit(value, 0);
-
+        const bool newCarry = get_bit(value, 0);
         value >>= 1;
         set_bit(value, 7, SR[CARRY]);
 
         write_byte(value, address, true);
+        SR[CARRY] = newCarry;
+        cycle++;
     }
 
 

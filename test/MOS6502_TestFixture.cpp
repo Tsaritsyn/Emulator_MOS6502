@@ -569,3 +569,39 @@ void MOS6502_TestFixture::check_location(Location location, Byte expectedValue, 
     EXPECT_EQ(PC, expectedPC) << testID;
     EXPECT_EQ(cycle, expectedCycle) << testID;
 }
+
+void MOS6502_TestFixture::test_rotate(MOS6502_TestFixture::ShiftDirection direction, Byte value, bool carry,
+                                      const Addressing &addressing) {
+    reset();
+
+    const auto &[instruction, expectedResult, expectedCarry] = [direction, value, carry]() -> std::tuple<Instruction, Byte, bool> {
+        switch (direction) {
+            case ShiftDirection::LEFT:  return {Instruction::ROL, (value << 1) + carry, get_bit(value, 7)};
+            case ShiftDirection::RIGHT: return {Instruction::ROR, (value >> 1) + ((int)carry << 7), get_bit(value, 0)};
+        }
+        std::unreachable();
+    }();
+
+    const auto duration = [&addressing, instruction]() -> std::optional<size_t> {
+        switch (addressing.getMode()) {
+            case AddressingMode::ACCUMULATOR: return 2;
+            case AddressingMode::ZERO_PAGE:   return 5;
+            case AddressingMode::ZERO_PAGE_X: [[fallthrough]];
+            case AddressingMode::ABSOLUTE:    return 6;
+            case AddressingMode::ABSOLUTE_X:  return 7;
+            default:
+                std::cerr << "test_rotate: provided addressing mode " << addressing.getMode() << " is not supported by " << instruction << " instruction\n";
+                return std::nullopt;
+        }
+    }();
+
+    std::stringstream testID;
+    testID << "Test " << instruction << "(value: " << HEX_BYTE(value) << ", carry: " << carry << ", addressing: " << addressing << ")";
+
+    ProcessorStatus expectedFlags = set_register_flags_for(expectedResult);
+    expectedFlags[CARRY] = expectedCarry;
+
+    SR[CARRY] = carry;
+    const auto location = prepare_and_execute(instruction, value, addressing);
+    check_location(location.value(), expectedResult, addressing.PC_shift(), duration.value(), testID.str(), expectedFlags);
+}

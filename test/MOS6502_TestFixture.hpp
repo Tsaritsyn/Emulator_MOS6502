@@ -70,7 +70,7 @@ public:
 
     void test_shift(ShiftDirection direction, Byte value, const Addressing& addressing);
 
-    void test_rotate(ShiftDirection direction, Byte value, const Addressing& addressing);
+    void test_rotate(ShiftDirection direction, Byte value, bool carry, const Addressing& addressing);
 
     void test_jump(const Addressing& addressing);
 
