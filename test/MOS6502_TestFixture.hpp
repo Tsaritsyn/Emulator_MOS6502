@@ -45,6 +45,7 @@ private:
 
 public:
     enum struct ArithmeticOperation {ADD, SUB};
+    enum struct ChangeByOne {INCREMENT, DECREMENT};
 
     void test_loading(Register reg, Byte value, const Addressing& addressing);
 
@@ -64,7 +65,7 @@ public:
 
     void test_compare_register(Register reg, Byte registerValue, const Addressing& addressing, Byte memoryValue);
 
-    void test_increment_memory(Byte value, const Addressing& addressing);
+    void test_deincrement_memory(ChangeByOne operation, Byte value, const Addressing &addressing);
 
     void test_decrement_memory(Byte value, const Addressing& addressing);
 

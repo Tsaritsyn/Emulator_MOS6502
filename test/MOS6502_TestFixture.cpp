@@ -475,10 +475,17 @@ void MOS6502_TestFixture::test_compare_register(Register reg, Byte registerValue
     EXPECT_EQ(SR, expectedFlags);
 }
 
-void MOS6502_TestFixture::test_increment_memory(Byte value, const Addressing &addressing) {
+void MOS6502_TestFixture::test_deincrement_memory(ChangeByOne operation, Byte value, const Addressing &addressing) {
     reset();
 
-    constexpr Instruction instruction = Emulator::Instruction::INC;
+    const auto &[instruction, expectedResult] = [operation, value]() -> std::pair<Instruction, Byte> {
+        switch (operation) {
+            case ChangeByOne::INCREMENT: return {Instruction::INC, value + 1};
+            case ChangeByOne::DECREMENT: return {Instruction::DEC, value - 1};
+        }
+        std::unreachable();
+    }();
+
     const auto duration = [&addressing, instruction]() -> std::optional<size_t> {
         switch (addressing.getMode()) {
             case AddressingMode::ZERO_PAGE:   return 5;
@@ -486,7 +493,7 @@ void MOS6502_TestFixture::test_increment_memory(Byte value, const Addressing &ad
             case AddressingMode::ABSOLUTE:    return 6;
             case AddressingMode::ABSOLUTE_X:  return 7;
             default:
-                std::cerr << "test_increment_memory: provided addressing mode " << addressing.getMode() << " is not supported by " << instruction << " instruction\n";
+                std::cerr << "test_deincrement_memory: provided addressing mode " << addressing.getMode() << " is not supported by " << instruction << " instruction\n";
                 return std::nullopt;
         }
     }();
@@ -494,11 +501,10 @@ void MOS6502_TestFixture::test_increment_memory(Byte value, const Addressing &ad
     std::stringstream testID;
     testID << "Test " << instruction << "(value: " << (int)value << ", addressing: " << addressing << ")";
     const auto address = prepare_and_execute(opcode(instruction, addressing.getMode()).value(), value, addressing);
-    const Byte expectedValue = value + 1;
 
     ASSERT_TRUE(std::holds_alternative<Word>(address.value())) << testID.str();
-    EXPECT_EQ((*this)[address.value()], expectedValue) << testID.str();
+    EXPECT_EQ((*this)[address.value()], expectedResult) << testID.str();
     EXPECT_EQ(cycle, duration) << testID.str();
     EXPECT_EQ(PC, addressing.PC_shift()) << testID.str();
-    EXPECT_EQ(SR, set_register_flags_for(expectedValue)) << testID.str();
+    EXPECT_EQ(SR, set_register_flags_for(expectedResult)) << testID.str();
 }
