@@ -29,28 +29,29 @@ private:
      *
      * @return reference to the memory or register where the target value must be put to (or where to read it from), if any.
      */
-    std::optional<Address> prepare_memory(const Addressing& addressing);
-    std::optional<Address> prepare_and_execute(OpCode opcode, std::optional<Byte> value, std::optional<Addressing> addressing = std::nullopt);
+    std::optional<Address> prepare_memory(const Addressing& addressing) noexcept;
+    std::optional<Address> prepare_and_execute(Instruction instruction, std::optional<Byte> value, std::optional<Addressing> addressing = std::nullopt) noexcept;
 
     void check_register(Register reg,
                         Byte expectedValue,
                         Word expectedPCShift,
                         size_t expectedDuration,
                         const std::string& testID,
-                        std::optional<ProcessorStatus> expectedFlags = std::nullopt);
+                        std::optional<ProcessorStatus> expectedFlags = std::nullopt) const;
 
     void check_memory(Word address,
                       Byte expectedValue,
                       Word expectedPCShift,
                       size_t expectedDuration,
                       const std::string &testID,
-                      ProcessorStatus expectedFlags = 0);
+                      ProcessorStatus expectedFlags = 0) const;
 
-    Byte& stack(Byte address);
+    Byte& stack(Byte address) noexcept;
 
 public:
     enum struct ArithmeticOperation {ADD, SUB};
     enum struct ChangeByOne {INCREMENT, DECREMENT};
+    enum struct ShiftDirection {LEFT, RIGHT};
 
     void test_loading(Register reg, Byte value, const Addressing& addressing);
 
@@ -74,13 +75,9 @@ public:
 
     void test_deincrement_register(ChangeByOne operation, Byte value, Register reg);
 
-    void test_shift_left(Byte value, const Addressing& addressing);
+    void test_shift(ShiftDirection direction, Byte value, const Addressing& addressing);
 
-    void test_shift_right(Byte value, const Addressing& addressing);
-
-    void test_rotate_left(Byte value, const Addressing& addressing);
-
-    void test_rotate_right(Byte value, const Addressing& addressing);
+    void test_rotate(ShiftDirection direction, Byte value, const Addressing& addressing);
 
     void test_jump(const Addressing& addressing);
 

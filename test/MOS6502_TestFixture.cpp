@@ -21,7 +21,7 @@ void MOS6502_TestFixture::reset() noexcept {
     SP = 255;
 }
 
-std::optional<Address> MOS6502_TestFixture::prepare_memory(const Addressing &addressing) {
+std::optional<Address> MOS6502_TestFixture::prepare_memory(const Addressing &addressing) noexcept {
     switch (addressing.getMode()) {
         case AddressingMode::IMPLICIT:
             return std::nullopt;
@@ -150,10 +150,12 @@ void MOS6502_TestFixture::test_transfer(Register from, Register to, Byte value) 
     EXPECT_EQ(cycle, 2) << testID.str();
 }
 
-std::optional<Address> MOS6502_TestFixture::prepare_and_execute(OpCode opcode, std::optional<Byte> value, std::optional<Addressing> addressing) {
-    const auto address = (addressing.has_value()) ? prepare_memory(addressing.value()) : std::nullopt;
+std::optional<Address> MOS6502_TestFixture::prepare_and_execute(Instruction instruction, std::optional<Byte> value, std::optional<Addressing> addressing) noexcept {
+    // if addressing provided, will prepare the memory and return the target address, otherwise returns nullopt
+    const auto address = addressing.and_then([this](const Addressing& addr){return prepare_memory(addr);});
     if (value.has_value() && address.has_value()) (*this)[address.value()] = value.value();
-    memory[PC] = opcode;
+    // if addressing provided, will use its mode, otherwise nullopt
+    memory[PC] = opcode(instruction, addressing.and_then([](const Addressing& addr) -> std::optional<AddressingMode> { return addr.getMode(); })).value();
     execute_current_command();
     return address;
 }
@@ -163,7 +165,7 @@ void MOS6502_TestFixture::check_register(Register reg,
                                          Word expectedPCShift,
                                          size_t expectedDuration,
                                          const std::string &testID,
-                                         std::optional<ProcessorStatus> expectedFlags) {
+                                         std::optional<ProcessorStatus> expectedFlags) const {
     EXPECT_EQ((*this)[reg], expectedValue) << testID;
     EXPECT_EQ(SR, expectedFlags.value_or(set_register_flags_for(expectedValue))) << testID;
     EXPECT_EQ(PC, expectedPCShift) << testID;
@@ -183,8 +185,6 @@ void MOS6502_TestFixture::test_loading(Register reg, Byte value, const Addressin
                 return std::nullopt;
         }
     }();
-
-    const auto opCode = opcode(instruction.value(), addressing.getMode());
 
     const auto duration = [&addressing, instruction]() -> std::optional<size_t> {
         switch (addressing.getMode()) {
@@ -206,7 +206,7 @@ void MOS6502_TestFixture::test_loading(Register reg, Byte value, const Addressin
     std::stringstream testID;
     testID << "Test " << instruction << "(value: " << (int)value << ", addressing: " << addressing << ")";
 
-    prepare_and_execute(opCode.value(), value, addressing);
+    prepare_and_execute(instruction.value(), value, addressing);
     check_register(reg, value, addressing.PC_shift(), duration.value(), testID.str());
 }
 
@@ -223,8 +223,6 @@ void MOS6502_TestFixture::test_storage(Register reg, Byte value, const Addressin
                 return std::nullopt;
         }
     }();
-
-    const auto opCode = opcode(instruction.value(), addressing.getMode());
 
     const auto duration = [&addressing, instruction]() -> std::optional<size_t> {
         switch (addressing.getMode()) {
@@ -246,7 +244,7 @@ void MOS6502_TestFixture::test_storage(Register reg, Byte value, const Addressin
     testID << "Test " << instruction << "(value: " << (int)value << ", addressing: " << addressing << ")";
 
     (*this)[reg] = value;
-    const auto address = prepare_and_execute(opCode.value(), std::nullopt, addressing);
+    const auto address = prepare_and_execute(instruction.value(), std::nullopt, addressing);
     ASSERT_TRUE(address.has_value());
     const auto memAddress = std::get_if<Word>(&address.value());
     ASSERT_TRUE(memAddress != nullptr);
@@ -255,7 +253,7 @@ void MOS6502_TestFixture::test_storage(Register reg, Byte value, const Addressin
 
 void MOS6502_TestFixture::check_memory(Word address, Byte expectedValue, Word expectedPCShift, size_t expectedDuration,
                                        const std::string &testID,
-                                       ProcessorStatus expectedFlags) {
+                                       ProcessorStatus expectedFlags) const {
 
     EXPECT_EQ(memory[address], expectedValue) << testID;
     EXPECT_EQ(SR, expectedFlags) << testID;
@@ -291,7 +289,7 @@ void MOS6502_TestFixture::test_push_to_stack(Register reg, Byte value) {
     EXPECT_EQ(PC, 1) << testID.str();
 }
 
-Byte &MOS6502_TestFixture::stack(Byte address) {
+Byte &MOS6502_TestFixture::stack(Byte address) noexcept {
     return memory[STACK_BOTTOM + address];
 }
 
@@ -354,7 +352,7 @@ void MOS6502_TestFixture::test_logical(LogicalOperation operation, Byte value, B
     testID << "Test " << instruction << "(AC: " << HEX_BYTE(value) << ", memory: " << HEX_BYTE(mem) << ", addressing: " << addressing << ")";
 
     AC = value;
-    prepare_and_execute(opcode(instruction, addressing.getMode()).value(), mem, addressing);
+    prepare_and_execute(instruction, mem, addressing);
     check_register(Emulator::Register::AC, expectedResult, addressing.PC_shift(), duration.value(), testID.str());
 }
 
@@ -376,7 +374,7 @@ void MOS6502_TestFixture::test_bit_test(Byte value, Byte mem, const Addressing &
     testID << "Test BIT(AC: " << HEX_BYTE(value) << ", memory: " << HEX_BYTE(mem) << ", addressing: " << addressing << ")";
 
     AC = value;
-    prepare_and_execute(opcode(Instruction::BIT, addressing.getMode()).value(), mem, addressing);
+    prepare_and_execute(Instruction::BIT, mem, addressing);
 
     ProcessorStatus expectedFlags{};
     expectedFlags[ZERO] = (value & mem) == 0;
@@ -425,7 +423,7 @@ void MOS6502_TestFixture::test_arithmetics(MOS6502_TestFixture::ArithmeticOperat
 
     AC = value;
     SR[CARRY] = carry;
-    prepare_and_execute(opcode(instruction, addressing.getMode()).value(), mem, addressing);
+    prepare_and_execute(instruction, mem, addressing);
     check_register(Emulator::Register::AC, expectedResult, addressing.PC_shift(), duration.value(), testID.str(), expectedFlags);
 }
 
@@ -464,7 +462,7 @@ void MOS6502_TestFixture::test_compare_register(Register reg, Byte registerValue
     testID << "Test " << instruction << "(register: " << HEX_BYTE(registerValue) << ", memory: " << HEX_BYTE(memoryValue) << ", addressing: " << addressing << ")";
 
     (*this)[reg] = registerValue;
-    prepare_and_execute(opcode(instruction.value(), addressing.getMode()).value(), memoryValue, addressing);
+    prepare_and_execute(instruction.value(), memoryValue, addressing);
 
     ProcessorStatus expectedFlags{};
     expectedFlags[ZERO] = registerValue == memoryValue;
@@ -501,7 +499,7 @@ void MOS6502_TestFixture::test_deincrement_memory(ChangeByOne operation, Byte va
 
     std::stringstream testID;
     testID << "Test " << instruction << "(value: " << (int)value << ", addressing: " << addressing << ")";
-    const auto address = prepare_and_execute(opcode(instruction, addressing.getMode()).value(), value, addressing);
+    const auto address = prepare_and_execute(instruction, value, addressing);
 
     ASSERT_TRUE(std::holds_alternative<Word>(address.value())) << testID.str();
     check_memory(std::get<Word>(address.value()), expectedResult, addressing.PC_shift(), duration.value(), testID.str(), set_register_flags_for(expectedResult));
@@ -542,7 +540,7 @@ void MOS6502_TestFixture::test_deincrement_register(MOS6502_TestFixture::ChangeB
     testID << "Test " << instruction << "(value: " << (int)value << ")";
 
     (*this)[reg] = value;
-    prepare_and_execute(opcode(instruction.value()).value(), value);
+    prepare_and_execute(instruction.value(), value);
 
     check_register(reg, expectedResult, 1, 2, testID.str());
 }
