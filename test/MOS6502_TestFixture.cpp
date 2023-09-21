@@ -150,9 +150,9 @@ void MOS6502_TestFixture::test_transfer(Register from, Register to, Byte value) 
     EXPECT_EQ(cycle, 2) << testID.str();
 }
 
-std::optional<Address> MOS6502_TestFixture::prepare_and_execute(OpCode opcode, std::optional<Byte> value, const Addressing &addressing) {
-    const auto address = prepare_memory(addressing);
-    if (value.has_value()) (*this)[address.value()] = value.value();
+std::optional<Address> MOS6502_TestFixture::prepare_and_execute(OpCode opcode, std::optional<Byte> value, std::optional<Addressing> addressing) {
+    const auto address = (addressing.has_value()) ? prepare_memory(addressing.value()) : std::nullopt;
+    if (value.has_value() && address.has_value()) (*this)[address.value()] = value.value();
     memory[PC] = opcode;
     execute_current_command();
     return address;
@@ -253,11 +253,12 @@ void MOS6502_TestFixture::test_storage(Register reg, Byte value, const Addressin
     check_memory(*memAddress, value, addressing.PC_shift(), duration.value(), testID.str());
 }
 
-void MOS6502_TestFixture::check_memory(Word address, Byte expectedValue, Word expectedPCShift,
-                                       size_t expectedDuration, const std::string &testID) {
+void MOS6502_TestFixture::check_memory(Word address, Byte expectedValue, Word expectedPCShift, size_t expectedDuration,
+                                       const std::string &testID,
+                                       ProcessorStatus expectedFlags) {
 
     EXPECT_EQ(memory[address], expectedValue) << testID;
-    EXPECT_EQ(SR, 0) << testID;
+    EXPECT_EQ(SR, expectedFlags) << testID;
     EXPECT_EQ(PC, expectedPCShift) << testID;
     EXPECT_EQ(cycle, expectedDuration) << testID;
 }
@@ -503,8 +504,45 @@ void MOS6502_TestFixture::test_deincrement_memory(ChangeByOne operation, Byte va
     const auto address = prepare_and_execute(opcode(instruction, addressing.getMode()).value(), value, addressing);
 
     ASSERT_TRUE(std::holds_alternative<Word>(address.value())) << testID.str();
-    EXPECT_EQ((*this)[address.value()], expectedResult) << testID.str();
-    EXPECT_EQ(cycle, duration) << testID.str();
-    EXPECT_EQ(PC, addressing.PC_shift()) << testID.str();
-    EXPECT_EQ(SR, set_register_flags_for(expectedResult)) << testID.str();
+    check_memory(std::get<Word>(address.value()), expectedResult, addressing.PC_shift(), duration.value(), testID.str(), set_register_flags_for(expectedResult));
+}
+
+void MOS6502_TestFixture::test_deincrement_register(MOS6502_TestFixture::ChangeByOne operation, Byte value, Register reg) {
+    reset();
+
+    const auto instruction = [operation, reg]() -> std::optional<Instruction> {
+        switch (reg) {
+            case Emulator::Register::X:
+                switch (operation) {
+                    case ChangeByOne::INCREMENT: return Emulator::Instruction::INX;
+                    case ChangeByOne::DECREMENT: return Instruction::DEX;
+                }
+                std::unreachable();
+            case Emulator::Register::Y:
+                switch (operation) {
+                    case ChangeByOne::INCREMENT: return Emulator::Instruction::INY;
+                    case ChangeByOne::DECREMENT: return Instruction::DEY;
+                }
+                std::unreachable();
+            default:
+                std::cerr << "test_deincrement_register: register " << reg << " cannot be used for increment or decrement command\n";
+                return std::nullopt;
+        }
+    }();
+
+    const auto expectedResult = [operation, value]() -> Byte {
+        switch (operation) {
+            case ChangeByOne::INCREMENT: return value + 1;
+            case ChangeByOne::DECREMENT: return value - 1;
+        }
+        std::unreachable();
+    }();
+
+    std::stringstream testID;
+    testID << "Test " << instruction << "(value: " << (int)value << ")";
+
+    (*this)[reg] = value;
+    prepare_and_execute(opcode(instruction.value()).value(), value);
+
+    check_register(reg, expectedResult, 1, 2, testID.str());
 }

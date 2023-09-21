@@ -294,11 +294,13 @@ namespace Emulator {
 
     void MOS6502::increment_register(Register reg) {
         set_register(reg, get_register(reg) + 1);
+        cycle++;
     }
 
 
     void MOS6502::decrement_register(Register reg) {
         set_register(reg, get_register(reg) - 1);
+        cycle++;
     }
 
 

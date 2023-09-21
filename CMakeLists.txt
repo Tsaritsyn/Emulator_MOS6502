@@ -48,7 +48,8 @@ add_executable(Emulator_MOS6502_Test
         test/MOS6502_TestBIT.cpp
         test/MOS6502_TestArithmetics.cpp
         test/MOS6502_TestCompare.cpp
-        test/MOS6502_TestINC.cpp
+        test/MOS6502_TestDeincrementMemory.cpp
+        test/MOS6502_TestDeincrementRegisters.cpp
 )
 
 target_include_directories(Emulator_MOS6502_Test PRIVATE lib test)

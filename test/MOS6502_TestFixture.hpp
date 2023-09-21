@@ -30,7 +30,7 @@ private:
      * @return reference to the memory or register where the target value must be put to (or where to read it from), if any.
      */
     std::optional<Address> prepare_memory(const Addressing& addressing);
-    std::optional<Address> prepare_and_execute(OpCode opcode, std::optional<Byte> value, const Addressing& addressing);
+    std::optional<Address> prepare_and_execute(OpCode opcode, std::optional<Byte> value, std::optional<Addressing> addressing = std::nullopt);
 
     void check_register(Register reg,
                         Byte expectedValue,
@@ -39,7 +39,12 @@ private:
                         const std::string& testID,
                         std::optional<ProcessorStatus> expectedFlags = std::nullopt);
 
-    void check_memory(Word address, Byte expectedValue, Word expectedPCShift, size_t expectedDuration, const std::string& testID);
+    void check_memory(Word address,
+                      Byte expectedValue,
+                      Word expectedPCShift,
+                      size_t expectedDuration,
+                      const std::string &testID,
+                      ProcessorStatus expectedFlags = 0);
 
     Byte& stack(Byte address);
 
@@ -67,11 +72,7 @@ public:
 
     void test_deincrement_memory(ChangeByOne operation, Byte value, const Addressing &addressing);
 
-    void test_decrement_memory(Byte value, const Addressing& addressing);
-
-    void test_increment_register(Byte value, Register reg);
-
-    void test_decrement_register(Byte value, Register reg);
+    void test_deincrement_register(ChangeByOne operation, Byte value, Register reg);
 
     void test_shift_left(Byte value, const Addressing& addressing);
 
