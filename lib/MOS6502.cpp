@@ -279,14 +279,16 @@ namespace Emulator {
 
 
     void MOS6502::increment_memory(AddressingMode mode) {
-        Word address = determine_address(mode);
+        Word address = determine_address(mode, true);
         write_byte(read_byte(address) + 1, address, true);
+        cycle++;
     }
 
 
     void MOS6502::decrement_memory(AddressingMode mode) {
-        Word address = determine_address(mode);
+        Word address = determine_address(mode, true);
         write_byte(read_byte(address) - 1, address, true);
+        cycle++;
     }
 
 
