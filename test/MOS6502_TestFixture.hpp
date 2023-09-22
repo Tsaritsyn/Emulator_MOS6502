@@ -30,7 +30,7 @@ private:
      * @return reference to the memory or register where the target value must be put to (or where to read it from), if any.
      */
     std::optional<Location> prepare_memory(const Addressing& addressing) noexcept;
-    std::optional<Location> prepare_and_execute(Instruction instruction, std::optional<Byte> value, std::optional<Addressing> addressing = std::nullopt) noexcept;
+    Result<std::optional<Location>> prepare_and_execute(Instruction instruction, std::optional<Byte> value, std::optional<Addressing> addressing = std::nullopt) noexcept;
 
     void check_location(Location location,
                         Byte expectedValue,

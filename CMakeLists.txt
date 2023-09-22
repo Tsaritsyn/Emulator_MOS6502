@@ -19,6 +19,7 @@ add_executable(Emulator_MOS6502 main.cpp
         lib/MOS6502_definitions.hpp
         lib/MOS6502_helpers.cpp
         lib/MOS6502_helpers.hpp
+        lib/Result.hpp
 )
 
 target_include_directories(Emulator_MOS6502 PRIVATE lib)
@@ -52,6 +53,7 @@ add_executable(Emulator_MOS6502_Test
         test/MOS6502_TestDeincrementRegisters.cpp
         test/MOS6502_TestShift.cpp
         test/MOS6502_TestRotate.cpp
+        lib/Result.hpp
 )
 
 target_include_directories(Emulator_MOS6502_Test PRIVATE lib test)

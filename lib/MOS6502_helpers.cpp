@@ -4,6 +4,7 @@
 
 #include <iostream>
 #include "MOS6502_helpers.hpp"
+#include "Result.hpp"
 
 namespace Emulator {
 
@@ -126,7 +127,7 @@ namespace Emulator {
         std::unreachable();
     }
 
-    std::optional<OpCode> opcode(Instruction instruction, std::optional<AddressingMode> addressingMode) {
+    Result <OpCode> opcode(Instruction instruction, std::optional<AddressingMode> addressingMode) {
         switch (instruction) {
             case Instruction::ADC:
                 switch (addressingMode.value_or(AddressingMode::IMMEDIATE)) {
@@ -492,8 +493,9 @@ namespace Emulator {
                 else break;
         }
 
-        std::cerr << "opcode: instruction " << instruction << " does not support " << addressingMode << " addressing\n";
-        return std::nullopt;
+        std::stringstream message;
+        message << "opcode: instruction " << instruction << " does not support " << addressingMode << " addressing\n";
+        return {message.str()};
     }
 
 }

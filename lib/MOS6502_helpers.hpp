@@ -12,6 +12,7 @@
 #include <utility>
 
 #include "MOS6502_definitions.hpp"
+#include "Result.hpp"
 
 namespace Emulator {
 
@@ -35,7 +36,7 @@ namespace Emulator {
         return os;
     }
 
-    std::optional<OpCode> opcode(Instruction instruction, std::optional<AddressingMode> addressingMode = std::nullopt);
+    Result<OpCode> opcode(Instruction instruction, std::optional<AddressingMode> addressingMode = std::nullopt);
 
     template<Printable T>
     std::ostream &operator<<(std::ostream &os, std::optional<T> opt) {
