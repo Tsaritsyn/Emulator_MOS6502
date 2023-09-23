@@ -185,22 +185,23 @@ namespace Emulator {
 
     void MOS6502::push_to_stack(Register reg) {
         push_byte_to_stack(get_register(reg));
+        cycle++;
     }
 
 
     void MOS6502::push_byte_to_stack(Byte value) {
-        write_byte(value, add_word(STACK_BOTTOM, SP--, true));
+        write_byte(value, STACK_BOTTOM + (SP--));
     }
 
 
     Byte MOS6502::pull_byte_from_stack() {
-        return read_byte(add_word(STACK_BOTTOM, ++SP, true));
+        return read_byte(STACK_BOTTOM + (++SP));
     }
 
 
     void MOS6502::pull_from_stack(Register to) {
-        cycle++;
         set_register(to, pull_byte_from_stack());
+        cycle += 2;
     }
 
 
@@ -391,6 +392,7 @@ namespace Emulator {
         Word targetAddress = determine_address(AddressingMode::ABSOLUTE);
         push_word_to_stack(PC - 1);
         PC = targetAddress;
+        cycle++;
     }
 
 
@@ -401,15 +403,15 @@ namespace Emulator {
 
     void MOS6502::push_word_to_stack(Word value) {
         WordToBytes buf(value);
-        push_byte_to_stack(buf.high);
         push_byte_to_stack(buf.low);
+        push_byte_to_stack(buf.high);
     }
 
 
     Word MOS6502::pull_word_from_stack() {
         WordToBytes buf{};
-        buf.low = pull_byte_from_stack();
         buf.high = pull_byte_from_stack();
+        buf.low = pull_byte_from_stack();
         return buf.word;
     }
 

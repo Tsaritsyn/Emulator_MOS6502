@@ -754,3 +754,25 @@ void MOS6502_TestFixture::test_jump(const Addressing &addressing) {
         EXPECT_EQ(cycle, duration) << testID.str();
     }
 }
+
+void MOS6502_TestFixture::test_jump_to_subroutine(Word address) {
+    reset();
+
+    const auto instruction = Instruction::JSR;
+    const auto addressing = Addressing::Absolute(address);
+    const size_t duration = 6;
+
+    std::stringstream testID;
+    testID << "Test " << instruction << "(addressing: " << addressing << ")";
+
+    const WordToBytes pcBuf(PC + 2);
+
+    const auto result = prepare_and_execute(instruction, std::nullopt, addressing);
+    ASSERT_FALSE(result.failed()) << testID.str() << ' ' << result.fail_message();
+
+    ASSERT_EQ(SP, 253);
+    ASSERT_EQ(stack(255), pcBuf.low);
+    ASSERT_EQ(stack(254), pcBuf.high);
+    ASSERT_EQ(PC, address);
+    ASSERT_EQ(cycle, duration);
+}
