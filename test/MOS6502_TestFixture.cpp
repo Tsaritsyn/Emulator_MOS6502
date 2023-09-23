@@ -713,3 +713,44 @@ void MOS6502_TestFixture::test_rotate(MOS6502_TestFixture::ShiftDirection direct
         }
     }
 }
+
+void MOS6502_TestFixture::test_jump(const Addressing &addressing) {
+    reset();
+
+    const Instruction instruction = Instruction::JMP;
+
+    std::stringstream testID;
+    testID << "Test " << instruction << "(addressing: " << addressing << ")";
+
+    const auto durationResult = [&addressing, instruction]() -> Result<size_t> {
+        switch (addressing.getMode()) {
+            case AddressingMode::ABSOLUTE: return 3;
+            case AddressingMode::INDIRECT: return 5;
+            default:
+                std::stringstream message;
+                message << "test_jump: provided addressing mode " << addressing.getMode() << " is not supported by " << instruction << " instruction\n";
+                return {message.str()};
+        }
+    }();
+    ASSERT_FALSE(durationResult.failed()) << testID.str() << ' ' << durationResult.fail_message();
+
+    for (const auto duration: durationResult) {
+        const auto opcodeResult = opcode(instruction);
+        ASSERT_FALSE(opcodeResult.failed()) << testID.str() << ' ' << opcodeResult.fail_message();
+
+        const auto locationResult = prepare_and_execute(instruction, std::nullopt, addressing);
+        ASSERT_FALSE(locationResult.failed()) << testID.str() << ' ' << locationResult.fail_message();
+
+        switch (addressing.getMode()) {
+            case Emulator::AddressingMode::ABSOLUTE:
+                EXPECT_EQ(PC, addressing.getAbsolute().value().address) << testID.str();
+                break;
+            case Emulator::AddressingMode::INDIRECT:
+                EXPECT_EQ(PC, addressing.getIndirect().value().targetAddress) << testID.str();
+                break;
+            default:
+                std::unreachable();
+        }
+        EXPECT_EQ(cycle, duration) << testID.str();
+    }
+}

@@ -54,6 +54,7 @@ add_executable(Emulator_MOS6502_Test
         test/MOS6502_TestShift.cpp
         test/MOS6502_TestRotate.cpp
         lib/Result.hpp
+        test/MOS6502_TestJMP.cpp
 )
 
 target_include_directories(Emulator_MOS6502_Test PRIVATE lib test)
