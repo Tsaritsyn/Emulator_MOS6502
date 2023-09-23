@@ -21,6 +21,8 @@ namespace Emulator {
 
         [[nodiscard]] std::string dump(bool include_memory = false) const;
 
+        void print_stack() const;
+
         virtual /**
          * Program counter is set to the value of RESET_LOCATION, cycle is set to 7, interrupt disable flag is set to 1.
          * It is recommended to begin the program with setting the stack pointer by LDX <value> and TXS.

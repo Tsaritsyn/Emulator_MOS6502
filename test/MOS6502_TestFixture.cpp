@@ -760,7 +760,6 @@ void MOS6502_TestFixture::test_jump_to_subroutine(Word address) {
 
     const auto instruction = Instruction::JSR;
     const auto addressing = Addressing::Absolute(address);
-    const size_t duration = 6;
 
     std::stringstream testID;
     testID << "Test " << instruction << "(addressing: " << addressing << ")";
@@ -770,9 +769,30 @@ void MOS6502_TestFixture::test_jump_to_subroutine(Word address) {
     const auto result = prepare_and_execute(instruction, std::nullopt, addressing);
     ASSERT_FALSE(result.failed()) << testID.str() << ' ' << result.fail_message();
 
-    ASSERT_EQ(SP, 253);
-    ASSERT_EQ(stack(255), pcBuf.low);
-    ASSERT_EQ(stack(254), pcBuf.high);
-    ASSERT_EQ(PC, address);
-    ASSERT_EQ(cycle, duration);
+    ASSERT_EQ(SP, 253) << testID.str();
+    ASSERT_EQ(stack(255), pcBuf.low) << testID.str();
+    ASSERT_EQ(stack(254), pcBuf.high) << testID.str();
+    ASSERT_EQ(PC, address) << testID.str();
+    ASSERT_EQ(cycle, 6) << testID.str();
 }
+
+void MOS6502_TestFixture::test_return_from_subroutine(Word targetPC) {
+    reset();
+
+    const WordToBytes pcBuf(targetPC);
+    stack(SP--) = pcBuf.low;
+    stack(SP--) = pcBuf.high;
+
+    const auto instruction = Instruction::RTS;
+
+    std::stringstream testID;
+    testID << "Test " << instruction << "(target PC: " << HEX_WORD(targetPC) << ")";
+
+    const auto result = prepare_and_execute(instruction, std::nullopt);
+    ASSERT_FALSE(result.failed()) << testID.str() << ' ' << result.fail_message();
+
+    EXPECT_EQ(PC, targetPC + 1) << testID.str();
+    EXPECT_EQ(cycle, 6) << testID.str();
+    EXPECT_EQ(SP, 255) << testID.str();
+}
+

@@ -76,7 +76,7 @@ public:
 
     void test_jump_to_subroutine(Word address);
 
-    void test_return_from_subroutine();
+    void test_return_from_subroutine(Word targetPC);
 
     void test_branch(Flag flag, bool value, bool targetValue);
 

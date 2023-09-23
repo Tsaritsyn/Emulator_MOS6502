@@ -195,13 +195,14 @@ namespace Emulator {
 
 
     Byte MOS6502::pull_byte_from_stack() {
+        cycle++;
         return read_byte(STACK_BOTTOM + (++SP));
     }
 
 
     void MOS6502::pull_from_stack(Register to) {
         set_register(to, pull_byte_from_stack());
-        cycle += 2;
+        cycle ++;
     }
 
 
@@ -398,6 +399,7 @@ namespace Emulator {
 
     void MOS6502::return_from_subroutine() {
         PC = pull_word_from_stack() + 1;
+        cycle++;
     }
 
 
@@ -1000,6 +1002,12 @@ namespace Emulator {
     void MOS6502::transfer_registers(Register from, Register to) {
         cycle++;
         set_register(to, get_register(from));
+    }
+
+    void MOS6502::print_stack() const {
+        for (int sp = 255; sp >= 0; sp--) {
+            std::cout << HEX_BYTE(sp) << ": " << HEX_BYTE(memory[STACK_BOTTOM + sp]) << '\n';
+        }
     }
 
 }
