@@ -171,7 +171,7 @@ namespace Emulator {
         // SYSTEM FUNCTIONS //
         // **************** //
 
-        void force_interrupt();
+        void brk();
 
         void nop() { cycle++; };
 

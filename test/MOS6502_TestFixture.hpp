@@ -82,11 +82,11 @@ public:
 
     void test_branch(Flag flag, bool value, bool targetValue, Word initialPC, char offset);
 
-    void test_force_interrupt(Word initialPC, Word interruptVector);
+    void test_brk(Word initialPC, Word interruptVector);
 
     void test_nop();
 
-    void test_return_from_interrupt();
+    void test_return_from_interrupt(Word previousPC, Byte previousSR);
 };
 
 

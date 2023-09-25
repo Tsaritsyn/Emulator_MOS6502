@@ -781,8 +781,8 @@ void MOS6502_TestFixture::test_return_from_subroutine(Word targetPC) {
     reset();
 
     const WordToBytes pcBuf(targetPC);
-    stack(SP--) = pcBuf.low;
     stack(SP--) = pcBuf.high;
+    stack(SP--) = pcBuf.low;
 
     const auto instruction = Instruction::RTS;
 
@@ -834,7 +834,7 @@ void MOS6502_TestFixture::test_branch(Flag flag, bool value, bool targetValue, W
     }
 }
 
-void MOS6502_TestFixture::test_force_interrupt(Word initialPC, Word interruptVector) {
+void MOS6502_TestFixture::test_brk(Word initialPC, Word interruptVector) {
     reset();
     PC = initialPC;
 
@@ -846,10 +846,48 @@ void MOS6502_TestFixture::test_force_interrupt(Word initialPC, Word interruptVec
 
     write_word(interruptVector, BRK_HANDLER);
     const auto executionResult = prepare_and_execute(instruction);
+    ASSERT_FALSE(executionResult.failed()) << testID.str() << ' ' << executionResult.fail_message();
 
     EXPECT_EQ(SP, 253) << testID.str();
     EXPECT_EQ(stack(255), storedPC.high) << testID.str();
     EXPECT_EQ(stack(254), storedPC.low) << testID.str();
     EXPECT_EQ(PC, interruptVector) << testID.str();
+    EXPECT_EQ(cycle, 6) << testID.str();
+    EXPECT_EQ(SR[BREAK], SET) << testID.str();
+}
+
+void MOS6502_TestFixture::test_nop() {
+    reset();
+
+    constexpr Instruction instruction = Instruction::NOP;
+    std::stringstream testID;
+    testID << "Test " << instruction;
+
+    const auto executionResult = prepare_and_execute(instruction);
+    ASSERT_FALSE(executionResult.failed()) << testID.str() << ' ' << executionResult.fail_message();
+
+    EXPECT_EQ(cycle, 2) << testID.str();
+    EXPECT_EQ(PC, 1) << testID.str();
+}
+
+void MOS6502_TestFixture::test_return_from_interrupt(Word previousPC, Byte previousSR) {
+    reset();
+
+    const WordToBytes previousPCbuf(previousPC);
+    stack(SP--) = previousPCbuf.high;
+    stack(SP--) = previousPCbuf.low;
+    stack(SP--) = previousSR;
+
+    constexpr Instruction instruction = Instruction::RTI;
+    std::stringstream testID;
+    testID << "Test " << instruction << "(previous PC: " << HEX_WORD(previousPC) << ", previous SR: " << ProcessorStatus(previousSR) << ")";
+
+    const auto executionResult = prepare_and_execute(instruction);
+    ASSERT_FALSE(executionResult.failed()) << testID.str() << ' ' << executionResult.fail_message();
+
+    EXPECT_EQ(PC, previousPC) << testID.str();
+    EXPECT_EQ(SR, previousSR) << testID.str();
+    EXPECT_EQ(SP, 255) << testID.str();
+    EXPECT_EQ(cycle, 6) << testID.str();
 }
 

@@ -414,8 +414,8 @@ namespace Emulator {
 
     Word MOS6502::pull_word_from_stack() {
         WordToBytes buf{};
-        buf.high = pull_byte_from_stack();
         buf.low = pull_byte_from_stack();
+        buf.high = pull_byte_from_stack();
         return buf.word;
     }
 
@@ -435,16 +435,19 @@ namespace Emulator {
     }
 
 
-    void MOS6502::force_interrupt() {
+    void MOS6502::brk() {
         // it stores initial PC + 2, where initial is the address of the command
         push_word_to_stack(PC + 1);
         PC = read_reversed_word(BRK_HANDLER);
+        SR[BREAK] = SET;
+        cycle++;
     }
 
 
     void MOS6502::return_from_interrupt() {
-        pull_from_stack(Register::SR);
-        PC = pull_word_from_stack() + 1;
+        SR = pull_byte_from_stack();
+        PC = pull_word_from_stack();
+        cycle--;
     }
 
 
@@ -563,7 +566,7 @@ namespace Emulator {
                 return;
 
             case OpCode::BRK_IMPLICIT:
-                force_interrupt();
+                brk();
                 return;
 
             case OpCode::CLC_IMPLICIT:

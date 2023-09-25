@@ -6,11 +6,11 @@
 
 using namespace Emulator;
 
-constexpr std::array<Word, 8> testedAddresses{0, 10, 0xff, 0x0200, 0x02f0, 0x02ff, 0xff00, 0x36fe};
+static constexpr std::array<Word, 8> testedAddresses{0, 10, 0xff, 0x0200, 0x02f0, 0x02ff, 0xff00, 0x36fe};
 
 
 TEST_F(MOS6502_TestFixture, TestBRK) {
     for (const auto initialPC: testedAddresses)
         for (const auto interruptVector: testedAddresses)
-            test_force_interrupt(initialPC, interruptVector);
+            test_brk(initialPC, interruptVector);
 }
