@@ -78,7 +78,7 @@ public:
 
     void test_return_from_subroutine(Word targetPC);
 
-    void test_branch(Flag flag, bool value, bool targetValue);
+    void test_branch(Flag flag, bool value, bool targetValue, Word initialPC, char offset);
 
     void test_force_interrupt();
 

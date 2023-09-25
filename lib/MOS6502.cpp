@@ -156,8 +156,10 @@ namespace Emulator {
             case AddressingMode::ZERO_PAGE_Y:
                 return add_word(read_current_byte(), Y, true);
 
-            case AddressingMode::RELATIVE:
-                return PC + (char)read_current_byte();
+            case AddressingMode::RELATIVE: {
+                const char offset = read_current_byte();
+                return PC + offset;
+            }
 
             case AddressingMode::ABSOLUTE:
                 return read_current_word();
@@ -419,8 +421,17 @@ namespace Emulator {
 
 
     void MOS6502::branch_if(Flag flag_to_check, bool value_to_expect) {
+        const Word initialAddress = PC;
         Word new_address = determine_address(AddressingMode::RELATIVE);
-        if (SR[flag_to_check] == value_to_expect) PC = new_address;
+//        std::cout << "flag value: " << SR[flag_to_check] << ", expected value: " << value_to_expect << '\n';
+        if (SR[flag_to_check] == value_to_expect) {
+            PC = new_address;
+            // elapse cycle for successful branching
+            cycle++;
+            // TODO: find out if this is really necessary; if yes, then does page crossing counts from the initialPC or from initialPC + 2
+            // elapse cycle if page crossed
+//            if (WordToBytes(initialAddress).high != WordToBytes(new_address).high) cycle++;
+        }
     }
 
 

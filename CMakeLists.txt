@@ -56,6 +56,7 @@ add_executable(Emulator_MOS6502_Test
         lib/Result.hpp
         test/MOS6502_TestJMP.cpp
         test/MOS6502_TestSubroutine.cpp
+        test/MOS6502_TestBranch.cpp
 )
 
 target_include_directories(Emulator_MOS6502_Test PRIVATE lib test)

@@ -69,6 +69,7 @@ namespace Emulator {
          * While the decimal mode flag is set the processor will obey the rules of Binary Coded Decimal (BCD) arithmetic during addition and subtraction.
          * The flag can be explicitly set using 'Set Decimal Flag' (SED) and cleared with 'Clear Decimal Flag' (CLD).
          */
+         // TODO: implement addition and subtraction in decimal mode
         DECIMAL = 3,
 
         /**

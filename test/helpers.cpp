@@ -14,8 +14,8 @@ ProcessorStatus set_register_flags_for(Byte value) {
 
 bool page_crossed(Word address, int offset) {
     const WordToBytes buf(address);
-    int result = buf.low + offset;
-    return result < 0 || result > UINT8_MAX;
+    const WordToBytes bufNew((Word)(address + offset));
+    return buf.high != bufNew.high;
 }
 
 static std::pair<Byte, bool> add_within_range(int value1, int value2, bool carry, int rmin, int rmax) {

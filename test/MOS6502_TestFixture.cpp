@@ -796,3 +796,40 @@ void MOS6502_TestFixture::test_return_from_subroutine(Word targetPC) {
     EXPECT_EQ(SP, 255) << testID.str();
 }
 
+void MOS6502_TestFixture::test_branch(Flag flag, bool value, bool targetValue, Word initialPC, char offset) {
+    reset();
+    PC = initialPC;
+    SR[flag] = value;
+
+    const auto instructionResult = [flag, targetValue]() -> Result<Instruction> {
+        switch (flag) {
+            case NEGATIVE: return (targetValue) ? Instruction::BMI : Instruction::BPL;
+            case CARRY: return (targetValue) ? Instruction::BCS : Instruction::BCC;
+            case ZERO: return (targetValue) ? Instruction::BEQ : Instruction::BNE;
+            case OVERFLOW: return (targetValue) ? Instruction::BVS : Instruction::BVC;
+            default:
+                std::stringstream message;
+                message << "test_branch: unsupported flag " << flag << "for branching";
+                return {message.str()};
+        }
+    }();
+    ASSERT_FALSE(instructionResult.failed()) << instructionResult.fail_message();
+
+    for (const auto instruction: instructionResult) {
+        std::stringstream testID;
+        testID << "Test " << instruction << "(flag: " << flag << ", given value: " << value << ", expected value: " << targetValue << ", initial PC: " << HEX_WORD(initialPC) << ", offset: " << (int)offset << ")";
+
+        const auto addressing = Addressing::Relative(initialPC, offset);
+
+        const auto initialSR = SR;
+
+        const auto executionResult = prepare_and_execute(instruction, std::nullopt, addressing);
+        ASSERT_FALSE(executionResult.failed()) << testID.str() << ' ' << executionResult.fail_message();
+
+        const auto branchHappened = value == targetValue;
+        EXPECT_EQ(PC, (branchHappened) ? (Word)(initialPC + offset + 2) : (Word)(initialPC + 2)) << testID.str();
+        EXPECT_EQ(cycle, (branchHappened) ? 3 : 2) << testID.str();
+        EXPECT_EQ(SR, initialSR);
+    }
+}
+
