@@ -407,8 +407,8 @@ namespace Emulator {
 
     void MOS6502::push_word_to_stack(Word value) {
         WordToBytes buf(value);
-        push_byte_to_stack(buf.low);
         push_byte_to_stack(buf.high);
+        push_byte_to_stack(buf.low);
     }
 
 
@@ -436,8 +436,8 @@ namespace Emulator {
 
 
     void MOS6502::force_interrupt() {
-        push_word_to_stack(PC);
-        push_to_stack(Register::SR);
+        // it stores initial PC + 2, where initial is the address of the command
+        push_word_to_stack(PC + 1);
         PC = read_reversed_word(BRK_HANDLER);
     }
 

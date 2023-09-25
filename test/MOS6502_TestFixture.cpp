@@ -151,7 +151,8 @@ void MOS6502_TestFixture::test_transfer(Register from, Register to, Byte value) 
 }
 
 Result<std::optional<Location>>
-MOS6502_TestFixture::prepare_and_execute(Instruction instruction, std::optional<Byte> value, std::optional<Addressing> addressing) noexcept {
+MOS6502_TestFixture::prepare_and_execute(Instruction instruction, std::optional<Addressing> addressing,
+                                         std::optional<Byte> value) noexcept {
     // if addressing provided, will prepare the memory and return the target address, otherwise returns nullopt
     const auto location = addressing.and_then([this](const Addressing& addr){return prepare_memory(addr);});
 
@@ -211,7 +212,7 @@ void MOS6502_TestFixture::test_loading(Register reg, Byte value, const Addressin
         ASSERT_FALSE(durationResult.failed()) << testID.str() << ' ' << durationResult.fail_message();
 
         for (const auto duration: durationResult) {
-            prepare_and_execute(instruction, value, addressing);
+            prepare_and_execute(instruction, addressing, value);
             check_location(reg, value, addressing.PC_shift(), duration, testID.str(),
                            set_register_flags_for(value));
         }
@@ -258,7 +259,7 @@ void MOS6502_TestFixture::test_storage(Register reg, Byte value, const Addressin
 
         for (const auto duration: durationResult) {
             (*this)[reg] = value;
-            const auto locationResult = prepare_and_execute(instruction, std::nullopt, addressing);
+            const auto locationResult = prepare_and_execute(instruction, addressing);
 
             ASSERT_FALSE(locationResult.failed()) << testID.str() << locationResult.fail_message();
             for (const auto location: locationResult) {
@@ -383,7 +384,7 @@ void MOS6502_TestFixture::test_logical(LogicalOperation operation, Byte value, B
 
     for (const auto duration: durationResult) {
         AC = value;
-        prepare_and_execute(instruction, mem, addressing);
+        prepare_and_execute(instruction, addressing, mem);
         check_location(Register::AC, expectedResult, addressing.PC_shift(), duration, testID.str(),
                        set_register_flags_for(expectedResult));
     }
@@ -410,7 +411,7 @@ void MOS6502_TestFixture::test_bit_test(Byte value, Byte mem, const Addressing &
 
     for (const auto duration: durationResult) {
         AC = value;
-        prepare_and_execute(Instruction::BIT, mem, addressing);
+        prepare_and_execute(Instruction::BIT, addressing, mem);
 
         ProcessorStatus expectedFlags{};
         expectedFlags[ZERO] = (value & mem) == 0;
@@ -464,7 +465,7 @@ void MOS6502_TestFixture::test_arithmetics(MOS6502_TestFixture::ArithmeticOperat
     for (const auto duration: durationResult) {
         AC = value;
         SR[CARRY] = carry;
-        prepare_and_execute(instruction, mem, addressing);
+        prepare_and_execute(instruction, addressing, mem);
         check_location(Register::AC, expectedResult, addressing.PC_shift(), duration, testID.str(),
                        expectedFlags);
     }
@@ -513,7 +514,7 @@ void MOS6502_TestFixture::test_compare_register(Register reg, Byte registerValue
 
         for (const auto duration: durationResult) {
             (*this)[reg] = registerValue;
-            prepare_and_execute(instruction, memoryValue, addressing);
+            prepare_and_execute(instruction, addressing, memoryValue);
 
             ProcessorStatus expectedFlags{};
             expectedFlags[ZERO] = registerValue == memoryValue;
@@ -556,7 +557,7 @@ void MOS6502_TestFixture::test_deincrement_memory(ChangeByOne operation, Byte va
     ASSERT_FALSE(durationResult.failed()) << testID.str() << ' ' << durationResult.fail_message();
 
     for (const auto duration: durationResult) {
-        const auto locationResult = prepare_and_execute(instruction, value, addressing);
+        const auto locationResult = prepare_and_execute(instruction, addressing, value);
         ASSERT_FALSE(locationResult.failed()) << locationResult.fail_message();
 
         for (const auto location: locationResult) {
@@ -607,7 +608,7 @@ void MOS6502_TestFixture::test_deincrement_register(MOS6502_TestFixture::ChangeB
         }();
 
         (*this)[reg] = value;
-        prepare_and_execute(instruction, value);
+        prepare_and_execute(instruction, std::nullopt, value);
 
         check_location(reg, expectedResult, 1, 2, testID.str(), set_register_flags_for(expectedResult));
     }
@@ -648,7 +649,7 @@ void MOS6502_TestFixture::test_shift(MOS6502_TestFixture::ShiftDirection directi
         ProcessorStatus expectedFlags = set_register_flags_for(expectedResult);
         expectedFlags[CARRY] = expectedCarry;
 
-        const auto locationResult = prepare_and_execute(instruction, value, addressing);
+        const auto locationResult = prepare_and_execute(instruction, addressing, value);
         ASSERT_FALSE(locationResult.failed()) << testID.str() << ' ' << locationResult.fail_message();
 
         for (const auto location: locationResult) {
@@ -703,7 +704,7 @@ void MOS6502_TestFixture::test_rotate(MOS6502_TestFixture::ShiftDirection direct
         expectedFlags[CARRY] = expectedCarry;
 
         SR[CARRY] = carry;
-        const auto locationResult = prepare_and_execute(instruction, value, addressing);
+        const auto locationResult = prepare_and_execute(instruction, addressing, value);
         ASSERT_FALSE(locationResult.failed()) << testID.str() << ' ' << locationResult.fail_message();
 
         for (const auto location: locationResult) {
@@ -717,12 +718,12 @@ void MOS6502_TestFixture::test_rotate(MOS6502_TestFixture::ShiftDirection direct
 void MOS6502_TestFixture::test_jump(const Addressing &addressing) {
     reset();
 
-    const Instruction instruction = Instruction::JMP;
+    constexpr Instruction instruction = Instruction::JMP;
 
     std::stringstream testID;
     testID << "Test " << instruction << "(addressing: " << addressing << ")";
 
-    const auto durationResult = [&addressing, instruction]() -> Result<size_t> {
+    const auto durationResult = [&addressing]() -> Result<size_t> {
         switch (addressing.getMode()) {
             case AddressingMode::ABSOLUTE: return 3;
             case AddressingMode::INDIRECT: return 5;
@@ -738,7 +739,7 @@ void MOS6502_TestFixture::test_jump(const Addressing &addressing) {
         const auto opcodeResult = opcode(instruction);
         ASSERT_FALSE(opcodeResult.failed()) << testID.str() << ' ' << opcodeResult.fail_message();
 
-        const auto locationResult = prepare_and_execute(instruction, std::nullopt, addressing);
+        const auto locationResult = prepare_and_execute(instruction, addressing);
         ASSERT_FALSE(locationResult.failed()) << testID.str() << ' ' << locationResult.fail_message();
 
         switch (addressing.getMode()) {
@@ -766,12 +767,12 @@ void MOS6502_TestFixture::test_jump_to_subroutine(Word address) {
 
     const WordToBytes pcBuf(PC + 2);
 
-    const auto result = prepare_and_execute(instruction, std::nullopt, addressing);
+    const auto result = prepare_and_execute(instruction, addressing);
     ASSERT_FALSE(result.failed()) << testID.str() << ' ' << result.fail_message();
 
     ASSERT_EQ(SP, 253) << testID.str();
-    ASSERT_EQ(stack(255), pcBuf.low) << testID.str();
-    ASSERT_EQ(stack(254), pcBuf.high) << testID.str();
+    ASSERT_EQ(stack(255), pcBuf.high) << testID.str();
+    ASSERT_EQ(stack(254), pcBuf.low) << testID.str();
     ASSERT_EQ(PC, address) << testID.str();
     ASSERT_EQ(cycle, 6) << testID.str();
 }
@@ -788,7 +789,7 @@ void MOS6502_TestFixture::test_return_from_subroutine(Word targetPC) {
     std::stringstream testID;
     testID << "Test " << instruction << "(target PC: " << HEX_WORD(targetPC) << ")";
 
-    const auto result = prepare_and_execute(instruction, std::nullopt);
+    const auto result = prepare_and_execute(instruction);
     ASSERT_FALSE(result.failed()) << testID.str() << ' ' << result.fail_message();
 
     EXPECT_EQ(PC, targetPC + 1) << testID.str();
@@ -823,7 +824,7 @@ void MOS6502_TestFixture::test_branch(Flag flag, bool value, bool targetValue, W
 
         const auto initialSR = SR;
 
-        const auto executionResult = prepare_and_execute(instruction, std::nullopt, addressing);
+        const auto executionResult = prepare_and_execute(instruction, addressing);
         ASSERT_FALSE(executionResult.failed()) << testID.str() << ' ' << executionResult.fail_message();
 
         const auto branchHappened = value == targetValue;
@@ -831,5 +832,24 @@ void MOS6502_TestFixture::test_branch(Flag flag, bool value, bool targetValue, W
         EXPECT_EQ(cycle, (branchHappened) ? 3 : 2) << testID.str();
         EXPECT_EQ(SR, initialSR);
     }
+}
+
+void MOS6502_TestFixture::test_force_interrupt(Word initialPC, Word interruptVector) {
+    reset();
+    PC = initialPC;
+
+    const WordToBytes storedPC(PC + 2);
+    constexpr Instruction instruction = Instruction::BRK;
+
+    std::stringstream testID;
+    testID << "Test " << instruction << "(initial PC: " << HEX_WORD(initialPC) << ", interrupt vector: " << HEX_WORD(interruptVector) << ")";
+
+    write_word(interruptVector, BRK_HANDLER);
+    const auto executionResult = prepare_and_execute(instruction);
+
+    EXPECT_EQ(SP, 253) << testID.str();
+    EXPECT_EQ(stack(255), storedPC.high) << testID.str();
+    EXPECT_EQ(stack(254), storedPC.low) << testID.str();
+    EXPECT_EQ(PC, interruptVector) << testID.str();
 }
 
