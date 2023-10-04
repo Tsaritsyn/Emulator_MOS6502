@@ -20,6 +20,8 @@ add_executable(Emulator_MOS6502 main.cpp
         lib/MOS6502_helpers.cpp
         lib/MOS6502_helpers.hpp
         lib/Result.hpp
+        lib/programs.cpp
+        lib/programs.hpp
 )
 
 target_include_directories(Emulator_MOS6502 PRIVATE lib)

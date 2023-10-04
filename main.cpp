@@ -1,5 +1,7 @@
 #include <iostream>
+
 #include "MOS6502.hpp"
+#include "programs.hpp"
 
 using namespace Emulator;
 
@@ -9,9 +11,8 @@ int main() {
     constexpr Word programStart = 0x0200;
     Byte index = 0;
 
-    constexpr Byte n1 = 100;
-    constexpr Byte n2 = 100;
-    constexpr Word ADDRESS_RESULT_HIGH = 1;
+    constexpr Byte n1 = 255;
+    constexpr Byte n2 = 255;
 
     /*
      * Start-up sequence
@@ -20,10 +21,8 @@ int main() {
     // LDX #FF
     memory[programStart + index++] = LDX_IMMEDIATE;
     memory[programStart + index++] = 0xff;
-
     // TSX
     memory[programStart + index++] = TSX_IMPLICIT;
-
     // CLI
     memory[programStart + index++] = CLI_IMPLICIT;
 
@@ -34,57 +33,18 @@ int main() {
     // LDA n1
     memory[programStart + index++] = LDA_IMMEDIATE;
     memory[programStart + index++] = n1;
-
     // LDX n2
     memory[programStart + index++] = LDX_IMMEDIATE;
     memory[programStart + index++] = n2;
 
     /*
-     * Actual code
+     * Actual multiplication program
      */
 
-    // STA $00
-    memory[programStart + index++] = STA_ZERO_PAGE;
-    memory[programStart + index++] = 0;
+    const auto program = program_multiplication(programStart + index);
+    for (const auto byte: program)
+        memory[programStart + index++] = byte;
 
-    // LDA #00
-    memory[programStart + index++] = LDA_IMMEDIATE;
-    memory[programStart + index++] = 0;
-
-    // loop: CPX #0
-    const Word loop = programStart + index;
-    memory[programStart + index++] = CPX_IMMEDIATE;
-    memory[programStart + index++] = 0;
-
-    // BEQ +3
-    memory[programStart + index++] = BEQ_RELATIVE;
-    memory[programStart + index++] = 11;
-
-    // CLC
-    memory[programStart + index++] = CLC_IMPLICIT;
-
-    // ADC $00
-    memory[programStart + index++] = ADC_ZERO_PAGE;
-    memory[programStart + index++] = 0;
-
-    // BCC +3
-    memory[programStart + index++] = BCC_RELATIVE;
-    memory[programStart + index++] = 2;
-
-    // INC ADDRESS_RESULT_HIGH
-    memory[programStart + index++] = INC_ZERO_PAGE;
-    memory[programStart + index++] = ADDRESS_RESULT_HIGH;
-
-    // DEX
-    memory[programStart + index++] = DEX_IMPLICIT;
-
-    // JMP loop
-    const WordToBytes buf(loop);
-    memory[programStart + index++] = JMP_ABSOLUTE;
-    memory[programStart + index++] = buf.low;
-    memory[programStart + index++] = buf.high;
-
-    // BRK
     memory[programStart + index++] = BRK_IMPLICIT;
 
 
