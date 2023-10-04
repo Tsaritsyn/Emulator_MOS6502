@@ -19,6 +19,14 @@ namespace Emulator {
 
     public:
 
+        static constexpr Word STACK_BOTTOM = 0x0100;
+        static constexpr Word INTERRUPT_HANDLER = 0xFFFA;
+        static constexpr Word RESET_LOCATION = 0xFFFC;
+        static constexpr Word BRK_HANDLER = 0xFFFE;
+
+        bool verbose = false;
+
+
         [[nodiscard]] std::string dump(bool include_memory = false) const;
 
         void print_stack() const;
@@ -40,9 +48,9 @@ namespace Emulator {
 
         void execute_command(OpCode opCode);
 
-        void execute_current_command();
+        OpCode execute_current_command();
 
-        [[noreturn]] void execute();
+        void execute(bool stopOnBRK);
 
         Byte& operator [](const Location& address);
 
@@ -241,11 +249,6 @@ namespace Emulator {
         ProcessorStatus SR;
         /// stack pointer
         Byte SP;
-
-        static constexpr Word STACK_BOTTOM = 0x0100;
-        static constexpr Word INTERRUPT_HANDLER = 0xFFFA;
-        static constexpr Word RESET_LOCATION = 0xFFFC;
-        static constexpr Word BRK_HANDLER = 0xFFFE;
 
         /**
          * CPU memory storing processor stack and instructions referenced by program counter.

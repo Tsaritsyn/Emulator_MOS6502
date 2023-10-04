@@ -246,6 +246,9 @@ namespace Emulator {
         const bool initialMemSignBit = get_bit(mem, NEGATIVE);
 
         bool carry = SR[CARRY];
+
+        if (verbose) std::cout << "Add with carry: AC = " << (int)AC << ", memory = " << (int)mem << ", carry = " << carry << "\n";
+
         set_register(Register::AC, add_bytes(AC, mem, carry));
         const bool resultSignBit = get_bit(AC, NEGATIVE);
 
@@ -276,9 +279,13 @@ namespace Emulator {
         Byte reg_value = get_register(reg);
         Byte memory_value = read_byte(mode);
 
+        if (verbose) std::cout << "Comparing " << (int)reg_value << " to " << (int)memory_value;
+
         SR[CARRY] = reg_value >= memory_value;
         SR[ZERO] = reg_value == memory_value;
         SR[NEGATIVE] = reg_value < memory_value;
+
+        if (verbose) std::cout << ", resulting flags " << SR << '\n';
     }
 
 
@@ -388,6 +395,8 @@ namespace Emulator {
 
     void MOS6502::jump(AddressingMode mode) {
         PC = determine_address(mode);
+
+        if (verbose) std::cout << "Jump to " << HEX_WORD(PC) << '\n';
     }
 
 
@@ -421,17 +430,23 @@ namespace Emulator {
 
 
     void MOS6502::branch_if(Flag flag_to_check, bool value_to_expect) {
-        const Word initialAddress = PC;
+//        const Word initialAddress = PC;
         Word new_address = determine_address(AddressingMode::RELATIVE);
-//        std::cout << "flag value: " << SR[flag_to_check] << ", expected value: " << value_to_expect << '\n';
+
+        if (verbose) std::cout << "Branching on " << flag_to_check << ' ' << value_to_expect;
+
         if (SR[flag_to_check] == value_to_expect) {
             PC = new_address;
+
+            if (verbose) std::cout << ": successfully to " << HEX_WORD(PC) << '\n';
+
             // elapse cycle for successful branching
             cycle++;
             // TODO: find out if this is really necessary; if yes, then does page crossing counts from the initialPC or from initialPC + 2
             // elapse cycle if page crossed
 //            if (WordToBytes(initialAddress).high != WordToBytes(new_address).high) cycle++;
         }
+        else if (verbose) std::cout << ": failed\n";
     }
 
 
@@ -466,6 +481,8 @@ namespace Emulator {
 
 
     void MOS6502::execute_command(OpCode opCode) {
+        if (verbose) std::cout << "Executing " << HEX_BYTE(opCode) << '\n';
+
         switch (opCode) {
             case OpCode::ADC_IMMEDIATE:
                 add_with_carry(AddressingMode::IMMEDIATE);
@@ -961,15 +978,21 @@ namespace Emulator {
     }
 
 
-    void MOS6502::execute() {
-        while (true)
-            execute_current_command();
+    void MOS6502::execute(bool stopOnBRK) {
+        while (true) {
+            auto opCode = execute_current_command();
+
+            if (verbose) std::cout << "AC = " << (int)AC << ", X = " << (int)X << ", Y = " << (int)Y << "; flags = " << SR << '\n';
+
+            if (stopOnBRK && opCode == BRK_IMPLICIT) return;
+        }
     }
 
 
-    void MOS6502::execute_current_command() {
+    OpCode MOS6502::execute_current_command() {
         OpCode opCode{read_current_byte()};
         execute_command(opCode);
+        return opCode;
     }
 
 
