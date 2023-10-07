@@ -415,7 +415,7 @@ void MOS6502_TestFixture::test_bit_test(Byte value, Byte mem, const Addressing &
 
         ProcessorStatus expectedFlags{};
         expectedFlags[ZERO] = (value & mem) == 0;
-        expectedFlags[OVERFLOW] = get_bit(mem, OVERFLOW);
+        expectedFlags[OVERFLOW_F] = get_bit(mem, OVERFLOW_F);
         expectedFlags[NEGATIVE] = get_bit(mem, NEGATIVE);
 
         EXPECT_EQ(SR, expectedFlags) << testID.str();
@@ -807,7 +807,7 @@ void MOS6502_TestFixture::test_branch(Flag flag, bool value, bool targetValue, W
             case NEGATIVE: return (targetValue) ? Instruction::BMI : Instruction::BPL;
             case CARRY: return (targetValue) ? Instruction::BCS : Instruction::BCC;
             case ZERO: return (targetValue) ? Instruction::BEQ : Instruction::BNE;
-            case OVERFLOW: return (targetValue) ? Instruction::BVS : Instruction::BVC;
+            case OVERFLOW_F: return (targetValue) ? Instruction::BVS : Instruction::BVC;
             default:
                 std::stringstream message;
                 message << "test_branch: unsupported flag " << flag << "for branching";

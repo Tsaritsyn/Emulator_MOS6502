@@ -30,7 +30,7 @@ std::pair<Byte, ProcessorStatus> add_with_carry(Byte value1, Byte value2, bool c
     flags[CARRY] = unsignedOverflow;
 
     const auto &[_, signedOverflow] = add_within_range((char)value1, (char)value2, carry, INT8_MIN, INT8_MAX);
-    flags[OVERFLOW] = signedOverflow;
+    flags[OVERFLOW_F] = signedOverflow;
 
     return {unsignedResult, flags | set_register_flags_for(unsignedResult)};
 }
@@ -47,7 +47,7 @@ std::pair<Byte, ProcessorStatus> subtract_with_carry(Byte value1, Byte value2, b
     flags[CARRY] = !unsignedOverflow;
 
     const auto &[_, signedOverflow] = subtract_within_range((char)value1, (char)value2, carry, INT8_MIN, INT8_MAX);
-    flags[OVERFLOW] = signedOverflow;
+    flags[OVERFLOW_F] = signedOverflow;
 
     return {unsignedResult, flags | set_register_flags_for(unsignedResult)};
 }

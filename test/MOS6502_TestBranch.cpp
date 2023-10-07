@@ -61,15 +61,15 @@ TEST_F(MOS6502_TestFixture, TestBMI) {
 TEST_F(MOS6502_TestFixture, TestBVC) {
     for (const auto initialPC: testedPCs)
         for (const auto offset: testedOffsets) {
-            test_branch(OVERFLOW, SET, CLEAR, initialPC, offset);
-            test_branch(OVERFLOW, CLEAR, CLEAR, initialPC, offset);
+            test_branch(OVERFLOW_F, SET, CLEAR, initialPC, offset);
+            test_branch(OVERFLOW_F, CLEAR, CLEAR, initialPC, offset);
         }
 }
 
 TEST_F(MOS6502_TestFixture, TestBVS) {
     for (const auto initialPC: testedPCs)
         for (const auto offset: testedOffsets) {
-            test_branch(OVERFLOW, SET, SET, initialPC, offset);
-            test_branch(OVERFLOW, CLEAR, SET, initialPC, offset);
+            test_branch(OVERFLOW_F, SET, SET, initialPC, offset);
+            test_branch(OVERFLOW_F, CLEAR, SET, initialPC, offset);
         }
 }

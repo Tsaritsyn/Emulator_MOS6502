@@ -234,7 +234,7 @@ namespace Emulator {
 
         SR[ZERO] = test_result == 0;
 
-        SR[OVERFLOW] = get_bit(memory_byte, OVERFLOW);
+        SR[OVERFLOW_F] = get_bit(memory_byte, OVERFLOW_F);
         SR[NEGATIVE] = get_bit(memory_byte, NEGATIVE);
     }
 
@@ -254,7 +254,7 @@ namespace Emulator {
 
         SR[CARRY] = carry;
         // overflow flag is set every time when the sign of the result is incorrect
-        SR[OVERFLOW] = (initialACSignBit == initialMemSignBit) && (initialACSignBit != resultSignBit);
+        SR[OVERFLOW_F] = (initialACSignBit == initialMemSignBit) && (initialACSignBit != resultSignBit);
     }
 
 
@@ -271,7 +271,7 @@ namespace Emulator {
         // carry flag is set only when the result crossed 0
         SR[CARRY] = carry;
         // overflow flag is set every time when the sign of the result is incorrect
-        SR[OVERFLOW] = (initial_sign_bit != rhs_sign_bit) && (initial_sign_bit != resulting_sign_bit);
+        SR[OVERFLOW_F] = (initial_sign_bit != rhs_sign_bit) && (initial_sign_bit != resulting_sign_bit);
     }
 
 
@@ -569,10 +569,10 @@ namespace Emulator {
                 branch_if(NEGATIVE, CLEAR);
                 return;
             case OpCode::BVC_RELATIVE:
-                branch_if(OVERFLOW, CLEAR);
+                branch_if(OVERFLOW_F, CLEAR);
                 return;
             case OpCode::BVS_RELATIVE:
-                branch_if(OVERFLOW, SET);
+                branch_if(OVERFLOW_F, SET);
                 return;
 
             case OpCode::BIT_ZERO_PAGE:
@@ -596,7 +596,7 @@ namespace Emulator {
                 SR[INTERRUPT_DISABLE] = CLEAR;
                 return;
             case OpCode::CLV_IMPLICIT:
-                SR[OVERFLOW] = CLEAR;
+                SR[OVERFLOW_F] = CLEAR;
                 return;
 
             case OpCode::CMP_IMMEDIATE:

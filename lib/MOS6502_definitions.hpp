@@ -58,7 +58,7 @@ namespace Emulator {
          *  (e.g. adding to positive numbers and ending up with a negative result: 64 + 64 => -128).
          * It is determined by looking at the carry between bits 6 and 7 and between bit 7 and the carry flag.
          */
-        OVERFLOW = 6,
+        OVERFLOW_F = 6,
 
         /**
          * The break command bit is set when a BRK instruction has been executed and an interrupt has been generated to process it.
