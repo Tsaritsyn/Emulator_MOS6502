@@ -14,6 +14,7 @@
 #include <QListView>
 
 #include "MOS6502_definitions.hpp"
+#include "byteview.hpp"
 
 using namespace Emulator;
 
@@ -22,35 +23,14 @@ class PageView : public QWidget {
 Q_OBJECT
 
 public:
-    explicit PageView(Byte pageIndex, /*ROM &memory, */QWidget *parent = nullptr);
-
-//private slots:
-//    template <int index>
-//    void changeMemoryValue() {
-//        std::cout << "Memory value changed to " << memoryValueLabels[index]->toPlainText().toStdString() << '\n';
-//    };
+    explicit PageView(Byte pageIndex, ROM &memory, QWidget *parent = nullptr);
 
 private:
-    void changeMemory(Byte page, Byte index);
-//    std::unique_ptr<QScrollArea> mainScroll;
-//    std::unique_ptr<QGroupBox> mainFrame;
-//    std::unique_ptr<QGroupBox> mainGroupBox;
     std::unique_ptr<QVBoxLayout> mainLayout;
-
-//    std::unique_ptr<QLabel> pageIndexLabel;
-
-    std::unique_ptr<QLabel> byteIndexLabels[256];
-    std::unique_ptr<QTextEdit> memoryValueLabels[256];
-    std::unique_ptr<QLabel> assemblyDecodingLabels[256];
-    std::unique_ptr<QTextEdit> commentLabels[256];
-
-    std::unique_ptr<QHBoxLayout> groupLayouts[256];
-    std::unique_ptr<QGroupBox> groupBoxes[256];
-
-//    std::unique_ptr<QListView> listView;
+    std::unique_ptr<ByteView> byteViews[256];
 
     Byte m_pageIndex;
-//    ROM &m_memory;
+    ROM &m_memory;
 };
 
 

@@ -39,6 +39,8 @@ add_executable(Emulator_MOS6502 main.cpp
         ui/mainwindow.hpp
         ui/pageview.cpp
         ui/pageview.hpp
+        ui/byteview.cpp
+        ui/byteview.hpp
 )
 
 target_include_directories(Emulator_MOS6502 PRIVATE lib ui)

@@ -16,14 +16,9 @@ class MainWindow : public QMainWindow {
 Q_OBJECT
 
 public:
-    explicit MainWindow(QWidget* parent = nullptr);
-
-    ~MainWindow() override;
+    explicit MainWindow(ROM &memory, QWidget* parent = nullptr);
 
     void addPageView(Byte page);
-
-private slots:
-    void increaseCount();
 
 private:
     std::vector<std::unique_ptr<PageView>> pageViews;
@@ -31,9 +26,8 @@ private:
 
     std::unique_ptr<QWidget> mainWidget;
     std::unique_ptr<QHBoxLayout> pageViewsLayout;
-//    int count;
-//    QPushButton* button;
-//    QLabel* label;
+
+    ROM &memory;
 };
 
 

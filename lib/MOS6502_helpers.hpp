@@ -10,6 +10,7 @@
 #include <iostream>
 #include <optional>
 #include <utility>
+#include <expected>
 
 #include "MOS6502_definitions.hpp"
 #include "Result.hpp"
@@ -43,6 +44,8 @@ namespace Emulator {
         if (opt.has_value()) return os << opt.value();
         else return os << "nullopt";
     }
+
+    std::string byte_description(Byte byte);
 }
 
 #endif //EMULATOR_MOS6502_MOS6502_HELPERS_HPP

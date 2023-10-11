@@ -7,9 +7,11 @@
 using namespace Emulator;
 
 int main(int argc, char *argv[]) {
+    ROM memory{};
+
     QApplication a(argc, argv);
 
-    MainWindow mainWindow{};
+    MainWindow mainWindow{memory};
     mainWindow.showMaximized();
 
     return QApplication::exec();
