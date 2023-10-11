@@ -8,6 +8,9 @@
 #include <QPushButton>
 #include <QLabel>
 #include <QMainWindow>
+#include <QScrollArea>
+
+#include "pageview.hpp"
 
 class MainWindow : public QMainWindow {
 Q_OBJECT
@@ -17,13 +20,20 @@ public:
 
     ~MainWindow() override;
 
+    void addPageView(Byte page);
+
 private slots:
     void increaseCount();
 
 private:
-    int count;
-    QPushButton* button;
-    QLabel* label;
+    std::vector<std::unique_ptr<PageView>> pageViews;
+    std::vector<std::unique_ptr<QScrollArea>> scrollAreas;
+
+    std::unique_ptr<QWidget> mainWidget;
+    std::unique_ptr<QHBoxLayout> pageViewsLayout;
+//    int count;
+//    QPushButton* button;
+//    QLabel* label;
 };
 
 
