@@ -9,6 +9,8 @@
 #include <QLabel>
 #include <QMainWindow>
 #include <QScrollArea>
+#include <QMenu>
+#include <QMenuBar>
 
 #include "pageview.hpp"
 
@@ -18,7 +20,10 @@ Q_OBJECT
 public:
     explicit MainWindow(ROM &memory, QWidget* parent = nullptr);
 
-    void addPageView(Byte page);
+    void add_page_view();
+
+private slots:
+    void execute_program();
 
 private:
     std::vector<std::unique_ptr<PageView>> pageViews;
@@ -26,6 +31,10 @@ private:
 
     std::unique_ptr<QWidget> mainWidget;
     std::unique_ptr<QHBoxLayout> pageViewsLayout;
+
+    std::unique_ptr<QMenu> fileMenu;
+    std::unique_ptr<QAction> execute;
+    std::unique_ptr<QAction> addPageView;
 
     ROM &memory;
 };
