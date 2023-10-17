@@ -20,110 +20,110 @@ namespace Emulator {
     }
 
 
-    std::ostream &operator<<(std::ostream &os, AddressingMode mode) {
+    std::string to_string(AddressingMode mode) {
         switch (mode) {
-            case AddressingMode::IMPLICIT:    return os << "Implicit";
-            case AddressingMode::ACCUMULATOR: return os << "Accumulator";
-            case AddressingMode::IMMEDIATE:   return os << "Immediate";
-            case AddressingMode::ZERO_PAGE:   return os << "Zero Page";
-            case AddressingMode::ZERO_PAGE_X: return os << "Zero Page,X";
-            case AddressingMode::ZERO_PAGE_Y: return os << "Zero Page,Y";
-            case AddressingMode::RELATIVE:    return os << "Relative";
-            case AddressingMode::ABSOLUTE:    return os << "Absolute";
-            case AddressingMode::ABSOLUTE_X:  return os << "Absolute,X";
-            case AddressingMode::ABSOLUTE_Y:  return os << "Absolute,Y";
-            case AddressingMode::INDIRECT:    return os << "Indirect";
-            case AddressingMode::INDIRECT_X:  return os << "Indirect,X";
-            case AddressingMode::INDIRECT_Y:  return os << "Indirect,Y";
+            case AddressingMode::IMPLICIT:    return "Implicit";
+            case AddressingMode::ACCUMULATOR: return "Accumulator";
+            case AddressingMode::IMMEDIATE:   return "Immediate";
+            case AddressingMode::ZERO_PAGE:   return "Zero Page";
+            case AddressingMode::ZERO_PAGE_X: return "Zero Page,X";
+            case AddressingMode::ZERO_PAGE_Y: return "Zero Page,Y";
+            case AddressingMode::RELATIVE:    return "Relative";
+            case AddressingMode::ABSOLUTE:    return "Absolute";
+            case AddressingMode::ABSOLUTE_X:  return "Absolute,X";
+            case AddressingMode::ABSOLUTE_Y:  return "Absolute,Y";
+            case AddressingMode::INDIRECT:    return "Indirect";
+            case AddressingMode::INDIRECT_X:  return "Indirect,X";
+            case AddressingMode::INDIRECT_Y:  return "Indirect,Y";
         }
         std::unreachable();
     }
 
 
-    std::ostream &operator<<(std::ostream &os, Register aRegister) {
+    std::string to_string(Register aRegister) {
         switch (aRegister) {
-            case Register::AC: return os << 'A';
-            case Register::X:  return os << 'X';
-            case Register::Y:  return os << 'Y';
-            case Register::SP: return os << "SP";
-            case Register::SR: return os << "SR";
+            case Register::AC: return "A";
+            case Register::X:  return "X";
+            case Register::Y:  return "Y";
+            case Register::SP: return "SP";
+            case Register::SR: return "SR";
         }
         std::unreachable();
     }
 
 
-    std::ostream &operator<<(std::ostream &os, Flag flag) {
+    std::string to_string(Flag flag) {
         switch (flag) {
-            case NEGATIVE:          return os << "Negative";
-            case OVERFLOW_F:          return os << "Overflow";
-            case BREAK:             return os << "Break";
-            case DECIMAL:           return os << "Decimal";
-            case INTERRUPT_DISABLE: return os << "Interrupt disable";
-            case ZERO:              return os << "Zero";
-            case CARRY:             return os << "Carry";
+            case NEGATIVE:          return "Negative";
+            case OVERFLOW_F:        return "Overflow";
+            case BREAK:             return "Break";
+            case DECIMAL:           return "Decimal";
+            case INTERRUPT_DISABLE: return "Interrupt disable";
+            case ZERO:              return "Zero";
+            case CARRY:             return "Carry";
         }
         std::unreachable();
     }
 
 
-    std::ostream &operator<<(std::ostream &os, Instruction instruction) {
+    std::string to_string(Instruction instruction) {
         switch (instruction) {
-            case Instruction::ADC: return os << "ADC";
-            case Instruction::AND: return os << "AND";
-            case Instruction::ASL: return os << "ASL";
-            case Instruction::BCC: return os << "BCC";
-            case Instruction::BCS: return os << "BCS";
-            case Instruction::BEQ: return os << "BEQ";
-            case Instruction::BIT: return os << "BIT";
-            case Instruction::BMI: return os << "BMI";
-            case Instruction::BNE: return os << "BNE";
-            case Instruction::BPL: return os << "BPL";
-            case Instruction::BRK: return os << "BRK";
-            case Instruction::BVC: return os << "BVC";
-            case Instruction::BVS: return os << "BVS";
-            case Instruction::CLC: return os << "CLC";
-            case Instruction::CLD: return os << "CLD";
-            case Instruction::CLI: return os << "CLI";
-            case Instruction::CLV: return os << "CLV";
-            case Instruction::CMP: return os << "CMP";
-            case Instruction::CPX: return os << "CPX";
-            case Instruction::CPY: return os << "CPY";
-            case Instruction::DEC: return os << "DEC";
-            case Instruction::DEX: return os << "DEX";
-            case Instruction::DEY: return os << "DEY";
-            case Instruction::EOR: return os << "EOR";
-            case Instruction::INC: return os << "INC";
-            case Instruction::INX: return os << "INX";
-            case Instruction::INY: return os << "INY";
-            case Instruction::JMP: return os << "JMP";
-            case Instruction::JSR: return os << "JSR";
-            case Instruction::LDA: return os << "LDA";
-            case Instruction::LDX: return os << "LDX";
-            case Instruction::LDY: return os << "LDY";
-            case Instruction::LSR: return os << "LSR";
-            case Instruction::NOP: return os << "NOP";
-            case Instruction::ORA: return os << "ORA";
-            case Instruction::PHA: return os << "PHA";
-            case Instruction::PHP: return os << "PHP";
-            case Instruction::PLA: return os << "PLA";
-            case Instruction::PLP: return os << "PLP";
-            case Instruction::ROL: return os << "ROL";
-            case Instruction::ROR: return os << "ROR";
-            case Instruction::RTI: return os << "RTI";
-            case Instruction::RTS: return os << "RTS";
-            case Instruction::SBC: return os << "SBC";
-            case Instruction::SEC: return os << "SEC";
-            case Instruction::SED: return os << "SED";
-            case Instruction::SEI: return os << "SEI";
-            case Instruction::STA: return os << "STA";
-            case Instruction::STX: return os << "STX";
-            case Instruction::STY: return os << "STY";
-            case Instruction::TAX: return os << "TAX";
-            case Instruction::TAY: return os << "TAY";
-            case Instruction::TSX: return os << "TSX";
-            case Instruction::TXA: return os << "TXA";
-            case Instruction::TXS: return os << "TXS";
-            case Instruction::TYA: return os << "TYA";
+            case Instruction::ADC: return "ADC";
+            case Instruction::AND: return "AND";
+            case Instruction::ASL: return "ASL";
+            case Instruction::BCC: return "BCC";
+            case Instruction::BCS: return "BCS";
+            case Instruction::BEQ: return "BEQ";
+            case Instruction::BIT: return "BIT";
+            case Instruction::BMI: return "BMI";
+            case Instruction::BNE: return "BNE";
+            case Instruction::BPL: return "BPL";
+            case Instruction::BRK: return "BRK";
+            case Instruction::BVC: return "BVC";
+            case Instruction::BVS: return "BVS";
+            case Instruction::CLC: return "CLC";
+            case Instruction::CLD: return "CLD";
+            case Instruction::CLI: return "CLI";
+            case Instruction::CLV: return "CLV";
+            case Instruction::CMP: return "CMP";
+            case Instruction::CPX: return "CPX";
+            case Instruction::CPY: return "CPY";
+            case Instruction::DEC: return "DEC";
+            case Instruction::DEX: return "DEX";
+            case Instruction::DEY: return "DEY";
+            case Instruction::EOR: return "EOR";
+            case Instruction::INC: return "INC";
+            case Instruction::INX: return "INX";
+            case Instruction::INY: return "INY";
+            case Instruction::JMP: return "JMP";
+            case Instruction::JSR: return "JSR";
+            case Instruction::LDA: return "LDA";
+            case Instruction::LDX: return "LDX";
+            case Instruction::LDY: return "LDY";
+            case Instruction::LSR: return "LSR";
+            case Instruction::NOP: return "NOP";
+            case Instruction::ORA: return "ORA";
+            case Instruction::PHA: return "PHA";
+            case Instruction::PHP: return "PHP";
+            case Instruction::PLA: return "PLA";
+            case Instruction::PLP: return "PLP";
+            case Instruction::ROL: return "ROL";
+            case Instruction::ROR: return "ROR";
+            case Instruction::RTI: return "RTI";
+            case Instruction::RTS: return "RTS";
+            case Instruction::SBC: return "SBC";
+            case Instruction::SEC: return "SEC";
+            case Instruction::SED: return "SED";
+            case Instruction::SEI: return "SEI";
+            case Instruction::STA: return "STA";
+            case Instruction::STX: return "STX";
+            case Instruction::STY: return "STY";
+            case Instruction::TAX: return "TAX";
+            case Instruction::TAY: return "TAY";
+            case Instruction::TSX: return "TSX";
+            case Instruction::TXA: return "TXA";
+            case Instruction::TXS: return "TXS";
+            case Instruction::TYA: return "TYA";
         }
         std::unreachable();
     }
@@ -494,9 +494,7 @@ namespace Emulator {
                 else break;
         }
 
-        std::stringstream message;
-        message << "opcode: instruction " << instruction << " does not support " << addressingMode << " addressing\n";
-        return {message.str()};
+        return {"opcode: instruction " + to_string(instruction) + " does not support " + to_string(addressingMode) + " addressing"};
     }
 
 

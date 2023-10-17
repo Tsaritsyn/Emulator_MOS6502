@@ -29,3 +29,10 @@ void Emulator::ROM::set_word(Emulator::ROM::SetWordInputAddressNotModified input
     set_byte({.address = input.address, .value = buf.low, .cycle = input.cycle});
     set_byte({.address = (Word)(input.address + 1), .value = buf.high, .cycle = input.cycle});
 }
+
+Emulator::Word Emulator::ROM::get_word(Emulator::Word address) const {
+    WordToBytes buf;
+    buf.low = m_bytes[address];
+    buf.high = m_bytes[address + 1];
+    return buf.word;
+}

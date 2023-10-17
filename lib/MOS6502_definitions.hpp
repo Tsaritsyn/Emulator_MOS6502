@@ -11,9 +11,9 @@
 #include <bitset>
 #include <variant>
 
-#define HEX_BYTE(byte) "0x" << std::uppercase << std::setfill('0') << std::setw(2) << std::hex << ((int)(byte)) << std::dec
-#define HEX_WORD(word) "0x" << std::uppercase << std::setfill('0') << std::setw(4) << std::hex << ((int)(word)) << std::dec
-#define HEX_CULL_BYTE(byte) std::uppercase << std::setfill('0') << std::setw(2) << std::hex << ((int)(byte)) << std::dec
+//#define HEX_BYTE(byte) "0x" << std::uppercase << std::setfill('0') << std::setw(2) << std::hex << ((int)(byte)) << std::dec
+//#define HEX_WORD(word) "0x" << std::uppercase << std::setfill('0') << std::setw(4) << std::hex << ((int)(word)) << std::dec
+//#define HEX_CULL_BYTE(byte) std::uppercase << std::setfill('0') << std::setw(2) << std::hex << ((int)(byte)) << std::dec
 
 // https://stackoverflow.com/questions/4239993/determining-endianness-at-compile-time
 #if 'AB' == 0x4142
@@ -30,11 +30,6 @@ namespace Emulator {
 
     constexpr bool CLEAR = false;
     constexpr bool SET = true;
-
-    template <typename T>
-    concept Printable = requires(std::ostream& os, const T& a) { os << a; };
-
-
 
     struct WordToBytes {
 #if BIG_ENDIAN

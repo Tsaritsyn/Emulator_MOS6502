@@ -8,6 +8,7 @@
 #include <iostream>
 #include <utility>
 #include <cassert>
+#include <format>
 
 #include "MOS6502.hpp"
 #include "MOS6502_helpers.hpp"
@@ -15,33 +16,6 @@
 
 
 namespace Emulator {
-
-//    Byte MOS6502::read_current_byte() {
-//        return read_byte(PC++);
-//    }
-
-
-//    Word MOS6502::read_current_word() {
-//        WordToBytes buf{};
-//        buf.low = read_current_byte();
-//        buf.high = read_current_byte();
-//        return buf.word;
-//    }
-
-
-//    Word MOS6502::read_reversed_word(Word address) {
-//        WordToBytes buf{};
-//        buf.low = read_byte(address);
-//        buf.high = read_byte(address + 1);
-//        return buf.word;
-//    }
-
-
-//    Byte MOS6502::read_byte(Word address) {
-//        cycle++;
-//        return memory[address];
-//    }
-
 
     void MOS6502::load_register(Register reg, AddressingMode mode) {
         set_register(reg, read_byte(mode));
@@ -80,39 +54,28 @@ namespace Emulator {
 
 
     std::string MOS6502::dump(bool include_memory) const {
-        std::stringstream ss;
-        ss << "Registers: AC = " << HEX_BYTE((int) AC) << ", X = " << HEX_BYTE((int) X) << ", Y = " << HEX_BYTE((int) Y);
-        ss << "\nProgram counter = " << HEX_BYTE((int) PC) << ", Stack pointer = " << HEX_BYTE((int) SP);
-        ss << "\nFlags: " << SR;
-        ss << "\nCurrent cycle = " << cycle;
-        ss << "\nZero page: ";
-        for (int i = 0x00; i < 0xFF; i++) ss << HEX_BYTE((int) memory[i]) << ' ';
-        ss << "\nStack: ";
-        for (int i = 0x0100; i < 0x01ff; i++) ss << HEX_BYTE((int) memory[i]) << ' ';
-        ss << "\nSpecial addresses: non-maskable interrupt handler = " << HEX_BYTE((int) memory[0xfffb])
-           << HEX_CULL_BYTE((int) memory[0xfffa])
-           << ", power on reset location = " << HEX_BYTE((int) memory[0xfffd]) << HEX_CULL_BYTE((int) memory[0xfffc])
-           << ", BRK/interrupt request handler = " << HEX_BYTE((int) memory[0xffff]) << HEX_CULL_BYTE((int) memory[0xfffe]);
+        auto result = std::vformat("Registers: AC = {:u}, X = {:u}, Y = {:u}\n", std::make_format_args(AC, X, Y));
+        result += std::vformat("Program counter = {:#04x}, Stack pointer = {:#02x}\n", std::make_format_args(PC, SP));
+        result += std::vformat("Flags: {}\n", std::make_format_args(SR.to_string()));
+        result += std::vformat("Current cycle = {:u}\n", std::make_format_args(cycle));
+
+        result += "Zero page: ";
+        for (int i = 0; i <= UINT8_MAX; i++) result += std::vformat("{:#02x} ", std::make_format_args(memory[i]));
+
+        result += "\nStack: ";
+        for (int i = 0; i <= UINT8_MAX; i++) result += std::vformat("{:#02x} ", std::make_format_args(memory[STACK_BOTTOM + i]));
+
+        result += std::vformat("\nSpecial addresses:\n\tnon-maskable interrupt handler = {:#04x}\n\tpower on reset location = {:#04x}\n\tBRK/interrupt request handler = {#04x}\n",
+                               std::make_format_args(memory.get_word(INTERRUPT_HANDLER), memory.get_word(RESET_LOCATION), memory.get_word(BRK_HANDLER)));
 
         if (include_memory) {
-            ss << "\nRemaining memory:\n";
-            for (int i = 0x01ff + 1; i < 0xfffa; i++) ss << HEX_BYTE((int) memory[i]) << ' ';
-            ss << "\nEND OF MEMORY.";
+            result += "Remaining memory:\n";
+            for (int i = STACK_BOTTOM + UINT8_MAX + 1; i <= UINT16_MAX; i++) result += std::vformat("{:#02} ", std::make_format_args(memory[i]));
+            result += '\n';
         }
-        return ss.str();
+
+        return result + "END OF DUMP.";
     }
-
-
-//    void MOS6502::write_byte(Byte value, Word address, bool set_flags) {
-//        memory[address] = value;
-//        cycle++;
-//
-//        if (set_flags) {
-//            // setting flags
-//            SR[ZERO] = value == 0;
-//            SR[NEGATIVE] = (char)value < 0;
-//        }
-//    }
 
 
     Byte MOS6502::get_register(Emulator::Register reg) const {
@@ -415,8 +378,6 @@ namespace Emulator {
 
     void MOS6502::jump(AddressingMode mode) {
         PC = determine_address(mode);
-
-        if (verbose) std::cout << "Jump to " << HEX_WORD(PC) << '\n';
     }
 
 
@@ -457,8 +418,6 @@ namespace Emulator {
 
         if (SR[flag_to_check] == value_to_expect) {
             PC = new_address;
-
-            if (verbose) std::cout << ": successfully to " << HEX_WORD(PC) << '\n';
 
             // elapse cycle for successful branching
             cycle++;
@@ -501,8 +460,6 @@ namespace Emulator {
 
 
     void MOS6502::execute_command(OpCode opCode) {
-        if (verbose) std::cout << "Executing " << HEX_BYTE(opCode) << '\n';
-
         switch (opCode) {
             case OpCode::ADC_IMMEDIATE:
                 add_with_carry(AddressingMode::IMMEDIATE);
@@ -992,9 +949,7 @@ namespace Emulator {
                 return;
         }
 
-        std::stringstream ss;
-        ss << "Illegal op code " << HEX_BYTE(opCode) << " at the address " << HEX_WORD(PC);
-        throw std::runtime_error(ss.str());
+        throw std::runtime_error(std::vformat("Illegal op code {:#02x} at the address {:#04x}", std::make_format_args(std::to_underlying(opCode), PC)));
     }
 
 
@@ -1059,12 +1014,6 @@ namespace Emulator {
     void MOS6502::transfer_registers(Register from, Register to) {
         cycle++;
         set_register(to, get_register(from));
-    }
-
-    void MOS6502::print_stack() const {
-        for (int sp = 255; sp >= 0; sp--) {
-            std::cout << HEX_BYTE(sp) << ": " << HEX_BYTE(memory[STACK_BOTTOM + sp]) << '\n';
-        }
     }
 
     void MOS6502::set_writing_flags(Byte value) {

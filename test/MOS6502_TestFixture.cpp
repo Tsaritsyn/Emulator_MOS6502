@@ -2,6 +2,7 @@
 // Created by Mikhail on 14/09/2023.
 //
 
+#include <format>
 #include "MOS6502_TestFixture.hpp"
 #include "helpers.hpp"
 
@@ -121,31 +122,27 @@ void MOS6502_TestFixture::test_transfer(Register from, Register to, Byte value) 
             }
 
             default:
-                break;
+                return {"test_transfer: cannot move value from " + to_string(from) + " to " + to_string(to)};
         }
-
-        std::stringstream message;
-        message << "test_transfer: cannot move value from " << from << " to " << to << '\n';
-        return {message.str()};
     }();
     ASSERT_FALSE(instructionResult.failed()) << instructionResult.fail_message();
 
     for (const auto instruction: instructionResult) {
-        std::stringstream testID;
-        testID << "Test " << instruction << "(value: " << (int) value << ")";
+        std::string testID = std::vformat("Test {}(value: {:d})",
+                                          std::make_format_args(to_string(instruction), value));
 
         const auto opcodeResult = opcode(instruction);
-        ASSERT_FALSE(opcodeResult.failed()) << testID.str() << ' ' << opcodeResult.fail_message();
+        ASSERT_FALSE(opcodeResult.failed()) << testID << ' ' << opcodeResult.fail_message();
 
         for (const auto opCode: opcodeResult) {
             (*this)[from] = value;
             memory[PC] = opCode;
             execute_current_command();
 
-            EXPECT_EQ((*this)[to], value) << testID.str();
-            EXPECT_EQ(SR, (to == Register::SP) ? 0 : set_register_flags_for(value)) << testID.str();
-            EXPECT_EQ(PC, 1) << testID.str();
-            EXPECT_EQ(cycle, 2) << testID.str();
+            EXPECT_EQ((*this)[to], value) << testID;
+            EXPECT_EQ(SR, (to == Register::SP) ? 0 : set_register_flags_for(value)) << testID;
+            EXPECT_EQ(PC, 1) << testID;
+            EXPECT_EQ(cycle, 2) << testID;
         }
     }
 }
@@ -180,16 +177,14 @@ void MOS6502_TestFixture::test_loading(Register reg, Byte value, const Addressin
             case Register::X: return Instruction::LDX;
             case Register::Y: return Instruction::LDY;
             default:
-                std::stringstream message;
-                message << "test_loading: unsupported register " << reg << " for load instruction\n";
-                return {message.str()};
+                return {"test_loading: unsupported register " + to_string(reg) + " for load instruction"};
         }
     }();
     ASSERT_FALSE(instructionResult.failed()) << instructionResult.fail_message();
 
     for (const auto instruction: instructionResult) {
-        std::stringstream testID;
-        testID << "Test " << instruction << "(value: " << (int) value << ", addressing: " << addressing << ")";
+        std::string testID = std::vformat("Test {}(value: {:d}, addressing: {})",
+                                          std::make_format_args(to_string(instruction), value, addressing.to_string()));
 
         const auto durationResult = [&addressing, instruction]() -> Result<size_t> {
             switch (addressing.getMode()) {
@@ -203,17 +198,15 @@ void MOS6502_TestFixture::test_loading(Register reg, Byte value, const Addressin
                 case AddressingMode::INDIRECT_X:  return 6;
                 case AddressingMode::INDIRECT_Y:  return 5 + addressing.page_crossed();
                 default:
-                    std::stringstream message;
-                    message << "loading_parameters: provided addressing mode " << addressing.getMode()
-                              << " is not supported by " << instruction << " instruction\n";
-                    return {message.str()};
+                    return {"loading_parameters: provided addressing mode " + to_string(addressing.getMode())
+                            + " is not supported by " + to_string(instruction) + " instruction"};
             }
         }();
-        ASSERT_FALSE(durationResult.failed()) << testID.str() << ' ' << durationResult.fail_message();
+        ASSERT_FALSE(durationResult.failed()) << testID << ' ' << durationResult.fail_message();
 
         for (const auto duration: durationResult) {
             prepare_and_execute(instruction, addressing, value);
-            check_location(reg, value, addressing.PC_shift(), duration, testID.str(),
+            check_location(reg, value, addressing.PC_shift(), duration, testID,
                            set_register_flags_for(value));
         }
     }
@@ -228,15 +221,13 @@ void MOS6502_TestFixture::test_storage(Register reg, Byte value, const Addressin
             case Register::X: return Instruction::STX;
             case Register::Y: return Instruction::STY;
             default:
-                std::stringstream message;
-                message << "test_loading: unsupported register " << reg << " for store instruction\n";
-                return {message.str()};
+                return {"test_loading: unsupported register " + to_string(reg) + " for store instruction"};
         }
     }();
     ASSERT_FALSE(instructionResult.failed()) << instructionResult.fail_message();
     for (const auto instruction: instructionResult) {
-        std::stringstream testID;
-        testID << "Test " << instruction << "(value: " << (int) value << ", addressing: " << addressing << ")";
+        std::string testID = std::vformat("Test {}(value: {:d}, addressing: {})",
+                                          std::make_format_args(to_string(instruction), value, addressing.to_string()));
 
         const auto durationResult = [&addressing, instruction]() -> Result<size_t> {
             switch (addressing.getMode()) {
@@ -249,22 +240,20 @@ void MOS6502_TestFixture::test_storage(Register reg, Byte value, const Addressin
                 case AddressingMode::INDIRECT_X:  [[fallthrough]];
                 case AddressingMode::INDIRECT_Y:  return 6;
                 default:
-                    std::stringstream message;
-                    message << "loading_parameters: provided addressing mode " << addressing.getMode()
-                            << " is not supported by " << instruction << " instruction\n";
-                    return {message.str()};
+                    return {"loading_parameters: provided addressing mode " + to_string(addressing.getMode())
+                            + " is not supported by " + to_string(instruction) + " instruction"};
             }
         }();
-        ASSERT_FALSE(durationResult.failed()) << testID.str() << ' ' << durationResult.fail_message();
+        ASSERT_FALSE(durationResult.failed()) << testID << ' ' << durationResult.fail_message();
 
         for (const auto duration: durationResult) {
             (*this)[reg] = value;
             const auto locationResult = prepare_and_execute(instruction, addressing);
 
-            ASSERT_FALSE(locationResult.failed()) << testID.str() << locationResult.fail_message();
+            ASSERT_FALSE(locationResult.failed()) << testID << locationResult.fail_message();
             for (const auto location: locationResult) {
-                ASSERT_TRUE(location.has_value()) << testID.str();
-                check_location(location.value(), value, addressing.PC_shift(), duration, testID.str());
+                ASSERT_TRUE(location.has_value()) << testID;
+                check_location(location.value(), value, addressing.PC_shift(), duration, testID);
             }
         }
     }
@@ -278,30 +267,28 @@ void MOS6502_TestFixture::test_push_to_stack(Register reg, Byte value) {
             case Register::AC: return Instruction::PHA;
             case Register::SR: return Instruction::PHP;
             default:
-                std::stringstream message;
-                message << "test_push_to_stack: unsupported register " << reg << " for stack push instruction\n";
-                return {message.str()};
+                return {"test_push_to_stack: unsupported register " + to_string(reg) + " for stack push instruction"};
         }
     }();
     ASSERT_FALSE(instructionResult.failed()) << instructionResult.fail_message();
     for (const auto instruction: instructionResult) {
-        std::stringstream testID;
-        testID << "Test " << instruction << "(value: " << (int) value << ")";
+        std::string testID = std::vformat("Test {}(value: {:d})",
+                                          std::make_format_args(to_string(instruction), value));
 
         // SR cannot be set via [] operator
         if (reg == Emulator::Register::AC) AC = value;
         else SR = value;
 
         const auto opcodeResult = opcode(instruction);
-        ASSERT_FALSE(opcodeResult.failed()) << testID.str() << ' ' << opcodeResult.fail_message();
+        ASSERT_FALSE(opcodeResult.failed()) << testID << ' ' << opcodeResult.fail_message();
 
         for (const auto opCode: opcodeResult) memory[PC] = opCode;
         execute_current_command();
 
-        EXPECT_EQ(stack(SP + 1), value) << testID.str();
-        EXPECT_EQ(SP, 254) << testID.str();
-        EXPECT_EQ(cycle, 3) << testID.str();
-        EXPECT_EQ(PC, 1) << testID.str();
+        EXPECT_EQ(stack(SP + 1), value) << testID;
+        EXPECT_EQ(SP, 254) << testID;
+        EXPECT_EQ(cycle, 3) << testID;
+        EXPECT_EQ(PC, 1) << testID;
     }
 }
 
@@ -317,16 +304,14 @@ void MOS6502_TestFixture::test_pull_from_stack(Register reg, Byte value) {
             case Register::AC: return Instruction::PLA;
             case Register::SR: return Instruction::PLP;
             default:
-                std::stringstream message;
-                message << "test_pull_from_stack: unsupported register " << reg << " for stack push instruction\n";
-                return {message.str()};
+                return {"test_pull_from_stack: unsupported register " + to_string(reg) + " for stack push instruction"};
         }
     }();
     ASSERT_FALSE(instructionResult.failed()) << instructionResult.fail_message();
 
     for (const auto instruction: instructionResult) {
-        std::stringstream testID;
-        testID << "Test " << instruction << "(value: " << (int)value << ")";
+        std::string testID = std::vformat("Test {}(value: {:d})",
+                                          std::make_format_args(to_string(instruction), value));
 
         stack(SP--) = value;
 
@@ -337,10 +322,10 @@ void MOS6502_TestFixture::test_pull_from_stack(Register reg, Byte value) {
             memory[PC] = opCode;
             execute_current_command();
 
-            EXPECT_EQ((reg == Emulator::Register::AC) ? AC : SR, value) << testID.str();
-            EXPECT_EQ(SP, 255) << testID.str();
-            EXPECT_EQ(cycle, 4) << testID.str();
-            EXPECT_EQ(PC, 1) << testID.str();
+            EXPECT_EQ((reg == Emulator::Register::AC) ? AC : SR, value) << testID;
+            EXPECT_EQ(SP, 255) << testID;
+            EXPECT_EQ(cycle, 4) << testID;
+            EXPECT_EQ(PC, 1) << testID;
         }
 
     }
@@ -360,8 +345,8 @@ void MOS6502_TestFixture::test_logical(LogicalOperation operation, Byte value, B
         std::unreachable();
     }();
 
-    std::stringstream testID;
-    testID << "Test " << instruction << "(AC: " << HEX_BYTE(value) << ", memory: " << HEX_BYTE(mem) << ", addressing: " << addressing << ")";
+    std::string testID = std::vformat("Test {}(AC: {:#02x}, memory: {:#02x}, addressing: {})",
+                                            std::make_format_args(to_string(instruction), AC, mem, addressing.to_string()));
 
     const auto durationResult = [&addressing]() -> Result<size_t> {
         switch (addressing.getMode()) {
@@ -374,18 +359,16 @@ void MOS6502_TestFixture::test_logical(LogicalOperation operation, Byte value, B
             case Emulator::AddressingMode::INDIRECT_X:  return 6;
             case Emulator::AddressingMode::INDIRECT_Y:  return 5 + addressing.page_crossed();
             default:
-                std::stringstream message;
-                message << "test_logical: provided addressing mode " << addressing.getMode()
-                          << " is not supported by EOR instruction\n";
-                return {message.str()};
+                return {"test_logical: provided addressing mode " + to_string(addressing.getMode())
+                        + " is not supported by EOR instruction"};
         }
     }();
-    ASSERT_FALSE(durationResult.failed()) << testID.str() << ' ' << durationResult.fail_message();
+    ASSERT_FALSE(durationResult.failed()) << testID << ' ' << durationResult.fail_message();
 
     for (const auto duration: durationResult) {
         AC = value;
         prepare_and_execute(instruction, addressing, mem);
-        check_location(Register::AC, expectedResult, addressing.PC_shift(), duration, testID.str(),
+        check_location(Register::AC, expectedResult, addressing.PC_shift(), duration, testID,
                        set_register_flags_for(expectedResult));
     }
 }
@@ -393,21 +376,19 @@ void MOS6502_TestFixture::test_logical(LogicalOperation operation, Byte value, B
 void MOS6502_TestFixture::test_bit_test(Byte value, Byte mem, const Addressing &addressing) {
     reset();
 
-    std::stringstream testID;
-    testID << "Test BIT(AC: " << HEX_BYTE(value) << ", memory: " << HEX_BYTE(mem) << ", addressing: " << addressing << ")";
+    std::string testID = std::vformat("Test BIT(AC: {:#02x}, memory: {:#02x}, addressing: {})",
+                                      std::make_format_args(AC, mem, addressing.to_string()));
 
     const auto durationResult = [&addressing]() -> Result<size_t> {
         switch (addressing.getMode()) {
             case AddressingMode::ZERO_PAGE: return 3;
             case AddressingMode::ABSOLUTE:  return 4;
             default:
-                std::stringstream message;
-                message << "test_bit_test: provided addressing mode " << addressing.getMode()
-                          << " is not supported by BIT instruction\n";
-                return {message.str()};
+                return {"test_bit_test: provided addressing mode " + to_string(addressing.getMode())
+                        + " is not supported by BIT instruction"};
         }
     }();
-    ASSERT_FALSE(durationResult.failed()) << testID.str() << ' ' << durationResult.fail_message();
+    ASSERT_FALSE(durationResult.failed()) << testID << ' ' << durationResult.fail_message();
 
     for (const auto duration: durationResult) {
         AC = value;
@@ -418,9 +399,9 @@ void MOS6502_TestFixture::test_bit_test(Byte value, Byte mem, const Addressing &
         expectedFlags[OVERFLOW_F] = get_bit(mem, OVERFLOW_F);
         expectedFlags[NEGATIVE] = get_bit(mem, NEGATIVE);
 
-        EXPECT_EQ(SR, expectedFlags) << testID.str();
-        EXPECT_EQ(cycle, duration) << testID.str();
-        EXPECT_EQ(PC, addressing.PC_shift()) << testID.str();
+        EXPECT_EQ(SR, expectedFlags) << testID;
+        EXPECT_EQ(cycle, duration) << testID;
+        EXPECT_EQ(PC, addressing.PC_shift()) << testID;
     }
 }
 
@@ -438,8 +419,8 @@ void MOS6502_TestFixture::test_arithmetics(MOS6502_TestFixture::ArithmeticOperat
         std::unreachable();
     }();
 
-    std::stringstream testID;
-    testID << "Test " << instruction << "(AC: " << HEX_BYTE(value) << ", memory: " << HEX_BYTE(mem) << ", carry: " << carry << ", addressing: " << addressing << ")";
+    std::string testID = std::vformat("Test {}(AC: {:#02x}, memory: {:#02x}, carry: {:d}, addressing: {})",
+                                      std::make_format_args(to_string(instruction), AC, mem, carry, addressing.to_string()));
 
     const auto &[expectedResult, expectedFlags] = arithmeticFn(value, mem, carry);
 
@@ -454,19 +435,16 @@ void MOS6502_TestFixture::test_arithmetics(MOS6502_TestFixture::ArithmeticOperat
             case Emulator::AddressingMode::INDIRECT_X:  return 6;
             case Emulator::AddressingMode::INDIRECT_Y:  return 5 + addressing.page_crossed();
             default:
-                std::stringstream message;
-                message << "test_arithmetics: provided addressing mode " << addressing.getMode()
-                        << " is not supported by " << instruction << " instruction\n";
-                return {message.str()};
+                return {"test_arithmetics: provided addressing mode " + to_string(addressing.getMode()) + " is not supported by " + to_string(instruction) + " instruction"};
         }
     }();
-    ASSERT_FALSE(durationResult.failed()) << testID.str() << ' ' << durationResult.fail_message();
+    ASSERT_FALSE(durationResult.failed()) << testID << ' ' << durationResult.fail_message();
 
     for (const auto duration: durationResult) {
         AC = value;
         SR[CARRY] = carry;
         prepare_and_execute(instruction, addressing, mem);
-        check_location(Register::AC, expectedResult, addressing.PC_shift(), duration, testID.str(),
+        check_location(Register::AC, expectedResult, addressing.PC_shift(), duration, testID,
                        expectedFlags);
     }
 }
@@ -481,17 +459,14 @@ void MOS6502_TestFixture::test_compare_register(Register reg, Byte registerValue
             case Register::X:  return Instruction::CPX;
             case Register::Y:  return Instruction::CPY;
             default:
-                std::stringstream message;
-                message << "test_compare_register: register " << reg << " cannot be used for comparison command\n";
-                return {message.str()};
+                return {"test_compare_register: register " + to_string(reg) + " cannot be used for comparison command\n"};
         }
     }();
     ASSERT_FALSE(instructionResult.failed()) << instructionResult.fail_message();
 
     for (const auto instruction: instructionResult) {
-        std::stringstream testID;
-        testID << "Test " << instruction << "(register: " << HEX_BYTE(registerValue) << ", memory: "
-               << HEX_BYTE(memoryValue) << ", addressing: " << addressing << ")";
+        std::string testID = std::vformat("Test {}(register: {:d}, memory: {:d}, addressing: {})",
+                                          std::make_format_args(to_string(instruction), registerValue, memoryValue, addressing.to_string()));
 
         const auto durationResult = [&addressing, instruction]() -> Result<size_t> {
             switch (addressing.getMode()) {
@@ -504,13 +479,11 @@ void MOS6502_TestFixture::test_compare_register(Register reg, Byte registerValue
                 case Emulator::AddressingMode::INDIRECT_X:  return 6;
                 case Emulator::AddressingMode::INDIRECT_Y:  return 5 + addressing.page_crossed();
                 default:
-                    std::stringstream message;
-                    message << "test_compare_register: provided addressing mode " << addressing.getMode()
-                              << " is not supported by " << instruction << " instruction\n";
-                    return {message.str()};
+                    return {"test_compare_register: provided addressing mode " + to_string(addressing.getMode())
+                            + " is not supported by " + to_string(instruction) + " instruction"};
             }
         }();
-        ASSERT_FALSE(durationResult.failed()) << testID.str() << ' ' << durationResult.fail_message();
+        ASSERT_FALSE(durationResult.failed()) << testID << ' ' << durationResult.fail_message();
 
         for (const auto duration: durationResult) {
             (*this)[reg] = registerValue;
@@ -539,8 +512,8 @@ void MOS6502_TestFixture::test_deincrement_memory(ChangeByOne operation, Byte va
         std::unreachable();
     }();
 
-    std::stringstream testID;
-    testID << "Test " << instruction << "(value: " << (int) value << ", addressing: " << addressing << ")";
+    std::string testID = std::vformat("Test {}(value: {:d}, addressing: {})",
+                                      std::make_format_args(to_string(instruction), value, addressing.to_string()));
 
     const auto durationResult = [&addressing, instruction]() -> Result<size_t> {
         switch (addressing.getMode()) {
@@ -549,20 +522,18 @@ void MOS6502_TestFixture::test_deincrement_memory(ChangeByOne operation, Byte va
             case AddressingMode::ABSOLUTE:    return 6;
             case AddressingMode::ABSOLUTE_X:  return 7;
             default:
-                std::stringstream message;
-                message << "test_deincrement_memory: provided addressing mode " << addressing.getMode() << " is not supported by " << instruction << " instruction\n";
-                return {message.str()};
+                return {"test_deincrement_memory: provided addressing mode " + to_string(addressing.getMode()) + " is not supported by " + to_string(instruction) + " instruction"};
         }
     }();
-    ASSERT_FALSE(durationResult.failed()) << testID.str() << ' ' << durationResult.fail_message();
+    ASSERT_FALSE(durationResult.failed()) << testID << ' ' << durationResult.fail_message();
 
     for (const auto duration: durationResult) {
         const auto locationResult = prepare_and_execute(instruction, addressing, value);
         ASSERT_FALSE(locationResult.failed()) << locationResult.fail_message();
 
         for (const auto location: locationResult) {
-            ASSERT_TRUE(location.has_value()) << testID.str();
-            check_location(location.value(), expectedResult, addressing.PC_shift(), duration, testID.str(),
+            ASSERT_TRUE(location.has_value()) << testID;
+            check_location(location.value(), expectedResult, addressing.PC_shift(), duration, testID,
                            set_register_flags_for(expectedResult));
         }
     }
@@ -588,16 +559,14 @@ void MOS6502_TestFixture::test_deincrement_register(MOS6502_TestFixture::ChangeB
                 std::unreachable();
             }
             default:
-                std::stringstream message;
-                message << "test_deincrement_register: register " << reg << " cannot be used for increment or decrement command\n";
-                return {message.str()};
+                return {"test_deincrement_register: register " + to_string(reg) + " cannot be used for increment or decrement command"};
         }
     }();
     ASSERT_FALSE(instructionResult.failed()) << instructionResult.fail_message();
 
     for (const auto instruction: instructionResult) {
-        std::stringstream testID;
-        testID << "Test " << instruction << "(value: " << (int) value << ")";
+        std::string testID = std::vformat("Test {}(value: {:d})",
+                                          std::make_format_args(to_string(instruction), value));
 
         const auto expectedResult = [operation, value]() -> Byte {
             switch (operation) {
@@ -610,7 +579,7 @@ void MOS6502_TestFixture::test_deincrement_register(MOS6502_TestFixture::ChangeB
         (*this)[reg] = value;
         prepare_and_execute(instruction, std::nullopt, value);
 
-        check_location(reg, expectedResult, 1, 2, testID.str(), set_register_flags_for(expectedResult));
+        check_location(reg, expectedResult, 1, 2, testID, set_register_flags_for(expectedResult));
     }
 }
 
@@ -627,8 +596,8 @@ void MOS6502_TestFixture::test_shift(MOS6502_TestFixture::ShiftDirection directi
         std::unreachable();
     }();
 
-    std::stringstream testID;
-    testID << "Test " << instruction << "(value: " << HEX_BYTE(value) << ", addressing: " << addressing << ")";
+    std::string testID = std::vformat("Test {}(value: {:#02x}, addressing: {})",
+                                      std::make_format_args(to_string(instruction), value, addressing.to_string()));
 
     const auto durationResult = [&addressing, instruction]() -> Result<size_t> {
         switch (addressing.getMode()) {
@@ -638,23 +607,21 @@ void MOS6502_TestFixture::test_shift(MOS6502_TestFixture::ShiftDirection directi
             case AddressingMode::ABSOLUTE:    return 6;
             case AddressingMode::ABSOLUTE_X:  return 7;
             default:
-                std::stringstream message;
-                message << "test_shift: provided addressing mode " << addressing.getMode() << " is not supported by " << instruction << " instruction\n";
-                return {message.str()};
+                return {"test_shift: provided addressing mode " + to_string(addressing.getMode()) + " is not supported by " + to_string(instruction) + " instruction"};
         }
     }();
-    ASSERT_FALSE(durationResult.failed()) << testID.str() << ' ' << durationResult.fail_message();
+    ASSERT_FALSE(durationResult.failed()) << testID << ' ' << durationResult.fail_message();
 
     for (const auto duration: durationResult) {
         ProcessorStatus expectedFlags = set_register_flags_for(expectedResult);
         expectedFlags[CARRY] = expectedCarry;
 
         const auto locationResult = prepare_and_execute(instruction, addressing, value);
-        ASSERT_FALSE(locationResult.failed()) << testID.str() << ' ' << locationResult.fail_message();
+        ASSERT_FALSE(locationResult.failed()) << testID << ' ' << locationResult.fail_message();
 
         for (const auto location: locationResult) {
-            ASSERT_TRUE(location.has_value()) << testID.str();
-            check_location(location.value(), expectedResult, addressing.PC_shift(), duration, testID.str(),
+            ASSERT_TRUE(location.has_value()) << testID;
+            check_location(location.value(), expectedResult, addressing.PC_shift(), duration, testID,
                            expectedFlags);
         }
     }
@@ -681,8 +648,8 @@ void MOS6502_TestFixture::test_rotate(MOS6502_TestFixture::ShiftDirection direct
         std::unreachable();
     }();
 
-    std::stringstream testID;
-    testID << "Test " << instruction << "(value: " << HEX_BYTE(value) << ", carry: " << carry << ", addressing: " << addressing << ")";
+    std::string testID = std::vformat("Test {}(value: {:#02x}, carry: {:d}, addressing: {})",
+                                      std::make_format_args(to_string(instruction), value, carry, addressing.to_string()));
 
     const auto durationResult = [&addressing, instruction]() -> Result<size_t> {
         switch (addressing.getMode()) {
@@ -692,12 +659,10 @@ void MOS6502_TestFixture::test_rotate(MOS6502_TestFixture::ShiftDirection direct
             case AddressingMode::ABSOLUTE:    return 6;
             case AddressingMode::ABSOLUTE_X:  return 7;
             default:
-                std::stringstream message;
-                message << "test_rotate: provided addressing mode " << addressing.getMode() << " is not supported by " << instruction << " instruction\n";
-                return {message.str()};
+                return {"test_rotate: provided addressing mode " + to_string(addressing.getMode()) + " is not supported by " + to_string(instruction) + " instruction"};
         }
     }();
-    ASSERT_FALSE(durationResult.failed()) << testID.str() << ' ' << durationResult.fail_message();
+    ASSERT_FALSE(durationResult.failed()) << testID << ' ' << durationResult.fail_message();
 
     for (const auto duration: durationResult) {
         ProcessorStatus expectedFlags = set_register_flags_for(expectedResult);
@@ -705,11 +670,11 @@ void MOS6502_TestFixture::test_rotate(MOS6502_TestFixture::ShiftDirection direct
 
         SR[CARRY] = carry;
         const auto locationResult = prepare_and_execute(instruction, addressing, value);
-        ASSERT_FALSE(locationResult.failed()) << testID.str() << ' ' << locationResult.fail_message();
+        ASSERT_FALSE(locationResult.failed()) << testID << ' ' << locationResult.fail_message();
 
         for (const auto location: locationResult) {
-            ASSERT_TRUE(location.has_value()) << testID.str();
-            check_location(location.value(), expectedResult, addressing.PC_shift(), duration, testID.str(),
+            ASSERT_TRUE(location.has_value()) << testID;
+            check_location(location.value(), expectedResult, addressing.PC_shift(), duration, testID,
                            expectedFlags);
         }
     }
@@ -720,39 +685,37 @@ void MOS6502_TestFixture::test_jump(const Addressing &addressing) {
 
     constexpr Instruction instruction = Instruction::JMP;
 
-    std::stringstream testID;
-    testID << "Test " << instruction << "(addressing: " << addressing << ")";
+    std::string testID = std::vformat("Test {}(addressing: {})",
+                                      std::make_format_args(to_string(instruction), addressing.to_string()));
 
     const auto durationResult = [&addressing]() -> Result<size_t> {
         switch (addressing.getMode()) {
             case AddressingMode::ABSOLUTE: return 3;
             case AddressingMode::INDIRECT: return 5;
             default:
-                std::stringstream message;
-                message << "test_jump: provided addressing mode " << addressing.getMode() << " is not supported by " << instruction << " instruction\n";
-                return {message.str()};
+                return {"test_jump: provided addressing mode " + to_string(addressing.getMode()) + " is not supported by " + to_string(instruction) + " instruction"};
         }
     }();
-    ASSERT_FALSE(durationResult.failed()) << testID.str() << ' ' << durationResult.fail_message();
+    ASSERT_FALSE(durationResult.failed()) << testID << ' ' << durationResult.fail_message();
 
     for (const auto duration: durationResult) {
         const auto opcodeResult = opcode(instruction);
-        ASSERT_FALSE(opcodeResult.failed()) << testID.str() << ' ' << opcodeResult.fail_message();
+        ASSERT_FALSE(opcodeResult.failed()) << testID << ' ' << opcodeResult.fail_message();
 
         const auto locationResult = prepare_and_execute(instruction, addressing);
-        ASSERT_FALSE(locationResult.failed()) << testID.str() << ' ' << locationResult.fail_message();
+        ASSERT_FALSE(locationResult.failed()) << testID << ' ' << locationResult.fail_message();
 
         switch (addressing.getMode()) {
             case Emulator::AddressingMode::ABSOLUTE:
-                EXPECT_EQ(PC, addressing.getAbsolute().value().address) << testID.str();
+                EXPECT_EQ(PC, addressing.getAbsolute().value().address) << testID;
                 break;
             case Emulator::AddressingMode::INDIRECT:
-                EXPECT_EQ(PC, addressing.getIndirect().value().targetAddress) << testID.str();
+                EXPECT_EQ(PC, addressing.getIndirect().value().targetAddress) << testID;
                 break;
             default:
                 std::unreachable();
         }
-        EXPECT_EQ(cycle, duration) << testID.str();
+        EXPECT_EQ(cycle, duration) << testID;
     }
 }
 
@@ -762,19 +725,19 @@ void MOS6502_TestFixture::test_jump_to_subroutine(Word address) {
     const auto instruction = Instruction::JSR;
     const auto addressing = Addressing::Absolute(address);
 
-    std::stringstream testID;
-    testID << "Test " << instruction << "(addressing: " << addressing << ")";
+    std::string testID = std::vformat("Test {}(addressing: {})",
+                                      std::make_format_args(to_string(instruction), addressing.to_string()));
 
     const WordToBytes pcBuf(PC + 2);
 
     const auto result = prepare_and_execute(instruction, addressing);
-    ASSERT_FALSE(result.failed()) << testID.str() << ' ' << result.fail_message();
+    ASSERT_FALSE(result.failed()) << testID << ' ' << result.fail_message();
 
-    ASSERT_EQ(SP, 253) << testID.str();
-    ASSERT_EQ(stack(255), pcBuf.high) << testID.str();
-    ASSERT_EQ(stack(254), pcBuf.low) << testID.str();
-    ASSERT_EQ(PC, address) << testID.str();
-    ASSERT_EQ(cycle, 6) << testID.str();
+    ASSERT_EQ(SP, 253) << testID;
+    ASSERT_EQ(stack(255), pcBuf.high) << testID;
+    ASSERT_EQ(stack(254), pcBuf.low) << testID;
+    ASSERT_EQ(PC, address) << testID;
+    ASSERT_EQ(cycle, 6) << testID;
 }
 
 void MOS6502_TestFixture::test_return_from_subroutine(Word targetPC) {
@@ -786,15 +749,15 @@ void MOS6502_TestFixture::test_return_from_subroutine(Word targetPC) {
 
     const auto instruction = Instruction::RTS;
 
-    std::stringstream testID;
-    testID << "Test " << instruction << "(target PC: " << HEX_WORD(targetPC) << ")";
+    std::string testID = std::vformat("Test {}(target PC: {:#04x})",
+                                      std::make_format_args(to_string(instruction), targetPC));
 
     const auto result = prepare_and_execute(instruction);
-    ASSERT_FALSE(result.failed()) << testID.str() << ' ' << result.fail_message();
+    ASSERT_FALSE(result.failed()) << testID << ' ' << result.fail_message();
 
-    EXPECT_EQ(PC, targetPC + 1) << testID.str();
-    EXPECT_EQ(cycle, 6) << testID.str();
-    EXPECT_EQ(SP, 255) << testID.str();
+    EXPECT_EQ(PC, targetPC + 1) << testID;
+    EXPECT_EQ(cycle, 6) << testID;
+    EXPECT_EQ(SP, 255) << testID;
 }
 
 void MOS6502_TestFixture::test_branch(Flag flag, bool value, bool targetValue, Word initialPC, char offset) {
@@ -809,27 +772,25 @@ void MOS6502_TestFixture::test_branch(Flag flag, bool value, bool targetValue, W
             case ZERO: return (targetValue) ? Instruction::BEQ : Instruction::BNE;
             case OVERFLOW_F: return (targetValue) ? Instruction::BVS : Instruction::BVC;
             default:
-                std::stringstream message;
-                message << "test_branch: unsupported flag " << flag << "for branching";
-                return {message.str()};
+                return {"test_branch: unsupported flag " + to_string(flag) + "for branching"};
         }
     }();
     ASSERT_FALSE(instructionResult.failed()) << instructionResult.fail_message();
 
     for (const auto instruction: instructionResult) {
-        std::stringstream testID;
-        testID << "Test " << instruction << "(flag: " << flag << ", given value: " << value << ", expected value: " << targetValue << ", initial PC: " << HEX_WORD(initialPC) << ", offset: " << (int)offset << ")";
+        std::string testID = std::vformat("Test {}(flag: {}, given value: {:d}, expected value: {:d}, initial PC: {:#04x}, offset: {:d})",
+                                          std::make_format_args(to_string(instruction), to_string(flag), value, targetValue, initialPC, offset));
 
         const auto addressing = Addressing::Relative(initialPC, offset);
 
         const auto initialSR = SR;
 
         const auto executionResult = prepare_and_execute(instruction, addressing);
-        ASSERT_FALSE(executionResult.failed()) << testID.str() << ' ' << executionResult.fail_message();
+        ASSERT_FALSE(executionResult.failed()) << testID << ' ' << executionResult.fail_message();
 
         const auto branchHappened = value == targetValue;
-        EXPECT_EQ(PC, (branchHappened) ? (Word)(initialPC + offset + 2) : (Word)(initialPC + 2)) << testID.str();
-        EXPECT_EQ(cycle, (branchHappened) ? 3 : 2) << testID.str();
+        EXPECT_EQ(PC, (branchHappened) ? (Word)(initialPC + offset + 2) : (Word)(initialPC + 2)) << testID;
+        EXPECT_EQ(cycle, (branchHappened) ? 3 : 2) << testID;
         EXPECT_EQ(SR, initialSR);
     }
 }
@@ -841,33 +802,32 @@ void MOS6502_TestFixture::test_brk(Word initialPC, Word interruptVector) {
     const WordToBytes storedPC(PC + 2);
     constexpr Instruction instruction = Instruction::BRK;
 
-    std::stringstream testID;
-    testID << "Test " << instruction << "(initial PC: " << HEX_WORD(initialPC) << ", interrupt vector: " << HEX_WORD(interruptVector) << ")";
+    std::string testID = std::vformat("Test {}(initial PC: {:#04x}, interrupt vector: {:#04x})",
+                                      std::make_format_args(to_string(instruction), initialPC, interruptVector));
 
     write_word(interruptVector, BRK_HANDLER);
     const auto executionResult = prepare_and_execute(instruction);
-    ASSERT_FALSE(executionResult.failed()) << testID.str() << ' ' << executionResult.fail_message();
+    ASSERT_FALSE(executionResult.failed()) << testID << ' ' << executionResult.fail_message();
 
-    EXPECT_EQ(SP, 253) << testID.str();
-    EXPECT_EQ(stack(255), storedPC.high) << testID.str();
-    EXPECT_EQ(stack(254), storedPC.low) << testID.str();
-    EXPECT_EQ(PC, interruptVector) << testID.str();
-    EXPECT_EQ(cycle, 6) << testID.str();
-    EXPECT_EQ(SR[BREAK], SET) << testID.str();
+    EXPECT_EQ(SP, 253) << testID;
+    EXPECT_EQ(stack(255), storedPC.high) << testID;
+    EXPECT_EQ(stack(254), storedPC.low) << testID;
+    EXPECT_EQ(PC, interruptVector) << testID;
+    EXPECT_EQ(cycle, 6) << testID;
+    EXPECT_EQ(SR[BREAK], SET) << testID;
 }
 
 void MOS6502_TestFixture::test_nop() {
     reset();
 
     constexpr Instruction instruction = Instruction::NOP;
-    std::stringstream testID;
-    testID << "Test " << instruction;
+    std::string testID =  "Test " + to_string(instruction);
 
     const auto executionResult = prepare_and_execute(instruction);
-    ASSERT_FALSE(executionResult.failed()) << testID.str() << ' ' << executionResult.fail_message();
+    ASSERT_FALSE(executionResult.failed()) << testID << ' ' << executionResult.fail_message();
 
-    EXPECT_EQ(cycle, 2) << testID.str();
-    EXPECT_EQ(PC, 1) << testID.str();
+    EXPECT_EQ(cycle, 2) << testID;
+    EXPECT_EQ(PC, 1) << testID;
 }
 
 void MOS6502_TestFixture::test_return_from_interrupt(Word previousPC, Byte previousSR) {
@@ -879,15 +839,15 @@ void MOS6502_TestFixture::test_return_from_interrupt(Word previousPC, Byte previ
     stack(SP--) = previousSR;
 
     constexpr Instruction instruction = Instruction::RTI;
-    std::stringstream testID;
-    testID << "Test " << instruction << "(previous PC: " << HEX_WORD(previousPC) << ", previous SR: " << ProcessorStatus(previousSR) << ")";
+    std::string testID = std::vformat("Test {}(previous PC: {:#04x}, previous SR: {})",
+                                      std::make_format_args(to_string(instruction), previousPC, ProcessorStatus(previousSR).to_string()));
 
     const auto executionResult = prepare_and_execute(instruction);
-    ASSERT_FALSE(executionResult.failed()) << testID.str() << ' ' << executionResult.fail_message();
+    ASSERT_FALSE(executionResult.failed()) << testID << ' ' << executionResult.fail_message();
 
-    EXPECT_EQ(PC, previousPC) << testID.str();
-    EXPECT_EQ(SR, previousSR) << testID.str();
-    EXPECT_EQ(SP, 255) << testID.str();
-    EXPECT_EQ(cycle, 6) << testID.str();
+    EXPECT_EQ(PC, previousPC) << testID;
+    EXPECT_EQ(SR, previousSR) << testID;
+    EXPECT_EQ(SP, 255) << testID;
+    EXPECT_EQ(cycle, 6) << testID;
 }
 

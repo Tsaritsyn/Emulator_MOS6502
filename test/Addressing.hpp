@@ -58,8 +58,10 @@ struct Addressing {
     [[nodiscard]] int PC_shift() const noexcept;
     [[nodiscard]] bool page_crossed() const noexcept;
 
+    std::string to_string() const;
 
-    friend std::ostream &operator<<(std::ostream &os, const Addressing &addressing);
+
+//    friend std::ostream &operator<<(std::ostream &os, const Addressing &addressing);
 
 
 private:

@@ -3,6 +3,7 @@
 //
 
 #include <utility>
+#include <format>
 #include "Addressing.hpp"
 
 using namespace Emulator;
@@ -144,34 +145,34 @@ std::optional<Addressing::IndirectIndexedT> Addressing::getIndirectY() const noe
     else return std::nullopt;
 }
 
-std::ostream &operator<<(std::ostream &os, const Addressing &addressing) {
-    switch (addressing.mode) {
+std::string Addressing::to_string() const {
+    switch (mode) {
         case AddressingMode::IMPLICIT:
-            return os << "Implicit";
+            return "Implicit";
         case AddressingMode::ACCUMULATOR:
-            return os << "Accumulator";
+            return "Accumulator";
         case AddressingMode::IMMEDIATE:
-            return os << "Immediate";
+            return "Immediate";
         case AddressingMode::ZERO_PAGE:
-            return os << "Zero Page(address: " << HEX_WORD(addressing.args.simple.address) << ")";
+            return std::vformat("Zero Page(address: {:#04x})", std::make_format_args(args.simple.address));
         case AddressingMode::ZERO_PAGE_X:
-            return os << "Zero Page,X(address: " << HEX_WORD(addressing.args.indexed.address) << ", X: " << HEX_BYTE(addressing.args.indexed.index) << ")";
+            return std::vformat("Zero Page,X(address: {:#04x}, X: {:#02x})", std::make_format_args(args.indexed.address, args.indexed.index));
         case AddressingMode::ZERO_PAGE_Y:
-            return os << "Zero Page,Y(address: " << HEX_WORD(addressing.args.indexed.address) << ", Y: " << HEX_BYTE(addressing.args.indexed.index) << ")";
+            return std::vformat("Zero Page,Y(address: {:#04x}, Y: {:#02x})", std::make_format_args(args.indexed.address, args.indexed.index));
         case AddressingMode::RELATIVE:
-            return os << "Relative(PC: " << HEX_WORD(addressing.args.relative.PC) << ", offset: " << (int)addressing.args.relative.PC << ")";
+            return std::vformat("Relative(PC: {:#04x}, offset: {:d})", std::make_format_args(args.relative.PC, args.relative.offset));
         case AddressingMode::ABSOLUTE:
-            return os << "Absolute(address: " << HEX_WORD(addressing.args.simple.address) << ")";
+            return std::vformat("Absolute(address: {:#04x})", std::make_format_args(args.simple.address));
         case AddressingMode::ABSOLUTE_X:
-            return os << "Absolute,X(address: " << HEX_WORD(addressing.args.indexed.address) << ", X: " << HEX_BYTE(addressing.args.indexed.index) << ")";
+            return std::vformat("Absolute,X(address: {:#04x}, X: {:#02x})", std::make_format_args(args.indexed.address, args.indexed.index));
         case AddressingMode::ABSOLUTE_Y:
-            return os << "Absolute,Y(address: " << HEX_WORD(addressing.args.indexed.address) << ", Y: " << HEX_BYTE(addressing.args.indexed.index) << ")";
+            return std::vformat("Absolute,Y(address: {:#04x}, X: {:#02x})", std::make_format_args(args.indexed.address, args.indexed.index));
         case AddressingMode::INDIRECT:
-            return os << "Indirect(table address: " << HEX_WORD(addressing.args.indirect.tableAddress) << ", target address: " << HEX_WORD(addressing.args.indirect.targetAddress) << ")";
+            return std::vformat("Indirect(table address: {:#04x}, target address: {:#04x})", std::make_format_args(args.indirect.tableAddress, args.indirect.targetAddress));
         case AddressingMode::INDIRECT_X:
-            return os << "Indirect,X(table address: " << HEX_WORD(addressing.args.indirectIndexed.tableAddress) << ", target address: " << HEX_WORD(addressing.args.indirectIndexed.targetAddress) << ", X: " << HEX_BYTE(addressing.args.indirectIndexed.index) << ")";
+            return std::vformat("Indirect,X(table address: {:#04x}, target address: {:#04x}, X: {:#02x})", std::make_format_args(args.indirectIndexed.tableAddress, args.indirectIndexed.targetAddress, args.indirectIndexed.index));
         case AddressingMode::INDIRECT_Y:
-            return os << "Indirect,Y(table address: " << HEX_WORD(addressing.args.indirectIndexed.tableAddress) << ", target address: " << HEX_WORD(addressing.args.indirectIndexed.targetAddress) << ", Y: " << HEX_BYTE(addressing.args.indirectIndexed.index) << ")";
+            return std::vformat("Indirect,Y(table address: {:#04x}, target address: {:#04x}, Y: {:#02x})", std::make_format_args(args.indirectIndexed.tableAddress, args.indirectIndexed.targetAddress, args.indirectIndexed.index));
     }
 
     std::unreachable();

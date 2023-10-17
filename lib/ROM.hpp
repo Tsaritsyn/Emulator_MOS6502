@@ -23,6 +23,8 @@ namespace Emulator {
         [[nodiscard]] Word fetch_word_and_proceed(Word &address, size_t &cycle) const;
         [[nodiscard]] Word fetch_word(Word address, size_t &cycle) const;
 
+        [[nodiscard]] Word get_word(Word address) const;
+
         struct SetByteInputAddressModified { Word &address; Byte value; size_t &cycle; };
         void set_byte_and_proceed(SetByteInputAddressModified input) { input.cycle++; m_bytes[input.address++] = input.value; }
 

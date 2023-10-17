@@ -21,13 +21,13 @@ namespace Emulator {
 
     bool get_bit(Byte byte, int number);
 
-    std::ostream &operator<<(std::ostream &os, AddressingMode mode);
+    std::string to_string(AddressingMode mode);
 
-    std::ostream &operator<<(std::ostream &os, Instruction instruction);
+    std::string to_string(Instruction instruction);
 
-    std::ostream &operator<<(std::ostream &os, Register aRegister);
+    std::string to_string(Register reg);
 
-    std::ostream &operator<<(std::ostream &os, Flag flag);
+    std::string to_string(Flag flag);
 
     template <class T>
     std::ostream& operator <<(std::ostream &os, const std::vector<T> &vec) {
@@ -39,10 +39,10 @@ namespace Emulator {
 
     Result<OpCode> opcode(Instruction instruction, std::optional<AddressingMode> addressingMode = std::nullopt);
 
-    template<Printable T>
-    std::ostream &operator<<(std::ostream &os, std::optional<T> opt) {
-        if (opt.has_value()) return os << opt.value();
-        else return os << "nullopt";
+    template <typename T>
+    std::string to_string(std::optional<T> opt) {
+        if (opt.has_value()) return to_string(opt.value());
+        else return "nullopt";
     }
 
     std::string byte_description(Byte byte);
