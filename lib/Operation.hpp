@@ -22,190 +22,190 @@ template<class... Ts> Overload(Ts...) -> Overload<Ts...>;
 
 namespace Emulator {
 
-    struct ADC_Immediate { Byte value; };
-    struct ADC_ZeroPage { Byte address; };
-    struct ADC_ZeroPageX { Byte address; };
-    struct ADC_Absolute { Word address; };
-    struct ADC_AbsoluteX { Word address; };
-    struct ADC_AbsoluteY { Word address; };
-    struct ADC_IndirectX { Byte address; };
-    struct ADC_IndirectY { Byte address; };
+    struct ADC_Immediate   { constexpr static OpCode opcode = ADC_IMMEDIATE;   Byte value; };
+    struct ADC_ZeroPage    { constexpr static OpCode opcode = ADC_ZERO_PAGE;   Byte address; };
+    struct ADC_ZeroPageX   { constexpr static OpCode opcode = ADC_ZERO_PAGE_X; Byte address; };
+    struct ADC_Absolute    { constexpr static OpCode opcode = ADC_ABSOLUTE;    Word address; };
+    struct ADC_AbsoluteX   { constexpr static OpCode opcode = ADC_ABSOLUTE_X;  Word address; };
+    struct ADC_AbsoluteY   { constexpr static OpCode opcode = ADC_ABSOLUTE_Y;  Word address; };
+    struct ADC_IndirectX   { constexpr static OpCode opcode = ADC_INDIRECT_X;  Byte address; };
+    struct ADC_IndirectY   { constexpr static OpCode opcode = ADC_INDIRECT_Y;  Byte address; };
 
-    struct AND_Immediate { Byte value; };
-    struct AND_ZeroPage { Byte address; };
-    struct AND_ZeroPageX { Byte address; };
-    struct AND_Absolute { Word address; };
-    struct AND_AbsoluteX { Word address; };
-    struct AND_AbsoluteY { Word address; };
-    struct AND_IndirectX { Byte address; };
-    struct AND_IndirectY { Byte address; };
+    struct AND_Immediate   { constexpr static OpCode opcode = AND_IMMEDIATE;   Byte value; };
+    struct AND_ZeroPage    { constexpr static OpCode opcode = AND_ZERO_PAGE;   Byte address; };
+    struct AND_ZeroPageX   { constexpr static OpCode opcode = AND_ZERO_PAGE_X; Byte address; };
+    struct AND_Absolute    { constexpr static OpCode opcode = AND_ABSOLUTE;    Word address; };
+    struct AND_AbsoluteX   { constexpr static OpCode opcode = AND_ABSOLUTE_X;  Word address; };
+    struct AND_AbsoluteY   { constexpr static OpCode opcode = AND_ABSOLUTE_Y;  Word address; };
+    struct AND_IndirectX   { constexpr static OpCode opcode = AND_INDIRECT_X;  Byte address; };
+    struct AND_IndirectY   { constexpr static OpCode opcode = AND_INDIRECT_Y;  Byte address; };
 
-    struct ASL_Accumulator {};
-    struct ASL_ZeroPage { Byte address; };
-    struct ASL_ZeroPageX { Byte address; };
-    struct ASL_Absolute { Word address; };
-    struct ASL_AbsoluteX { Word address; };
+    struct ASL_Accumulator { constexpr static OpCode opcode = ASL_ACCUMULATOR; };
+    struct ASL_ZeroPage    { constexpr static OpCode opcode = ASL_ZERO_PAGE;   Byte address; };
+    struct ASL_ZeroPageX   { constexpr static OpCode opcode = ASL_ZERO_PAGE_X; Byte address; };
+    struct ASL_Absolute    { constexpr static OpCode opcode = ASL_ABSOLUTE;    Word address; };
+    struct ASL_AbsoluteX   { constexpr static OpCode opcode = ASL_ABSOLUTE_X;  Word address; };
 
-    struct BCC { char offset; };
-    struct BCS { char offset; };
-    struct BEQ { char offset; };
-    struct BNE { char offset; };
-    struct BMI { char offset; };
-    struct BPL { char offset; };
-    struct BVC { char offset; };
-    struct BVS { char offset; };
+    struct BCC             { constexpr static OpCode opcode = BCC_RELATIVE;    char offset; };
+    struct BCS             { constexpr static OpCode opcode = BCS_RELATIVE;    char offset; };
+    struct BEQ             { constexpr static OpCode opcode = BEQ_RELATIVE;    char offset; };
+    struct BNE             { constexpr static OpCode opcode = BNE_RELATIVE;    char offset; };
+    struct BMI             { constexpr static OpCode opcode = BMI_RELATIVE;    char offset; };
+    struct BPL             { constexpr static OpCode opcode = BPL_RELATIVE;    char offset; };
+    struct BVC             { constexpr static OpCode opcode = BVC_RELATIVE;    char offset; };
+    struct BVS             { constexpr static OpCode opcode = BVS_RELATIVE;    char offset; };
 
-    struct BIT_ZeroPage { Byte address; };
-    struct BIT_Absolute { Word address; };
+    struct BIT_ZeroPage    { constexpr static OpCode opcode = BIT_ZERO_PAGE;   Byte address; };
+    struct BIT_Absolute    { constexpr static OpCode opcode = BIT_ABSOLUTE;    Word address; };
 
-    struct BRK {};
+    struct BRK             { constexpr static OpCode opcode = BRK_IMPLICIT; };
 
-    struct CLC {};
-    struct CLD {};
-    struct CLI {};
-    struct CLV {};
+    struct CLC             { constexpr static OpCode opcode = CLC_IMPLICIT; };
+    struct CLD             { constexpr static OpCode opcode = CLD_IMPLICIT; };
+    struct CLI             { constexpr static OpCode opcode = CLI_IMPLICIT; };
+    struct CLV             { constexpr static OpCode opcode = CLV_IMPLICIT; };
 
-    struct CMP_Immediate { Byte value; };
-    struct CMP_ZeroPage { Byte address; };
-    struct CMP_ZeroPageX { Byte address; };
-    struct CMP_Absolute { Word address; };
-    struct CMP_AbsoluteX { Word address; };
-    struct CMP_AbsoluteY { Word address; };
-    struct CMP_IndirectX { Byte address; };
-    struct CMP_IndirectY { Byte address; };
+    struct CMP_Immediate   { constexpr static OpCode opcode = CMP_IMMEDIATE;   Byte value; };
+    struct CMP_ZeroPage    { constexpr static OpCode opcode = CMP_ZERO_PAGE;   Byte address; };
+    struct CMP_ZeroPageX   { constexpr static OpCode opcode = CMP_ZERO_PAGE_X; Byte address; };
+    struct CMP_Absolute    { constexpr static OpCode opcode = CMP_ABSOLUTE;    Word address; };
+    struct CMP_AbsoluteX   { constexpr static OpCode opcode = CMP_ABSOLUTE_X;  Word address; };
+    struct CMP_AbsoluteY   { constexpr static OpCode opcode = CMP_ABSOLUTE_Y;  Word address; };
+    struct CMP_IndirectX   { constexpr static OpCode opcode = CMP_INDIRECT_X;  Byte address; };
+    struct CMP_IndirectY   { constexpr static OpCode opcode = CMP_INDIRECT_Y;  Byte address; };
 
-    struct CPX_Immediate { Byte value; };
-    struct CPX_ZeroPage { Byte address; };
-    struct CPX_Absolute { Word address; };
+    struct CPX_Immediate   { constexpr static OpCode opcode = CPX_IMMEDIATE;   Byte value; };
+    struct CPX_ZeroPage    { constexpr static OpCode opcode = CPX_ZERO_PAGE;   Byte address; };
+    struct CPX_Absolute    { constexpr static OpCode opcode = CPX_ABSOLUTE;    Word address; };
 
-    struct CPY_Immediate { Byte value; };
-    struct CPY_ZeroPage { Byte address; };
-    struct CPY_Absolute { Word address; };
+    struct CPY_Immediate   { constexpr static OpCode opcode = CPY_IMMEDIATE;   Byte value; };
+    struct CPY_ZeroPage    { constexpr static OpCode opcode = CPY_ZERO_PAGE;   Byte address; };
+    struct CPY_Absolute    { constexpr static OpCode opcode = CPY_ABSOLUTE;    Word address; };
 
-    struct DEC_ZeroPage { Byte address; };
-    struct DEC_ZeroPageX { Byte address; };
-    struct DEC_Absolute { Word address; };
-    struct DEC_AbsoluteX { Word address; };
+    struct DEC_ZeroPage    { constexpr static OpCode opcode = DEC_ZERO_PAGE;   Byte address; };
+    struct DEC_ZeroPageX   { constexpr static OpCode opcode = DEC_ZERO_PAGE_X; Byte address; };
+    struct DEC_Absolute    { constexpr static OpCode opcode = DEC_ABSOLUTE;    Word address; };
+    struct DEC_AbsoluteX   { constexpr static OpCode opcode = DEC_ABSOLUTE_X;  Word address; };
 
-    struct DEX {};
-    struct DEY {};
+    struct DEX             { constexpr static OpCode opcode = DEX_IMPLICIT; };
+    struct DEY             { constexpr static OpCode opcode = DEY_IMPLICIT; };
 
-    struct EOR_Immediate { Byte value; };
-    struct EOR_ZeroPage { Byte address; };
-    struct EOR_ZeroPageX { Byte address; };
-    struct EOR_Absolute { Word address; };
-    struct EOR_AbsoluteX { Word address; };
-    struct EOR_AbsoluteY { Word address; };
-    struct EOR_IndirectX { Byte address; };
-    struct EOR_IndirectY { Byte address; };
+    struct EOR_Immediate   { constexpr static OpCode opcode = EOR_IMMEDIATE;   Byte value; };
+    struct EOR_ZeroPage    { constexpr static OpCode opcode = EOR_ZERO_PAGE;   Byte address; };
+    struct EOR_ZeroPageX   { constexpr static OpCode opcode = EOR_ZERO_PAGE_X; Byte address; };
+    struct EOR_Absolute    { constexpr static OpCode opcode = EOR_ABSOLUTE;    Word address; };
+    struct EOR_AbsoluteX   { constexpr static OpCode opcode = EOR_ABSOLUTE_X;  Word address; };
+    struct EOR_AbsoluteY   { constexpr static OpCode opcode = EOR_ABSOLUTE_Y;  Word address; };
+    struct EOR_IndirectX   { constexpr static OpCode opcode = EOR_INDIRECT_X;  Byte address; };
+    struct EOR_IndirectY   { constexpr static OpCode opcode = EOR_INDIRECT_Y;  Byte address; };
 
-    struct INC_ZeroPage { Byte address; };
-    struct INC_ZeroPageX { Byte address; };
-    struct INC_Absolute { Word address; };
-    struct INC_AbsoluteX { Word address; };
+    struct INC_ZeroPage    { constexpr static OpCode opcode = INC_ZERO_PAGE;   Byte address; };
+    struct INC_ZeroPageX   { constexpr static OpCode opcode = INC_ZERO_PAGE_X; Byte address; };
+    struct INC_Absolute    { constexpr static OpCode opcode = INC_ABSOLUTE;    Word address; };
+    struct INC_AbsoluteX   { constexpr static OpCode opcode = INC_ABSOLUTE_X;  Word address; };
 
-    struct INX {};
-    struct INY {};
+    struct INX             { constexpr static OpCode opcode = INX_IMPLICIT; };
+    struct INY             { constexpr static OpCode opcode = INY_IMPLICIT; };
 
-    struct JMP_Absolute { Word address; };
-    struct JMP_Indirect { Word address; };
+    struct JMP_Absolute    { constexpr static OpCode opcode = JMP_ABSOLUTE;    Word address; };
+    struct JMP_Indirect    { constexpr static OpCode opcode = JMP_INDIRECT;    Word address; };
 
-    struct JSR { Word address; };
+    struct JSR             { constexpr static OpCode opcode = JSR_ABSOLUTE;    Word address; };
 
-    struct LDA_Immediate { Byte value; };
-    struct LDA_ZeroPage { Byte address; };
-    struct LDA_ZeroPageX { Byte address; };
-    struct LDA_Absolute { Word address; };
-    struct LDA_AbsoluteX { Word address; };
-    struct LDA_AbsoluteY { Word address; };
-    struct LDA_IndirectX { Byte address; };
-    struct LDA_IndirectY { Byte address; };
+    struct LDA_Immediate   { constexpr static OpCode opcode = LDA_IMMEDIATE;   Byte value; };
+    struct LDA_ZeroPage    { constexpr static OpCode opcode = LDA_ZERO_PAGE;   Byte address; };
+    struct LDA_ZeroPageX   { constexpr static OpCode opcode = LDA_ZERO_PAGE_X; Byte address; };
+    struct LDA_Absolute    { constexpr static OpCode opcode = LDA_ABSOLUTE;    Word address; };
+    struct LDA_AbsoluteX   { constexpr static OpCode opcode = LDA_ABSOLUTE_X;  Word address; };
+    struct LDA_AbsoluteY   { constexpr static OpCode opcode = LDA_ABSOLUTE_Y;  Word address; };
+    struct LDA_IndirectX   { constexpr static OpCode opcode = LDA_INDIRECT_X;  Byte address; };
+    struct LDA_IndirectY   { constexpr static OpCode opcode = LDA_INDIRECT_Y;  Byte address; };
 
-    struct LDX_Immediate { Byte value; };
-    struct LDX_ZeroPage { Byte address; };
-    struct LDX_ZeroPageY { Byte address; };
-    struct LDX_Absolute { Word address; };
-    struct LDX_AbsoluteY { Word address; };
+    struct LDX_Immediate   { constexpr static OpCode opcode = LDX_IMMEDIATE;   Byte value; };
+    struct LDX_ZeroPage    { constexpr static OpCode opcode = LDX_ZERO_PAGE;   Byte address; };
+    struct LDX_ZeroPageY   { constexpr static OpCode opcode = LDX_ZERO_PAGE_Y; Byte address; };
+    struct LDX_Absolute    { constexpr static OpCode opcode = LDX_ABSOLUTE;    Word address; };
+    struct LDX_AbsoluteY   { constexpr static OpCode opcode = LDX_ABSOLUTE_Y;  Word address; };
 
-    struct LDY_Immediate { Byte value; };
-    struct LDY_ZeroPage { Byte address; };
-    struct LDY_ZeroPageX { Byte address; };
-    struct LDY_Absolute { Word address; };
-    struct LDY_AbsoluteX { Word address; };
+    struct LDY_Immediate   { constexpr static OpCode opcode = LDY_IMMEDIATE;   Byte value; };
+    struct LDY_ZeroPage    { constexpr static OpCode opcode = LDY_ZERO_PAGE;   Byte address; };
+    struct LDY_ZeroPageX   { constexpr static OpCode opcode = LDY_ZERO_PAGE_X; Byte address; };
+    struct LDY_Absolute    { constexpr static OpCode opcode = LDY_ABSOLUTE;    Word address; };
+    struct LDY_AbsoluteX   { constexpr static OpCode opcode = LDY_ABSOLUTE_X;  Word address; };
 
-    struct LSR_Accumulator {};
-    struct LSR_ZeroPage { Byte address; };
-    struct LSR_ZeroPageX { Byte address; };
-    struct LSR_Absolute { Word address; };
-    struct LSR_AbsoluteX { Word address; };
+    struct LSR_Accumulator { constexpr static OpCode opcode = LSR_ACCUMULATOR; };
+    struct LSR_ZeroPage    { constexpr static OpCode opcode = LSR_ZERO_PAGE;   Byte address; };
+    struct LSR_ZeroPageX   { constexpr static OpCode opcode = LSR_ZERO_PAGE_X; Byte address; };
+    struct LSR_Absolute    { constexpr static OpCode opcode = LSR_ABSOLUTE;    Word address; };
+    struct LSR_AbsoluteX   { constexpr static OpCode opcode = LSR_ABSOLUTE_X;  Word address; };
 
-    struct NOP {};
+    struct NOP             { constexpr static OpCode opcode = NOP_IMPLICIT; };
 
-    struct ORA_Immediate { Byte value; };
-    struct ORA_ZeroPage { Byte address; };
-    struct ORA_ZeroPageX { Byte address; };
-    struct ORA_Absolute { Word address; };
-    struct ORA_AbsoluteX { Word address; };
-    struct ORA_AbsoluteY { Word address; };
-    struct ORA_IndirectX { Byte address; };
-    struct ORA_IndirectY { Byte address; };
+    struct ORA_Immediate   { constexpr static OpCode opcode = ORA_IMMEDIATE;   Byte value; };
+    struct ORA_ZeroPage    { constexpr static OpCode opcode = ORA_ZERO_PAGE;   Byte address; };
+    struct ORA_ZeroPageX   { constexpr static OpCode opcode = ORA_ZERO_PAGE_X; Byte address; };
+    struct ORA_Absolute    { constexpr static OpCode opcode = ORA_ABSOLUTE;    Word address; };
+    struct ORA_AbsoluteX   { constexpr static OpCode opcode = ORA_ABSOLUTE_X;  Word address; };
+    struct ORA_AbsoluteY   { constexpr static OpCode opcode = ORA_ABSOLUTE_Y;  Word address; };
+    struct ORA_IndirectX   { constexpr static OpCode opcode = ORA_INDIRECT_X;  Byte address; };
+    struct ORA_IndirectY   { constexpr static OpCode opcode = ORA_INDIRECT_Y;  Byte address; };
 
-    struct PHA {};
-    struct PHP {};
+    struct PHA             { constexpr static OpCode opcode = PHA_IMPLICIT; };
+    struct PHP             { constexpr static OpCode opcode = PHP_IMPLICIT; };
 
-    struct PLA {};
-    struct PLP {};
+    struct PLA             { constexpr static OpCode opcode = PLA_IMPLICIT; };
+    struct PLP             { constexpr static OpCode opcode = PLP_IMPLICIT; };
 
-    struct ROL_Accumulator {};
-    struct ROL_ZeroPage { Byte address; };
-    struct ROL_ZeroPageX { Byte address; };
-    struct ROL_Absolute { Word address; };
-    struct ROL_AbsoluteX { Word address; };
+    struct ROL_Accumulator { constexpr static OpCode opcode = ROL_ACCUMULATOR; };
+    struct ROL_ZeroPage    { constexpr static OpCode opcode = ROL_ZERO_PAGE;   Byte address; };
+    struct ROL_ZeroPageX   { constexpr static OpCode opcode = ROL_ZERO_PAGE_X; Byte address; };
+    struct ROL_Absolute    { constexpr static OpCode opcode = ROL_ABSOLUTE;    Word address; };
+    struct ROL_AbsoluteX   { constexpr static OpCode opcode = ROL_ABSOLUTE_X;  Word address; };
 
-    struct ROR_Accumulator {};
-    struct ROR_ZeroPage { Byte address; };
-    struct ROR_ZeroPageX { Byte address; };
-    struct ROR_Absolute { Word address; };
-    struct ROR_AbsoluteX { Word address; };
+    struct ROR_Accumulator { constexpr static OpCode opcode = ROR_ACCUMULATOR; };
+    struct ROR_ZeroPage    { constexpr static OpCode opcode = ROR_ZERO_PAGE;   Byte address; };
+    struct ROR_ZeroPageX   { constexpr static OpCode opcode = ROR_ZERO_PAGE_X; Byte address; };
+    struct ROR_Absolute    { constexpr static OpCode opcode = ROR_ABSOLUTE;    Word address; };
+    struct ROR_AbsoluteX   { constexpr static OpCode opcode = ROR_ABSOLUTE_X;  Word address; };
 
-    struct RTI {};
-    struct RTS {};
+    struct RTI             { constexpr static OpCode opcode = RTI_IMPLICIT; };
+    struct RTS             { constexpr static OpCode opcode = RTS_IMPLICIT; };
 
-    struct SBC_Immediate { Byte value; };
-    struct SBC_ZeroPage { Byte address; };
-    struct SBC_ZeroPageX { Byte address; };
-    struct SBC_Absolute { Word address; };
-    struct SBC_AbsoluteX { Word address; };
-    struct SBC_AbsoluteY { Word address; };
-    struct SBC_IndirectX { Byte address; };
-    struct SBC_IndirectY { Byte address; };
+    struct SBC_Immediate   { constexpr static OpCode opcode = SBC_IMMEDIATE;   Byte value; };
+    struct SBC_ZeroPage    { constexpr static OpCode opcode = SBC_ZERO_PAGE;   Byte address; };
+    struct SBC_ZeroPageX   { constexpr static OpCode opcode = SBC_ZERO_PAGE_X; Byte address; };
+    struct SBC_Absolute    { constexpr static OpCode opcode = SBC_ABSOLUTE;    Word address; };
+    struct SBC_AbsoluteX   { constexpr static OpCode opcode = SBC_ABSOLUTE_X;  Word address; };
+    struct SBC_AbsoluteY   { constexpr static OpCode opcode = SBC_ABSOLUTE_Y;  Word address; };
+    struct SBC_IndirectX   { constexpr static OpCode opcode = SBC_INDIRECT_X;  Byte address; };
+    struct SBC_IndirectY   { constexpr static OpCode opcode = SBC_INDIRECT_Y;  Byte address; };
 
-    struct SEC {};
-    struct SED {};
-    struct SEI {};
+    struct SEC             { constexpr static OpCode opcode = SEC_IMPLICIT; };
+    struct SED             { constexpr static OpCode opcode = SED_IMPLICIT; };
+    struct SEI             { constexpr static OpCode opcode = SEI_IMPLICIT; };
 
-    struct STA_ZeroPage { Byte address; };
-    struct STA_ZeroPageX { Byte address; };
-    struct STA_Absolute { Word address; };
-    struct STA_AbsoluteX { Word address; };
-    struct STA_AbsoluteY { Word address; };
-    struct STA_IndirectX { Byte address; };
-    struct STA_IndirectY { Byte address; };
+    struct STA_ZeroPage    { constexpr static OpCode opcode = STA_ZERO_PAGE;   Byte address; };
+    struct STA_ZeroPageX   { constexpr static OpCode opcode = STA_ZERO_PAGE_X; Byte address; };
+    struct STA_Absolute    { constexpr static OpCode opcode = STA_ABSOLUTE;    Word address; };
+    struct STA_AbsoluteX   { constexpr static OpCode opcode = STA_ABSOLUTE_X;  Word address; };
+    struct STA_AbsoluteY   { constexpr static OpCode opcode = STA_ABSOLUTE_Y;  Word address; };
+    struct STA_IndirectX   { constexpr static OpCode opcode = STA_INDIRECT_X;  Byte address; };
+    struct STA_IndirectY   { constexpr static OpCode opcode = STA_INDIRECT_Y;  Byte address; };
 
-    struct STX_ZeroPage { Byte address; };
-    struct STX_ZeroPageY { Byte address; };
-    struct STX_Absolute { Word address; };
+    struct STX_ZeroPage    { constexpr static OpCode opcode = STX_ZERO_PAGE;   Byte address; };
+    struct STX_ZeroPageY   { constexpr static OpCode opcode = STX_ZERO_PAGE_Y; Byte address; };
+    struct STX_Absolute    { constexpr static OpCode opcode = STX_ABSOLUTE;    Word address; };
 
-    struct STY_ZeroPage { Byte address; };
-    struct STY_ZeroPageX { Byte address; };
-    struct STY_Absolute { Word address; };
+    struct STY_ZeroPage    { constexpr static OpCode opcode = STY_ZERO_PAGE;   Byte address; };
+    struct STY_ZeroPageX   { constexpr static OpCode opcode = STY_ZERO_PAGE_X; Byte address; };
+    struct STY_Absolute    { constexpr static OpCode opcode = STY_ABSOLUTE;    Word address; };
 
-    struct TAX {};
-    struct TAY {};
-    struct TSX {};
-    struct TXA {};
-    struct TXS {};
-    struct TYA {};
+    struct TAX             { constexpr static OpCode opcode = TAX_IMPLICIT; };
+    struct TAY             { constexpr static OpCode opcode = TAY_IMPLICIT; };
+    struct TSX             { constexpr static OpCode opcode = TSX_IMPLICIT; };
+    struct TXA             { constexpr static OpCode opcode = TXA_IMPLICIT; };
+    struct TXS             { constexpr static OpCode opcode = TXS_IMPLICIT; };
+    struct TYA             { constexpr static OpCode opcode = TYA_IMPLICIT; };
 
 
 
@@ -396,7 +396,6 @@ namespace Emulator {
             TXS,
             TYA
             >;
-
 
     std::string description(const Operation &operation);
 

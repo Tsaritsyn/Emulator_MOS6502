@@ -7,57 +7,67 @@
 
 using namespace Emulator;
 
-constexpr static inline std::string accumulator() { return "A"; }
-static inline std::string immediate(Byte value)   { return std::vformat("#{:02u}", std::make_format_args(value)); }
-static inline std::string zeroPage(Byte address)  { return std::vformat("${:02x}", std::make_format_args(address)); }
-static inline std::string zeroPageX(Byte address) { return std::vformat("${:02x},X", std::make_format_args(address)); }
-static inline std::string zeroPageY(Byte address) { return std::vformat("${:02x},Y", std::make_format_args(address)); }
-static inline std::string relative(char offset)   { return std::vformat("*{:+}", std::make_format_args(offset)); }
-static inline std::string absolute(Word address)  { return std::vformat("${:04x}", std::make_format_args(address)); }
-static inline std::string absoluteX(Word address) { return std::vformat("${:04x},X", std::make_format_args(address)); }
-static inline std::string absoluteY(Word address) { return std::vformat("${:04x},Y", std::make_format_args(address)); }
-static inline std::string indirect(Word address)  { return std::vformat("(${:04x})", std::make_format_args(address)); }
-static inline std::string indirectX(Word address) { return std::vformat("(${:04x},X)", std::make_format_args(address)); }
-static inline std::string indirectY(Word address) { return std::vformat("(${:04x}),Y", std::make_format_args(address)); }
+constexpr static inline std::string accumulator_description(const std::string &name) { return std::format("{} A", name); }
+static inline std::string immediate_description(std::string name, Byte value)        { return std::vformat("{} #{:02u}", std::make_format_args(std::move(name), value)); }
+static inline std::string zeroPage_description(std::string name, Byte address)       { return std::vformat("{} ${:02x}", std::make_format_args(std::move(name), address)); }
+static inline std::string zeroPageX_description(std::string name, Byte address)      { return std::vformat("{} ${:02x},X", std::make_format_args(std::move(name), address)); }
+static inline std::string zeroPageY_description(std::string name, Byte address)      { return std::vformat("{} ${:02x},Y", std::make_format_args(std::move(name), address)); }
+static inline std::string relative_description(std::string name, char offset)        { return std::vformat("{} *{:+}", std::make_format_args(std::move(name), offset)); }
+static inline std::string absolute_description(std::string name, Word address)       { return std::vformat("{} ${:04x}", std::make_format_args(std::move(name), address)); }
+static inline std::string absoluteX_description(std::string name, Word address)      { return std::vformat("{} ${:04x},X", std::make_format_args(std::move(name), address)); }
+static inline std::string absoluteY_description(std::string name, Word address)      { return std::vformat("{} ${:04x},Y", std::make_format_args(std::move(name), address)); }
+static inline std::string indirect_description(std::string name, Word address)       { return std::vformat("{} (${:04x})", std::make_format_args(std::move(name), address)); }
+static inline std::string indirectX_description(std::string name, Word address)      { return std::vformat("{} (${:04x},X)", std::make_format_args(std::move(name), address)); }
+static inline std::string indirectY_description(std::string name, Word address)      { return std::vformat("{} (${:04x}),Y", std::make_format_args(std::move(name), address)); }
+
+
+
+static inline std::vector<Byte> no_argument(OpCode opCode) { return {opCode}; }
+static inline std::vector<Byte> byte_argument(OpCode opCode, Byte arg) { return {opCode, arg}; }
+static std::vector<Byte> word_argument(OpCode opCode, Word arg) {
+    WordToBytes buf(arg);
+    return {opCode, buf.low, buf.high};
+}
+
 
 
 std::string Emulator::description(const Operation &operation) {
     return std::visit(Overload {
-            [](ADC_Immediate op)   { return "ADC " + immediate(op.value); },
-            [](ADC_ZeroPage op)    { return "ADC " + zeroPage(op.address); },
-            [](ADC_ZeroPageX op)   { return "ADC " + zeroPageX(op.address); },
-            [](ADC_Absolute op)    { return "ADC " + absolute(op.address); },
-            [](ADC_AbsoluteX op)   { return "ADC " + absoluteX(op.address); },
-            [](ADC_AbsoluteY op)   { return "ADC " + absoluteY(op.address); },
-            [](ADC_IndirectX op)   { return "ADC " + indirectX(op.address); },
-            [](ADC_IndirectY op)   { return "ADC " + indirectY(op.address); },
+            [](ADC_Immediate op)   { return immediate_description("ADC", op.value); },
+            [](ADC_ZeroPage op)    { return zeroPage_description("ADC", op.address); },
+            [](ADC_ZeroPageX op)   { return zeroPageX_description("ADC", op.address); },
+            [](ADC_Absolute op)    { return absolute_description("ADC", op.address); },
+            [](ADC_AbsoluteX op)   { return absoluteX_description("ADC", op.address); },
+            [](ADC_AbsoluteY op)   { return absoluteY_description("ADC", op.address); },
+            [](ADC_IndirectX op)   { return indirectX_description("ADC", op.address); },
+            [](ADC_IndirectY op)   { return indirectY_description("ADC", op.address); },
 
-            [](AND_Immediate op)   { return "AND " + immediate(op.value); },
-            [](AND_ZeroPage op)    { return "AND " + zeroPage(op.address); },
-            [](AND_ZeroPageX op)   { return "AND " + zeroPageX(op.address); },
-            [](AND_Absolute op)    { return "AND " + absolute(op.address); },
-            [](AND_AbsoluteX op)   { return "AND " + absoluteX(op.address); },
-            [](AND_AbsoluteY op)   { return "AND " + absoluteY(op.address); },
-            [](AND_IndirectX op)   { return "AND " + indirectX(op.address); },
-            [](AND_IndirectY op)   { return "AND " + indirectY(op.address); },
+            [](AND_Immediate op)   { return immediate_description("AND", op.value); },
+            [](AND_ZeroPage op)    { return zeroPage_description("AND", op.address); },
+            [](AND_ZeroPageX op)   { return zeroPageX_description("AND", op.address); },
+            [](AND_Absolute op)    { return absolute_description("AND", op.address); },
+            [](AND_AbsoluteX op)   { return absoluteX_description("AND", op.address); },
+            [](AND_AbsoluteY op)   { return absoluteY_description("AND", op.address); },
+            [](AND_IndirectX op)   { return indirectX_description("AND", op.address); },
+            [](AND_IndirectY op)   { return indirectY_description("AND", op.address); },
 
-            [](ASL_Accumulator op) { return "ASL " + accumulator(); },
-            [](ASL_ZeroPage op)    { return "ASL " + zeroPage(op.address); },
-            [](ASL_ZeroPageX op)   { return "ASL " + zeroPageX(op.address); },
-            [](ASL_Absolute op)    { return "ASL " + absolute(op.address); },
-            [](ASL_AbsoluteX op)   { return "ASL " + absoluteX(op.address); },
+            [](ASL_Accumulator op) { return accumulator_description("ASL"); },
+            [](ASL_ZeroPage op)    { return zeroPage_description("ASL", op.address); },
+            [](ASL_ZeroPageX op)   { return zeroPageX_description("ASL", op.address); },
+            [](ASL_Absolute op)    { return absolute_description("ASL", op.address); },
+            [](ASL_AbsoluteX op)   { return absoluteX_description("ASL", op.address); },
 
-            [](BCC op)             { return "BCC " + relative(op.offset); },
-            [](BCS op)             { return "BCS " + relative(op.offset); },
-            [](BEQ op)             { return "BEQ " + relative(op.offset); },
-            [](BNE op)             { return "BNE " + relative(op.offset); },
-            [](BMI op)             { return "BMI " + relative(op.offset); },
-            [](BPL op)             { return "BPL " + relative(op.offset); },
-            [](BVC op)             { return "BVC " + relative(op.offset); },
-            [](BVS op)             { return "BVS " + relative(op.offset); },
+            [](BCC op)             { return relative_description("BCC", op.offset); },
+            [](BCS op)             { return relative_description("BCC", op.offset); },
+            [](BEQ op)             { return relative_description("BCC", op.offset); },
+            [](BNE op)             { return relative_description("BCC", op.offset); },
+            [](BMI op)             { return relative_description("BCC", op.offset); },
+            [](BPL op)             { return relative_description("BCC", op.offset); },
+            [](BVC op)             { return relative_description("BCC", op.offset); },
+            [](BVS op)             { return relative_description("BCC", op.offset); },
 
-            [](BIT_ZeroPage op)    { return "BIT " + zeroPage(op.address); },
-            [](BIT_Absolute op)    { return "BIT " + absolute(op.address); },
+            [](BIT_ZeroPage op)    { return zeroPage_description("BIT", op.address); },
+            [](BIT_Absolute op)    { return absolute_description("BIT", op.address); },
 
             [](BRK op)             { return std::string("BRK"); },
 
@@ -66,90 +76,90 @@ std::string Emulator::description(const Operation &operation) {
             [](CLI op)             { return std::string("CLI"); },
             [](CLV op)             { return std::string("CLV"); },
 
-            [](CMP_Immediate op)   { return "CMP " + immediate(op.value); },
-            [](CMP_ZeroPage op)    { return "CMP " + zeroPage(op.address); },
-            [](CMP_ZeroPageX op)   { return "CMP " + zeroPageX(op.address); },
-            [](CMP_Absolute op)    { return "CMP " + absolute(op.address); },
-            [](CMP_AbsoluteX op)   { return "CMP " + absoluteX(op.address); },
-            [](CMP_AbsoluteY op)   { return "CMP " + absoluteY(op.address); },
-            [](CMP_IndirectX op)   { return "CMP " + indirectX(op.address); },
-            [](CMP_IndirectY op)   { return "CMP " + indirectY(op.address); },
+            [](CMP_Immediate op)   { return immediate_description("CMP", op.value); },
+            [](CMP_ZeroPage op)    { return zeroPage_description("CMP", op.address); },
+            [](CMP_ZeroPageX op)   { return zeroPageX_description("CMP", op.address); },
+            [](CMP_Absolute op)    { return absolute_description("CMP", op.address); },
+            [](CMP_AbsoluteX op)   { return absoluteX_description("CMP", op.address); },
+            [](CMP_AbsoluteY op)   { return absoluteY_description("CMP", op.address); },
+            [](CMP_IndirectX op)   { return indirectX_description("CMP", op.address); },
+            [](CMP_IndirectY op)   { return indirectY_description("CMP", op.address); },
 
-            [](CPX_Immediate op)   { return "CPX " + immediate(op.value); },
-            [](CPX_ZeroPage op)    { return "CPX " + zeroPage(op.address); },
-            [](CPX_Absolute op)    { return "CPX " + absolute(op.address); },
+            [](CPX_Immediate op)   { return immediate_description("CPX", op.value); },
+            [](CPX_ZeroPage op)    { return zeroPage_description("CPX", op.address); },
+            [](CPX_Absolute op)    { return absolute_description("CPX", op.address); },
 
-            [](CPY_Immediate op)   { return "CPY " + immediate(op.value); },
-            [](CPY_ZeroPage op)    { return "CPY " + zeroPage(op.address); },
-            [](CPY_Absolute op)    { return "CPY " + absolute(op.address); },
+            [](CPY_Immediate op)   { return immediate_description("CPY", op.value); },
+            [](CPY_ZeroPage op)    { return zeroPage_description("CPY", op.address); },
+            [](CPY_Absolute op)    { return absolute_description("CPY", op.address); },
 
-            [](DEC_ZeroPage op)    { return "DEC " + zeroPage(op.address); },
-            [](DEC_ZeroPageX op)   { return "DEC " + zeroPageX(op.address); },
-            [](DEC_Absolute op)    { return "DEC " + absolute(op.address); },
-            [](DEC_AbsoluteX op)   { return "DEC " + absoluteX(op.address); },
+            [](DEC_ZeroPage op)    { return zeroPage_description("DEC", op.address); },
+            [](DEC_ZeroPageX op)   { return zeroPageX_description("DEC", op.address); },
+            [](DEC_Absolute op)    { return absolute_description("DEC", op.address); },
+            [](DEC_AbsoluteX op)   { return absoluteX_description("DEC", op.address); },
 
             [](DEX op)             { return std::string("DEX"); },
             [](DEY op)             { return std::string("DEY"); },
 
-            [](EOR_Immediate op)   { return "EOR " + immediate(op.value); },
-            [](EOR_ZeroPage op)    { return "EOR " + zeroPage(op.address); },
-            [](EOR_ZeroPageX op)   { return "EOR " + zeroPageX(op.address); },
-            [](EOR_Absolute op)    { return "EOR " + absolute(op.address); },
-            [](EOR_AbsoluteX op)   { return "EOR " + absoluteX(op.address); },
-            [](EOR_AbsoluteY op)   { return "EOR " + absoluteY(op.address); },
-            [](EOR_IndirectX op)   { return "EOR " + indirectX(op.address); },
-            [](EOR_IndirectY op)   { return "EOR " + indirectY(op.address); },
+            [](EOR_Immediate op)   { return immediate_description("EOR", op.value); },
+            [](EOR_ZeroPage op)    { return zeroPage_description("EOR", op.address); },
+            [](EOR_ZeroPageX op)   { return zeroPageX_description("EOR", op.address); },
+            [](EOR_Absolute op)    { return absolute_description("EOR", op.address); },
+            [](EOR_AbsoluteX op)   { return absoluteX_description("EOR", op.address); },
+            [](EOR_AbsoluteY op)   { return absoluteY_description("EOR", op.address); },
+            [](EOR_IndirectX op)   { return indirectX_description("EOR", op.address); },
+            [](EOR_IndirectY op)   { return indirectY_description("EOR", op.address); },
 
-            [](INC_ZeroPage op)    { return "INC " + zeroPage(op.address); },
-            [](INC_ZeroPageX op)   { return "INC " + zeroPageX(op.address); },
-            [](INC_Absolute op)    { return "INC " + absolute(op.address); },
-            [](INC_AbsoluteX op)   { return "INC " + absoluteX(op.address); },
+            [](INC_ZeroPage op)    { return zeroPage_description("INC", op.address); },
+            [](INC_ZeroPageX op)   { return zeroPageX_description("INC", op.address); },
+            [](INC_Absolute op)    { return absolute_description("INC", op.address); },
+            [](INC_AbsoluteX op)   { return absoluteX_description("INC", op.address); },
 
             [](INX op)             { return std::string("INX"); },
             [](INY op)             { return std::string("INY"); },
 
-            [](JMP_Absolute op)    { return "JMP " + absolute(op.address); },
-            [](JMP_Indirect op)    { return "JMP " + indirect(op.address); },
+            [](JMP_Absolute op)    { return absolute_description("JMP", op.address); },
+            [](JMP_Indirect op)    { return indirect_description("JMP", op.address); },
 
             [](JSR op)             { return std::string("JSR"); },
 
-            [](LDA_Immediate op)   { return "LDA " + immediate(op.value); },
-            [](LDA_ZeroPage op)    { return "LDA " + zeroPage(op.address); },
-            [](LDA_ZeroPageX op)   { return "LDA " + zeroPageX(op.address); },
-            [](LDA_Absolute op)    { return "LDA " + absolute(op.address); },
-            [](LDA_AbsoluteX op)   { return "LDA " + absoluteX(op.address); },
-            [](LDA_AbsoluteY op)   { return "LDA " + absoluteY(op.address); },
-            [](LDA_IndirectX op)   { return "LDA " + indirectX(op.address); },
-            [](LDA_IndirectY op)   { return "LDA " + indirectY(op.address); },
+            [](LDA_Immediate op)   { return immediate_description("LDA", op.value); },
+            [](LDA_ZeroPage op)    { return zeroPage_description("LDA", op.address); },
+            [](LDA_ZeroPageX op)   { return zeroPageX_description("LDA", op.address); },
+            [](LDA_Absolute op)    { return absolute_description("LDA", op.address); },
+            [](LDA_AbsoluteX op)   { return absoluteX_description("LDA", op.address); },
+            [](LDA_AbsoluteY op)   { return absoluteY_description("LDA", op.address); },
+            [](LDA_IndirectX op)   { return indirectX_description("LDA", op.address); },
+            [](LDA_IndirectY op)   { return indirectY_description("LDA", op.address); },
 
-            [](LDX_Immediate op)   { return "LDX " + immediate(op.value); },
-            [](LDX_ZeroPage op)    { return "LDX " + zeroPage(op.address); },
-            [](LDX_ZeroPageY op)   { return "LDX " + zeroPageY(op.address); },
-            [](LDX_Absolute op)    { return "LDX " + absolute(op.address); },
-            [](LDX_AbsoluteY op)   { return "LDX " + absoluteY(op.address); },
+            [](LDX_Immediate op)   { return immediate_description("LDX", op.value); },
+            [](LDX_ZeroPage op)    { return zeroPage_description("LDX", op.address); },
+            [](LDX_ZeroPageY op)   { return zeroPageY_description("LDX", op.address); },
+            [](LDX_Absolute op)    { return absolute_description("LDX", op.address); },
+            [](LDX_AbsoluteY op)   { return absoluteY_description("LDX", op.address); },
 
-            [](LDY_Immediate op)   { return "LDY " + immediate(op.value); },
-            [](LDY_ZeroPage op)    { return "LDY " + zeroPage(op.address); },
-            [](LDY_ZeroPageX op)   { return "LDY " + zeroPageX(op.address); },
-            [](LDY_Absolute op)    { return "LDY " + absolute(op.address); },
-            [](LDY_AbsoluteX op)   { return "LDY " + absoluteX(op.address); },
+            [](LDY_Immediate op)   { return immediate_description("LDY", op.value); },
+            [](LDY_ZeroPage op)    { return zeroPage_description("LDY", op.address); },
+            [](LDY_ZeroPageX op)   { return zeroPageX_description("LDY", op.address); },
+            [](LDY_Absolute op)    { return absolute_description("LDY", op.address); },
+            [](LDY_AbsoluteX op)   { return absoluteX_description("LDY", op.address); },
 
-            [](LSR_Accumulator op) { return "LSR " + accumulator(); },
-            [](LSR_ZeroPage op)    { return "LSR " + zeroPage(op.address); },
-            [](LSR_ZeroPageX op)   { return "LSR " + zeroPageX(op.address); },
-            [](LSR_Absolute op)    { return "LSR " + absolute(op.address); },
-            [](LSR_AbsoluteX op)   { return "LSR " + absoluteX(op.address); },
+            [](LSR_Accumulator op) { return accumulator_description("LSR"); },
+            [](LSR_ZeroPage op)    { return zeroPage_description("LSR", op.address); },
+            [](LSR_ZeroPageX op)   { return zeroPageX_description("LSR", op.address); },
+            [](LSR_Absolute op)    { return absolute_description("LSR", op.address); },
+            [](LSR_AbsoluteX op)   { return absoluteX_description("LSR", op.address); },
 
             [](NOP op)             { return std::string("NOP"); },
 
-            [](ORA_Immediate op)   { return "ORA " + immediate(op.value); },
-            [](ORA_ZeroPage op)    { return "ORA " + zeroPage(op.address); },
-            [](ORA_ZeroPageX op)   { return "ORA " + zeroPageX(op.address); },
-            [](ORA_Absolute op)    { return "ORA " + absolute(op.address); },
-            [](ORA_AbsoluteX op)   { return "ORA " + absoluteX(op.address); },
-            [](ORA_AbsoluteY op)   { return "ORA " + absoluteY(op.address); },
-            [](ORA_IndirectX op)   { return "ORA " + indirectX(op.address); },
-            [](ORA_IndirectY op)   { return "ORA " + indirectY(op.address); },
+            [](ORA_Immediate op)   { return immediate_description("ORA", op.value); },
+            [](ORA_ZeroPage op)    { return zeroPage_description("ORA", op.address); },
+            [](ORA_ZeroPageX op)   { return zeroPageX_description("ORA", op.address); },
+            [](ORA_Absolute op)    { return absolute_description("ORA", op.address); },
+            [](ORA_AbsoluteX op)   { return absoluteX_description("ORA", op.address); },
+            [](ORA_AbsoluteY op)   { return absoluteY_description("ORA", op.address); },
+            [](ORA_IndirectX op)   { return indirectX_description("ORA", op.address); },
+            [](ORA_IndirectY op)   { return indirectY_description("ORA", op.address); },
 
             [](PHA op)             { return std::string("PHA"); },
             [](PHP op)             { return std::string("PHP"); },
@@ -157,49 +167,49 @@ std::string Emulator::description(const Operation &operation) {
             [](PLA op)             { return std::string("PLA"); },
             [](PLP op)             { return std::string("PLP"); },
 
-            [](ROL_Accumulator op) { return "ROL " + accumulator(); },
-            [](ROL_ZeroPage op)    { return "ROL " + zeroPage(op.address); },
-            [](ROL_ZeroPageX op)   { return "ROL " + zeroPageX(op.address); },
-            [](ROL_Absolute op)    { return "ROL " + absolute(op.address); },
-            [](ROL_AbsoluteX op)   { return "ROL " + absoluteX(op.address); },
+            [](ROL_Accumulator op) { return accumulator_description("ROL"); },
+            [](ROL_ZeroPage op)    { return zeroPage_description("ROL", op.address); },
+            [](ROL_ZeroPageX op)   { return zeroPageX_description("ROL", op.address); },
+            [](ROL_Absolute op)    { return absolute_description("ROL", op.address); },
+            [](ROL_AbsoluteX op)   { return absoluteX_description("ROL", op.address); },
 
-            [](ROR_Accumulator op) { return "ROR " + accumulator(); },
-            [](ROR_ZeroPage op)    { return "ROR " + zeroPage(op.address); },
-            [](ROR_ZeroPageX op)   { return "ROR " + zeroPageX(op.address); },
-            [](ROR_Absolute op)    { return "ROR " + absolute(op.address); },
-            [](ROR_AbsoluteX op)   { return "ROR " + absoluteX(op.address); },
+            [](ROR_Accumulator op) { return accumulator_description("ROR"); },
+            [](ROR_ZeroPage op)    { return zeroPage_description("ROR", op.address); },
+            [](ROR_ZeroPageX op)   { return zeroPageX_description("ROR", op.address); },
+            [](ROR_Absolute op)    { return absolute_description("ROR", op.address); },
+            [](ROR_AbsoluteX op)   { return absoluteX_description("ROR", op.address); },
 
             [](RTI op)             { return std::string("RTI"); },
             [](RTS op)             { return std::string("RTS"); },
 
-            [](SBC_Immediate op)   { return "SBC " + immediate(op.value); },
-            [](SBC_ZeroPage op)    { return "SBC " + zeroPage(op.address); },
-            [](SBC_ZeroPageX op)   { return "SBC " + zeroPageX(op.address); },
-            [](SBC_Absolute op)    { return "SBC " + absolute(op.address); },
-            [](SBC_AbsoluteX op)   { return "SBC " + absoluteX(op.address); },
-            [](SBC_AbsoluteY op)   { return "SBC " + absoluteY(op.address); },
-            [](SBC_IndirectX op)   { return "SBC " + indirectX(op.address); },
-            [](SBC_IndirectY op)   { return "SBC " + indirectY(op.address); },
+            [](SBC_Immediate op)   { return immediate_description("SBC", op.value); },
+            [](SBC_ZeroPage op)    { return zeroPage_description("SBC", op.address); },
+            [](SBC_ZeroPageX op)   { return zeroPageX_description("SBC", op.address); },
+            [](SBC_Absolute op)    { return absolute_description("SBC", op.address); },
+            [](SBC_AbsoluteX op)   { return absoluteX_description("SBC", op.address); },
+            [](SBC_AbsoluteY op)   { return absoluteY_description("SBC", op.address); },
+            [](SBC_IndirectX op)   { return indirectX_description("SBC", op.address); },
+            [](SBC_IndirectY op)   { return indirectY_description("SBC", op.address); },
 
             [](SEC op)             { return std::string("SEC"); },
             [](SED op)             { return std::string("SED"); },
             [](SEI op)             { return std::string("SEI"); },
 
-            [](STA_ZeroPage op)    { return "STA " + zeroPage(op.address); },
-            [](STA_ZeroPageX op)   { return "STA " + zeroPageX(op.address); },
-            [](STA_Absolute op)    { return "STA " + absolute(op.address); },
-            [](STA_AbsoluteX op)   { return "STA " + absoluteX(op.address); },
-            [](STA_AbsoluteY op)   { return "STA " + absoluteY(op.address); },
-            [](STA_IndirectX op)   { return "STA " + indirectX(op.address); },
-            [](STA_IndirectY op)   { return "STA " + indirectY(op.address); },
+            [](STA_ZeroPage op)    { return zeroPage_description("STA", op.address); },
+            [](STA_ZeroPageX op)   { return zeroPageX_description("STA", op.address); },
+            [](STA_Absolute op)    { return absolute_description("STA", op.address); },
+            [](STA_AbsoluteX op)   { return absoluteX_description("STA", op.address); },
+            [](STA_AbsoluteY op)   { return absoluteY_description("STA", op.address); },
+            [](STA_IndirectX op)   { return indirectX_description("STA", op.address); },
+            [](STA_IndirectY op)   { return indirectY_description("STA", op.address); },
 
-            [](STX_ZeroPage op)    { return "STX " + zeroPage(op.address); },
-            [](STX_ZeroPageY op)   { return "STX " + zeroPageY(op.address); },
-            [](STX_Absolute op)    { return "STX " + absolute(op.address); },
+            [](STX_ZeroPage op)    { return zeroPage_description("STX", op.address); },
+            [](STX_ZeroPageY op)   { return zeroPageY_description("STX", op.address); },
+            [](STX_Absolute op)    { return absolute_description("STX", op.address); },
 
-            [](STY_ZeroPage op)    { return "STY " + zeroPage(op.address); },
-            [](STY_ZeroPageX op)   { return "STY " + zeroPageX(op.address); },
-            [](STY_Absolute op)    { return "STY " + absolute(op.address); },
+            [](STY_ZeroPage op)    { return zeroPage_description("STY", op.address); },
+            [](STY_ZeroPageX op)   { return zeroPageX_description("STY", op.address); },
+            [](STY_Absolute op)    { return absolute_description("STY", op.address); },
 
             [](TAX op)             { return std::string("TAX"); },
             [](TAY op)             { return std::string("TAY"); },
@@ -213,382 +223,190 @@ std::string Emulator::description(const Operation &operation) {
 
 std::vector<Byte> Emulator::encode(const Operation &operation) {
     return std::visit(Overload {
-        [](ADC_Immediate op) -> std::vector<Byte> { return {ADC_IMMEDIATE, op.value}; },
-        [](ADC_ZeroPage op) -> std::vector<Byte> { return {ADC_ZERO_PAGE, op.address}; },
-        [](ADC_ZeroPageX op) -> std::vector<Byte> { return {ADC_ZERO_PAGE_X, op.address}; },
-        [](ADC_Absolute op) -> std::vector<Byte> {
-            WordToBytes address{op.address};
-            return {ADC_ABSOLUTE, address.low, address.high};
-        },
-        [](ADC_AbsoluteX op) -> std::vector<Byte> {
-            WordToBytes address{op.address};
-            return {ADC_ABSOLUTE_X, address.low, address.high};
-        },
-        [](ADC_AbsoluteY op) -> std::vector<Byte> {
-            WordToBytes address{op.address};
-            return {ADC_ABSOLUTE_Y, address.low, address.high};
-        },
-        [](ADC_IndirectX op) -> std::vector<Byte> {
-            WordToBytes address{op.address};
-            return {ADC_INDIRECT_X, address.low, address.high};
-        },
-        [](ADC_IndirectY op) -> std::vector<Byte> {
-            WordToBytes address{op.address};
-            return {ADC_INDIRECT_Y, address.low, address.high};
-        },
+        [](ADC_Immediate op)   { return byte_argument(op.opcode, op.value); },
+        [](ADC_ZeroPage op)    { return byte_argument(op.opcode, op.address); },
+        [](ADC_ZeroPageX op)   { return byte_argument(op.opcode, op.address); },
+        [](ADC_Absolute op)    { return word_argument(op.opcode, op.address); },
+        [](ADC_AbsoluteX op)   { return word_argument(op.opcode, op.address); },
+        [](ADC_AbsoluteY op)   { return word_argument(op.opcode, op.address); },
+        [](ADC_IndirectX op)   { return byte_argument(op.opcode, op.address); },
+        [](ADC_IndirectY op)   { return byte_argument(op.opcode, op.address); },
 
-        [](AND_Immediate op) -> std::vector<Byte> { return {AND_IMMEDIATE, op.value}; },
-        [](AND_ZeroPage op) -> std::vector<Byte> { return {AND_ZERO_PAGE, op.address}; },
-        [](AND_ZeroPageX op) -> std::vector<Byte> { return {AND_ZERO_PAGE_X, op.address}; },
-        [](AND_Absolute op) -> std::vector<Byte> {
-            WordToBytes address{op.address};
-            return {AND_ABSOLUTE, address.low, address.high};
-        },
-        [](AND_AbsoluteX op) -> std::vector<Byte> {
-            WordToBytes address{op.address};
-            return {AND_ABSOLUTE_X, address.low, address.high};
-        },
-        [](AND_AbsoluteY op) -> std::vector<Byte> {
-            WordToBytes address{op.address};
-            return {AND_ABSOLUTE_Y, address.low, address.high};
-        },
-        [](AND_IndirectX op) -> std::vector<Byte> {
-            WordToBytes address{op.address};
-            return {AND_INDIRECT_X, address.low, address.high};
-        },
-        [](AND_IndirectY op) -> std::vector<Byte> {
-            WordToBytes address{op.address};
-            return {AND_INDIRECT_Y, address.low, address.high};
-        },
+        [](AND_Immediate op)   { return byte_argument(op.opcode, op.value); },
+        [](AND_ZeroPage op)    { return byte_argument(op.opcode, op.address); },
+        [](AND_ZeroPageX op)   { return byte_argument(op.opcode, op.address); },
+        [](AND_Absolute op)    { return word_argument(op.opcode, op.address); },
+        [](AND_AbsoluteX op)   { return word_argument(op.opcode, op.address); },
+        [](AND_AbsoluteY op)   { return word_argument(op.opcode, op.address); },
+        [](AND_IndirectX op)   { return byte_argument(op.opcode, op.address); },
+        [](AND_IndirectY op)   { return byte_argument(op.opcode, op.address); },
 
-        [](ASL_Accumulator op) -> std::vector<Byte> { return {ASL_ACCUMULATOR}; },
-        [](ASL_ZeroPage op) -> std::vector<Byte> { return {ASL_ZERO_PAGE, op.address}; },
-        [](ASL_ZeroPageX op) -> std::vector<Byte> { return {ASL_ZERO_PAGE_X, op.address}; },
-        [](ASL_Absolute op) -> std::vector<Byte> {
-            WordToBytes address(op.address);
-            return {ASL_ABSOLUTE, address.low, address.high};
-        },
-        [](ASL_AbsoluteX op) -> std::vector<Byte> {
-            WordToBytes address(op.address);
-            return {ASL_ABSOLUTE_X, address.low, address.high};
-        },
+        [](ASL_Accumulator op) { return no_argument(op.opcode); },
+        [](ASL_ZeroPage op)    { return byte_argument(op.opcode, op.address); },
+        [](ASL_ZeroPageX op)   { return byte_argument(op.opcode, op.address); },
+        [](ASL_Absolute op)    { return word_argument(op.opcode, op.address); },
+        [](ASL_AbsoluteX op)   { return word_argument(op.opcode, op.address); },
 
-        [](BCC op) -> std::vector<Byte> { return {BCC_RELATIVE}; },
-        [](BCS op) -> std::vector<Byte> { return {BCS_RELATIVE}; },
-        [](BEQ op) -> std::vector<Byte> { return {BEQ_RELATIVE}; },
-        [](BNE op) -> std::vector<Byte> { return {BNE_RELATIVE}; },
-        [](BMI op) -> std::vector<Byte> { return {BMI_RELATIVE}; },
-        [](BPL op) -> std::vector<Byte> { return {BPL_RELATIVE}; },
-        [](BVC op) -> std::vector<Byte> { return {BVC_RELATIVE}; },
-        [](BVS op) -> std::vector<Byte> { return {BVS_RELATIVE}; },
+        [](BCC op)             { return byte_argument(op.opcode, op.offset); },
+        [](BCS op)             { return byte_argument(op.opcode, op.offset); },
+        [](BEQ op)             { return byte_argument(op.opcode, op.offset); },
+        [](BNE op)             { return byte_argument(op.opcode, op.offset); },
+        [](BMI op)             { return byte_argument(op.opcode, op.offset); },
+        [](BPL op)             { return byte_argument(op.opcode, op.offset); },
+        [](BVC op)             { return byte_argument(op.opcode, op.offset); },
+        [](BVS op)             { return byte_argument(op.opcode, op.offset); },
 
-        [](BIT_ZeroPage op) -> std::vector<Byte> { return std::vector{BIT_ZERO_PAGE, op.address}; },
-        [](BIT_Absolute op) -> std::vector<Byte> {
-            WordToBytes address(op.address);
-            return {BIT_ABSOLUTE, address.low, address.high};
-        },
+        [](BIT_ZeroPage op)    { return byte_argument(op.opcode, op.address); },
+        [](BIT_Absolute op)    { return word_argument(op.opcode, op.address); },
 
-        [](BRK op) -> std::vector<Byte> { return {BRK_IMPLICIT}; },
+        [](BRK op)             { return no_argument(op.opcode); },
 
-        [](CLC op) -> std::vector<Byte> { return {CLC_IMPLICIT}; },
-        [](CLD op) -> std::vector<Byte> { return {CLD_IMPLICIT}; },
-        [](CLI op) -> std::vector<Byte> { return {CLI_IMPLICIT}; },
-        [](CLV op) -> std::vector<Byte> { return {CLV_IMPLICIT}; },
+        [](CLC op)             { return no_argument(op.opcode); },
+        [](CLD op)             { return no_argument(op.opcode); },
+        [](CLI op)             { return no_argument(op.opcode); },
+        [](CLV op)             { return no_argument(op.opcode); },
 
-        [](CMP_Immediate op) -> std::vector<Byte> { return {CMP_IMMEDIATE, op.value}; },
-        [](CMP_ZeroPage op) -> std::vector<Byte> { return {CMP_ZERO_PAGE, op.address}; },
-        [](CMP_ZeroPageX op) -> std::vector<Byte> { return {CMP_ZERO_PAGE_X, op.address}; },
-        [](CMP_Absolute op) -> std::vector<Byte> {
-            WordToBytes address{op.address};
-            return {CMP_ABSOLUTE, address.low, address.high};
-        },
-        [](CMP_AbsoluteX op) -> std::vector<Byte> {
-            WordToBytes address{op.address};
-            return {CMP_ABSOLUTE_X, address.low, address.high};
-        },
-        [](CMP_AbsoluteY op) -> std::vector<Byte> {
-            WordToBytes address{op.address};
-            return {CMP_ABSOLUTE_Y, address.low, address.high};
-        },
-        [](CMP_IndirectX op) -> std::vector<Byte> {
-            WordToBytes address{op.address};
-            return {CMP_INDIRECT_X, address.low, address.high};
-        },
-        [](CMP_IndirectY op) -> std::vector<Byte> {
-            WordToBytes address{op.address};
-            return {CMP_INDIRECT_Y, address.low, address.high};
-        },
+        [](CMP_Immediate op)   { return byte_argument(op.opcode, op.value); },
+        [](CMP_ZeroPage op)    { return byte_argument(op.opcode, op.address); },
+        [](CMP_ZeroPageX op)   { return byte_argument(op.opcode, op.address); },
+        [](CMP_Absolute op)    { return word_argument(op.opcode, op.address); },
+        [](CMP_AbsoluteX op)   { return word_argument(op.opcode, op.address); },
+        [](CMP_AbsoluteY op)   { return word_argument(op.opcode, op.address); },
+        [](CMP_IndirectX op)   { return byte_argument(op.opcode, op.address); },
+        [](CMP_IndirectY op)   { return byte_argument(op.opcode, op.address); },
 
-        [](CPX_Immediate op) -> std::vector<Byte> { return {CPX_IMMEDIATE, op.value}; },
-        [](CPX_ZeroPage op) -> std::vector<Byte> { return {CPX_ZERO_PAGE, op.address}; },
-        [](CPX_Absolute op) -> std::vector<Byte> {
-            WordToBytes address{op.address};
-            return {CPX_ABSOLUTE, address.low, address.high};
-        },
+        [](CPX_Immediate op)   { return byte_argument(op.opcode, op.value); },
+        [](CPX_ZeroPage op)    { return byte_argument(op.opcode, op.address); },
+        [](CPX_Absolute op)    { return word_argument(op.opcode, op.address); },
 
-        [](CPY_Immediate op) -> std::vector<Byte> { return {CPY_IMMEDIATE, op.value}; },
-        [](CPY_ZeroPage op) -> std::vector<Byte> { return {CPY_ZERO_PAGE, op.address}; },
-        [](CPY_Absolute op) -> std::vector<Byte> {
-            WordToBytes address{op.address};
-            return {CPY_ABSOLUTE, address.low, address.high};
-        },
+        [](CPY_Immediate op)   { return byte_argument(op.opcode, op.value); },
+        [](CPY_ZeroPage op)    { return byte_argument(op.opcode, op.address); },
+        [](CPY_Absolute op)    { return word_argument(op.opcode, op.address); },
 
-        [](DEC_ZeroPage op) -> std::vector<Byte> { return {DEC_ZERO_PAGE, op.address}; },
-        [](DEC_ZeroPageX op) -> std::vector<Byte> { return {DEC_ZERO_PAGE_X, op.address}; },
-        [](DEC_Absolute op) -> std::vector<Byte> {
-            WordToBytes address{op.address};
-            return {DEC_ABSOLUTE, address.low, address.high};
-        },
-        [](DEC_AbsoluteX op) -> std::vector<Byte> {
-            WordToBytes address{op.address};
-            return {DEC_ABSOLUTE_X, address.low, address.high};
-        },
+        [](DEC_ZeroPage op)    { return byte_argument(op.opcode, op.address); },
+        [](DEC_ZeroPageX op)   { return byte_argument(op.opcode, op.address); },
+        [](DEC_Absolute op)    { return word_argument(op.opcode, op.address); },
+        [](DEC_AbsoluteX op)   { return word_argument(op.opcode, op.address); },
 
-        [](DEX op) -> std::vector<Byte> { return {DEX_IMPLICIT}; },
-        [](DEY op) -> std::vector<Byte> { return {DEY_IMPLICIT}; },
+        [](DEX op)             { return no_argument(op.opcode); },
+        [](DEY op)             { return no_argument(op.opcode); },
 
-        [](EOR_Immediate op) -> std::vector<Byte> { return {EOR_IMMEDIATE, op.value}; },
-        [](EOR_ZeroPage op) -> std::vector<Byte> { return {EOR_ZERO_PAGE, op.address}; },
-        [](EOR_ZeroPageX op) -> std::vector<Byte> { return {EOR_ZERO_PAGE_X, op.address}; },
-        [](EOR_Absolute op) -> std::vector<Byte> {
-            WordToBytes address{op.address};
-            return {EOR_ABSOLUTE, address.low, address.high};
-        },
-        [](EOR_AbsoluteX op) -> std::vector<Byte> {
-            WordToBytes address{op.address};
-            return {EOR_ABSOLUTE_X, address.low, address.high};
-        },
-        [](EOR_AbsoluteY op) -> std::vector<Byte> {
-            WordToBytes address{op.address};
-            return {EOR_ABSOLUTE_Y, address.low, address.high};
-        },
-        [](EOR_IndirectX op) -> std::vector<Byte> {
-            WordToBytes address{op.address};
-            return {EOR_INDIRECT_X, address.low, address.high};
-        },
-        [](EOR_IndirectY op) -> std::vector<Byte> {
-            WordToBytes address{op.address};
-            return {EOR_INDIRECT_Y, address.low, address.high};
-        },
+        [](EOR_Immediate op)   { return byte_argument(op.opcode, op.value); },
+        [](EOR_ZeroPage op)    { return byte_argument(op.opcode, op.address); },
+        [](EOR_ZeroPageX op)   { return byte_argument(op.opcode, op.address); },
+        [](EOR_Absolute op)    { return word_argument(op.opcode, op.address); },
+        [](EOR_AbsoluteX op)   { return word_argument(op.opcode, op.address); },
+        [](EOR_AbsoluteY op)   { return word_argument(op.opcode, op.address); },
+        [](EOR_IndirectX op)   { return byte_argument(op.opcode, op.address); },
+        [](EOR_IndirectY op)   { return byte_argument(op.opcode, op.address); },
 
-        [](INC_ZeroPage op) -> std::vector<Byte> { return {INC_ZERO_PAGE, op.address}; },
-        [](INC_ZeroPageX op) -> std::vector<Byte> { return {INC_ZERO_PAGE_X, op.address}; },
-        [](INC_Absolute op) -> std::vector<Byte> {
-            WordToBytes address{op.address};
-            return {INC_ABSOLUTE, address.low, address.high};
-        },
-        [](INC_AbsoluteX op) -> std::vector<Byte> {
-            WordToBytes address{op.address};
-            return {INC_ABSOLUTE_X, address.low, address.high};
-        },
+        [](INC_ZeroPage op)    { return byte_argument(op.opcode, op.address); },
+        [](INC_ZeroPageX op)   { return byte_argument(op.opcode, op.address); },
+        [](INC_Absolute op)    { return word_argument(op.opcode, op.address); },
+        [](INC_AbsoluteX op)   { return word_argument(op.opcode, op.address); },
 
-        [](INX op) -> std::vector<Byte> { return {INX_IMPLICIT}; },
-        [](INY op) -> std::vector<Byte> { return {INY_IMPLICIT}; },
+        [](INX op)             { return no_argument(op.opcode); },
+        [](INY op)             { return no_argument(op.opcode); },
 
-        [](JMP_Absolute op) -> std::vector<Byte> {
-            WordToBytes address(op.address);
-            return {JMP_ABSOLUTE, address.low, address.high};
-        },
-        [](JMP_Indirect op) -> std::vector<Byte> {
-            WordToBytes address(op.address);
-            return {JMP_INDIRECT, address.low, address.high};
-        },
+        [](JMP_Absolute op)    { return word_argument(op.opcode, op.address); },
+        [](JMP_Indirect op)    { return word_argument(op.opcode, op.address); },
 
-        [](JSR op) -> std::vector<Byte> {
-            WordToBytes address(op.address);
-            return {JSR_ABSOLUTE, address.low, address.high};
-        },
+        [](JSR op)             { return word_argument(op.opcode, op.address); },
 
-        [](LDA_Immediate op) -> std::vector<Byte> { return {LDA_IMMEDIATE, op.value}; },
-        [](LDA_ZeroPage op) -> std::vector<Byte> { return {LDA_ZERO_PAGE, op.address}; },
-        [](LDA_ZeroPageX op) -> std::vector<Byte> { return {LDA_ZERO_PAGE_X, op.address}; },
-        [](LDA_Absolute op) -> std::vector<Byte> {
-            WordToBytes address{op.address};
-            return {LDA_ABSOLUTE, address.low, address.high};
-        },
-        [](LDA_AbsoluteX op) -> std::vector<Byte> {
-            WordToBytes address{op.address};
-            return {LDA_ABSOLUTE_X, address.low, address.high};
-        },
-        [](LDA_AbsoluteY op) -> std::vector<Byte> {
-            WordToBytes address{op.address};
-            return {LDA_ABSOLUTE_Y, address.low, address.high};
-        },
-        [](LDA_IndirectX op) -> std::vector<Byte> {
-            WordToBytes address{op.address};
-            return {LDA_INDIRECT_X, address.low, address.high};
-        },
-        [](LDA_IndirectY op) -> std::vector<Byte> {
-            WordToBytes address{op.address};
-            return {LDA_INDIRECT_Y, address.low, address.high};
-        },
+        [](LDA_Immediate op)   { return byte_argument(op.opcode, op.value); },
+        [](LDA_ZeroPage op)    { return byte_argument(op.opcode, op.address); },
+        [](LDA_ZeroPageX op)   { return byte_argument(op.opcode, op.address); },
+        [](LDA_Absolute op)    { return word_argument(op.opcode, op.address); },
+        [](LDA_AbsoluteX op)   { return word_argument(op.opcode, op.address); },
+        [](LDA_AbsoluteY op)   { return word_argument(op.opcode, op.address); },
+        [](LDA_IndirectX op)   { return byte_argument(op.opcode, op.address); },
+        [](LDA_IndirectY op)   { return byte_argument(op.opcode, op.address); },
 
-        [](LDX_Immediate op) -> std::vector<Byte> { return {LDX_IMMEDIATE, op.value}; },
-        [](LDX_ZeroPage op) -> std::vector<Byte> { return {LDX_ZERO_PAGE, op.address}; },
-        [](LDX_ZeroPageY op) -> std::vector<Byte> { return {LDX_ZERO_PAGE_Y, op.address}; },
-        [](LDX_Absolute op) -> std::vector<Byte> {
-            WordToBytes address{op.address};
-            return {LDX_ABSOLUTE, address.low, address.high};
-        },
-        [](LDX_AbsoluteY op) -> std::vector<Byte> {
-            WordToBytes address{op.address};
-            return {LDX_ABSOLUTE_Y, address.low, address.high};
-        },
+        [](LDX_Immediate op)   { return byte_argument(op.opcode, op.value); },
+        [](LDX_ZeroPage op)    { return byte_argument(op.opcode, op.address); },
+        [](LDX_ZeroPageY op)   { return byte_argument(op.opcode, op.address); },
+        [](LDX_Absolute op)    { return word_argument(op.opcode, op.address); },
+        [](LDX_AbsoluteY op)   { return word_argument(op.opcode, op.address); },
 
-        [](LDY_Immediate op) -> std::vector<Byte> { return {LDY_IMMEDIATE, op.value}; },
-        [](LDY_ZeroPage op) -> std::vector<Byte> { return {LDY_ZERO_PAGE, op.address}; },
-        [](LDY_ZeroPageX op) -> std::vector<Byte> { return {LDY_ZERO_PAGE_X, op.address}; },
-        [](LDY_Absolute op) -> std::vector<Byte> {
-            WordToBytes address{op.address};
-            return {LDY_ABSOLUTE, address.low, address.high};
-        },
-        [](LDY_AbsoluteX op) -> std::vector<Byte> {
-            WordToBytes address{op.address};
-            return {LDY_ABSOLUTE_X, address.low, address.high};
-        },
+        [](LDY_Immediate op)   { return byte_argument(op.opcode, op.value); },
+        [](LDY_ZeroPage op)    { return byte_argument(op.opcode, op.address); },
+        [](LDY_ZeroPageX op)   { return byte_argument(op.opcode, op.address); },
+        [](LDY_Absolute op)    { return word_argument(op.opcode, op.address); },
+        [](LDY_AbsoluteX op)   { return word_argument(op.opcode, op.address); },
 
-        [](LSR_Accumulator op) -> std::vector<Byte> { return {LSR_ACCUMULATOR}; },
-        [](LSR_ZeroPage op) -> std::vector<Byte> { return {LSR_ZERO_PAGE, op.address}; },
-        [](LSR_ZeroPageX op) -> std::vector<Byte> { return {LSR_ZERO_PAGE_X, op.address}; },
-        [](LSR_Absolute op) -> std::vector<Byte> {
-            WordToBytes address{op.address};
-            return {LSR_ABSOLUTE, address.low, address.high};
-        },
-        [](LSR_AbsoluteX op) -> std::vector<Byte> {
-            WordToBytes address{op.address};
-            return {LSR_ABSOLUTE_X, address.low, address.high};
-        },
+        [](LSR_Accumulator op) { return no_argument(op.opcode); },
+        [](LSR_ZeroPage op)    { return byte_argument(op.opcode, op.address); },
+        [](LSR_ZeroPageX op)   { return byte_argument(op.opcode, op.address); },
+        [](LSR_Absolute op)    { return word_argument(op.opcode, op.address); },
+        [](LSR_AbsoluteX op)   { return word_argument(op.opcode, op.address); },
 
-        [](NOP op) -> std::vector<Byte> { return {NOP_IMPLICIT}; },
+        [](NOP op)             { return no_argument(op.opcode); },
 
-        [](ORA_Immediate op) -> std::vector<Byte> { return {ORA_IMMEDIATE, op.value}; },
-        [](ORA_ZeroPage op) -> std::vector<Byte> { return {ORA_ZERO_PAGE, op.address}; },
-        [](ORA_ZeroPageX op) -> std::vector<Byte> { return {ORA_ZERO_PAGE_X, op.address}; },
-        [](ORA_Absolute op) -> std::vector<Byte> {
-            WordToBytes address{op.address};
-            return {ORA_ABSOLUTE, address.low, address.high};
-        },
-        [](ORA_AbsoluteX op) -> std::vector<Byte> {
-            WordToBytes address{op.address};
-            return {ORA_ABSOLUTE_X, address.low, address.high};
-        },
-        [](ORA_AbsoluteY op) -> std::vector<Byte> {
-            WordToBytes address{op.address};
-            return {ORA_ABSOLUTE_Y, address.low, address.high};
-        },
-        [](ORA_IndirectX op) -> std::vector<Byte> {
-            WordToBytes address{op.address};
-            return {ORA_INDIRECT_X, address.low, address.high};
-        },
-        [](ORA_IndirectY op) -> std::vector<Byte> {
-            WordToBytes address{op.address};
-            return {ORA_INDIRECT_Y, address.low, address.high};
-        },
+        [](ORA_Immediate op)   { return byte_argument(op.opcode, op.value); },
+        [](ORA_ZeroPage op)    { return byte_argument(op.opcode, op.address); },
+        [](ORA_ZeroPageX op)   { return byte_argument(op.opcode, op.address); },
+        [](ORA_Absolute op)    { return word_argument(op.opcode, op.address); },
+        [](ORA_AbsoluteX op)   { return word_argument(op.opcode, op.address); },
+        [](ORA_AbsoluteY op)   { return word_argument(op.opcode, op.address); },
+        [](ORA_IndirectX op)   { return byte_argument(op.opcode, op.address); },
+        [](ORA_IndirectY op)   { return byte_argument(op.opcode, op.address); },
 
-        [](PHA op) -> std::vector<Byte> { return {PHA_IMPLICIT}; },
-        [](PHP op) -> std::vector<Byte> { return {PHP_IMPLICIT}; },
+        [](PHA op)             { return no_argument(op.opcode); },
+        [](PHP op)             { return no_argument(op.opcode); },
 
-        [](PLA op) -> std::vector<Byte> { return {PLA_IMPLICIT}; },
-        [](PLP op) -> std::vector<Byte> { return {PLP_IMPLICIT}; },
+        [](PLA op)             { return no_argument(op.opcode); },
+        [](PLP op)             { return no_argument(op.opcode); },
 
-        [](ROL_Accumulator op) -> std::vector<Byte> { return {ROL_ACCUMULATOR}; },
-        [](ROL_ZeroPage op) -> std::vector<Byte> { return {ROL_ZERO_PAGE, op.address}; },
-        [](ROL_ZeroPageX op) -> std::vector<Byte> { return {ROL_ZERO_PAGE_X, op.address}; },
-        [](ROL_Absolute op) -> std::vector<Byte> {
-            WordToBytes address{op.address};
-            return {ROL_ABSOLUTE, address.low, address.high};
-        },
-        [](ROL_AbsoluteX op) -> std::vector<Byte> {
-            WordToBytes address{op.address};
-            return {ROL_ABSOLUTE_X, address.low, address.high};
-        },
+        [](ROL_Accumulator op) { return no_argument(op.opcode); },
+        [](ROL_ZeroPage op)    { return byte_argument(op.opcode, op.address); },
+        [](ROL_ZeroPageX op)   { return byte_argument(op.opcode, op.address); },
+        [](ROL_Absolute op)    { return word_argument(op.opcode, op.address); },
+        [](ROL_AbsoluteX op)   { return word_argument(op.opcode, op.address); },
 
-        [](ROR_Accumulator op) -> std::vector<Byte> { return {ROR_ACCUMULATOR}; },
-        [](ROR_ZeroPage op) -> std::vector<Byte> { return {ROR_ZERO_PAGE, op.address}; },
-        [](ROR_ZeroPageX op) -> std::vector<Byte> { return {ROR_ZERO_PAGE_X, op.address}; },
-        [](ROR_Absolute op) -> std::vector<Byte> {
-            WordToBytes address{op.address};
-            return {ROR_ABSOLUTE, address.low, address.high};
-        },
-        [](ROR_AbsoluteX op) -> std::vector<Byte> {
-            WordToBytes address{op.address};
-            return {ROR_ABSOLUTE_X, address.low, address.high};
-        },
+        [](ROR_Accumulator op) { return no_argument(op.opcode); },
+        [](ROR_ZeroPage op)    { return byte_argument(op.opcode, op.address); },
+        [](ROR_ZeroPageX op)   { return byte_argument(op.opcode, op.address); },
+        [](ROR_Absolute op)    { return word_argument(op.opcode, op.address); },
+        [](ROR_AbsoluteX op)   { return word_argument(op.opcode, op.address); },
 
-        [](RTI op) -> std::vector<Byte> { return {RTI_IMPLICIT}; },
-        [](RTS op) -> std::vector<Byte> { return {RTS_IMPLICIT}; },
+        [](RTI op)             { return no_argument(op.opcode); },
+        [](RTS op)             { return no_argument(op.opcode); },
 
-        [](SBC_Immediate op) -> std::vector<Byte> { return {SBC_IMMEDIATE, op.value}; },
-        [](SBC_ZeroPage op) -> std::vector<Byte> { return {SBC_ZERO_PAGE, op.address}; },
-        [](SBC_ZeroPageX op) -> std::vector<Byte> { return {SBC_ZERO_PAGE_X, op.address}; },
-        [](SBC_Absolute op) -> std::vector<Byte> {
-            WordToBytes address{op.address};
-            return {SBC_ABSOLUTE, address.low, address.high};
-        },
-        [](SBC_AbsoluteX op) -> std::vector<Byte> {
-            WordToBytes address{op.address};
-            return {SBC_ABSOLUTE_X, address.low, address.high};
-        },
-        [](SBC_AbsoluteY op) -> std::vector<Byte> {
-            WordToBytes address{op.address};
-            return {SBC_ABSOLUTE_Y, address.low, address.high};
-        },
-        [](SBC_IndirectX op) -> std::vector<Byte> {
-            WordToBytes address{op.address};
-            return {SBC_INDIRECT_X, address.low, address.high};
-        },
-        [](SBC_IndirectY op) -> std::vector<Byte> {
-            WordToBytes address{op.address};
-            return {SBC_INDIRECT_Y, address.low, address.high};
-        },
+        [](SBC_Immediate op)   { return byte_argument(op.opcode, op.value); },
+        [](SBC_ZeroPage op)    { return byte_argument(op.opcode, op.address); },
+        [](SBC_ZeroPageX op)   { return byte_argument(op.opcode, op.address); },
+        [](SBC_Absolute op)    { return word_argument(op.opcode, op.address); },
+        [](SBC_AbsoluteX op)   { return word_argument(op.opcode, op.address); },
+        [](SBC_AbsoluteY op)   { return word_argument(op.opcode, op.address); },
+        [](SBC_IndirectX op)   { return byte_argument(op.opcode, op.address); },
+        [](SBC_IndirectY op)   { return byte_argument(op.opcode, op.address); },
 
-        [](SEC op) -> std::vector<Byte> { return {SEC_IMPLICIT}; },
-        [](SED op) -> std::vector<Byte> { return {SED_IMPLICIT}; },
-        [](SEI op) -> std::vector<Byte> { return {SEI_IMPLICIT}; },
+        [](SEC op)             { return no_argument(op.opcode); },
+        [](SED op)             { return no_argument(op.opcode); },
+        [](SEI op)             { return no_argument(op.opcode); },
 
-        [](STA_ZeroPage op) -> std::vector<Byte> { return {STA_ZERO_PAGE, op.address}; },
-        [](STA_ZeroPageX op) -> std::vector<Byte> { return {STA_ZERO_PAGE_X, op.address}; },
-        [](STA_Absolute op) -> std::vector<Byte> {
-            WordToBytes address{op.address};
-            return {STA_ABSOLUTE, address.low, address.high};
-        },
-        [](STA_AbsoluteX op) -> std::vector<Byte> {
-            WordToBytes address{op.address};
-            return {STA_ABSOLUTE_X, address.low, address.high};
-        },
-        [](STA_AbsoluteY op) -> std::vector<Byte> {
-            WordToBytes address{op.address};
-            return {STA_ABSOLUTE_Y, address.low, address.high};
-        },
-        [](STA_IndirectX op) -> std::vector<Byte> {
-            WordToBytes address{op.address};
-            return {STA_INDIRECT_X, address.low, address.high};
-        },
-        [](STA_IndirectY op) -> std::vector<Byte> {
-            WordToBytes address{op.address};
-            return {STA_INDIRECT_Y, address.low, address.high};
-        },
+        [](STA_ZeroPage op)    { return byte_argument(op.opcode, op.address); },
+        [](STA_ZeroPageX op)   { return byte_argument(op.opcode, op.address); },
+        [](STA_Absolute op)    { return word_argument(op.opcode, op.address); },
+        [](STA_AbsoluteX op)   { return word_argument(op.opcode, op.address); },
+        [](STA_AbsoluteY op)   { return word_argument(op.opcode, op.address); },
+        [](STA_IndirectX op)   { return byte_argument(op.opcode, op.address); },
+        [](STA_IndirectY op)   { return byte_argument(op.opcode, op.address); },
 
-        [](STX_ZeroPage op) -> std::vector<Byte> { return {STX_ZERO_PAGE, op.address}; },
-        [](STX_ZeroPageY op) -> std::vector<Byte> { return {STX_ZERO_PAGE_Y, op.address}; },
-        [](STX_Absolute op) -> std::vector<Byte> {
-            WordToBytes address{op.address};
-            return {STX_ABSOLUTE, address.low, address.high};
-        },
+        [](STX_ZeroPage op)    { return byte_argument(op.opcode, op.address); },
+        [](STX_ZeroPageY op)   { return byte_argument(op.opcode, op.address); },
+        [](STX_Absolute op)    { return word_argument(op.opcode, op.address); },
 
-        [](STY_ZeroPage op) -> std::vector<Byte> { return {STY_ZERO_PAGE, op.address}; },
-        [](STY_ZeroPageX op) -> std::vector<Byte> { return {STY_ZERO_PAGE_X, op.address}; },
-        [](STY_Absolute op) -> std::vector<Byte> {
-            WordToBytes address{op.address};
-            return {STY_ABSOLUTE, address.low, address.high};
-        },
+        [](STY_ZeroPage op)    { return byte_argument(op.opcode, op.address); },
+        [](STY_ZeroPageX op)   { return byte_argument(op.opcode, op.address); },
+        [](STY_Absolute op)    { return word_argument(op.opcode, op.address); },
 
-        [](TAX op) -> std::vector<Byte> { return {TAX_IMPLICIT}; },
-        [](TAY op) -> std::vector<Byte> { return {TAY_IMPLICIT}; },
-        [](TSX op) -> std::vector<Byte> { return {TSX_IMPLICIT}; },
-        [](TXA op) -> std::vector<Byte> { return {TXA_IMPLICIT}; },
-        [](TXS op) -> std::vector<Byte> { return {TXS_IMPLICIT}; },
-        [](TYA op) -> std::vector<Byte> { return {TYA_IMPLICIT}; }
+        [](TAX op)             { return no_argument(op.opcode); },
+        [](TAY op)             { return no_argument(op.opcode); },
+        [](TSX op)             { return no_argument(op.opcode); },
+        [](TXA op)             { return no_argument(op.opcode); },
+        [](TXS op)             { return no_argument(op.opcode); },
+        [](TYA op)             { return no_argument(op.opcode); }
     },
           operation);
 }
