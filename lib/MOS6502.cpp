@@ -7,6 +7,7 @@
 #include <bitset>
 #include <iostream>
 #include <utility>
+#include <cassert>
 
 #include "MOS6502.hpp"
 #include "MOS6502_helpers.hpp"
@@ -15,31 +16,31 @@
 
 namespace Emulator {
 
-    Byte MOS6502::read_current_byte() {
-        return read_byte(PC++);
-    }
+//    Byte MOS6502::read_current_byte() {
+//        return read_byte(PC++);
+//    }
 
 
-    Word MOS6502::read_current_word() {
-        WordToBytes buf{};
-        buf.low = read_current_byte();
-        buf.high = read_current_byte();
-        return buf.word;
-    }
+//    Word MOS6502::read_current_word() {
+//        WordToBytes buf{};
+//        buf.low = read_current_byte();
+//        buf.high = read_current_byte();
+//        return buf.word;
+//    }
 
 
-    Word MOS6502::read_reversed_word(Word address) {
-        WordToBytes buf{};
-        buf.low = read_byte(address);
-        buf.high = read_byte(address + 1);
-        return buf.word;
-    }
+//    Word MOS6502::read_reversed_word(Word address) {
+//        WordToBytes buf{};
+//        buf.low = read_byte(address);
+//        buf.high = read_byte(address + 1);
+//        return buf.word;
+//    }
 
 
-    Byte MOS6502::read_byte(Word address) {
-        cycle++;
-        return memory[address];
-    }
+//    Byte MOS6502::read_byte(Word address) {
+//        cycle++;
+//        return memory[address];
+//    }
 
 
     void MOS6502::load_register(Register reg, AddressingMode mode) {
@@ -74,8 +75,7 @@ namespace Emulator {
 
 
         // setting flags
-        SR[ZERO] = value == 0;
-        SR[NEGATIVE] = (char)value < 0;
+        set_writing_flags(value);
     }
 
 
@@ -103,16 +103,16 @@ namespace Emulator {
     }
 
 
-    void MOS6502::write_byte(Byte value, Word address, bool set_flags) {
-        memory[address] = value;
-        cycle++;
-
-        if (set_flags) {
-            // setting flags
-            SR[ZERO] = value == 0;
-            SR[NEGATIVE] = (char)value < 0;
-        }
-    }
+//    void MOS6502::write_byte(Byte value, Word address, bool set_flags) {
+//        memory[address] = value;
+//        cycle++;
+//
+//        if (set_flags) {
+//            // setting flags
+//            SR[ZERO] = value == 0;
+//            SR[NEGATIVE] = (char)value < 0;
+//        }
+//    }
 
 
     Byte MOS6502::get_register(Emulator::Register reg) const {
@@ -134,7 +134,8 @@ namespace Emulator {
 
 
     void MOS6502::store_register(Register reg, AddressingMode mode) {
-        write_byte(get_register(reg), determine_address(mode, true));
+        auto value = get_register(reg);
+        write_byte(mode, value, true);
     }
 
 
@@ -148,37 +149,40 @@ namespace Emulator {
                 return PC;
 
             case AddressingMode::ZERO_PAGE:
-                return read_current_byte();
+                return memory.fetch_byte_and_proceed(PC, cycle);
 
             case AddressingMode::ZERO_PAGE_X:
-                return add_word(read_current_byte(), X, true);
+                return add_word(memory.fetch_byte_and_proceed(PC, cycle), X, true);
 
             case AddressingMode::ZERO_PAGE_Y:
-                return add_word(read_current_byte(), Y, true);
+                return add_word(memory.fetch_byte_and_proceed(PC, cycle), Y, true);
 
             case AddressingMode::RELATIVE: {
-                const char offset = read_current_byte();
+                const char offset = (char)memory.fetch_byte_and_proceed(PC, cycle);
                 return PC + offset;
             }
 
             case AddressingMode::ABSOLUTE:
-                return read_current_word();
+                return memory.fetch_word_and_proceed(PC, cycle);
 
             case AddressingMode::ABSOLUTE_X:
-                return add_word(read_current_word(), X, elapseCycleWhenNotCrossingPage);
+                return add_word(memory.fetch_word_and_proceed(PC, cycle), X, elapseCycleWhenNotCrossingPage);
 
             case AddressingMode::ABSOLUTE_Y:
-                return add_word(read_current_word(), Y, elapseCycleWhenNotCrossingPage);
+                return add_word(memory.fetch_word_and_proceed(PC, cycle), Y, elapseCycleWhenNotCrossingPage);
 
-            case AddressingMode::INDIRECT:
-                return read_reversed_word(read_current_word());
+            case AddressingMode::INDIRECT: {
+                auto tmpAddress = memory.fetch_word_and_proceed(PC, cycle);
+                return memory.fetch_word(tmpAddress, cycle);
+            }
 
-            case AddressingMode::INDIRECT_X:
+            case AddressingMode::INDIRECT_X: {
                 cycle++;
-                return read_reversed_word((Byte)(read_current_byte() + X));
+                return memory.fetch_word((Byte)(memory.fetch_byte_and_proceed(PC, cycle) + X), cycle);
+            }
 
             case AddressingMode::INDIRECT_Y:
-                return add_word(read_reversed_word(read_current_byte()), Y, elapseCycleWhenNotCrossingPage);
+                return add_word(memory.fetch_word((Word)memory.fetch_byte_and_proceed(PC, cycle), cycle), Y, elapseCycleWhenNotCrossingPage);
         }
 
         throw std::runtime_error("Some addressing modes were not handled");
@@ -192,19 +196,19 @@ namespace Emulator {
 
 
     void MOS6502::push_byte_to_stack(Byte value) {
-        write_byte(value, STACK_BOTTOM + (SP--));
+        memory.set_byte({.address = (Word)(STACK_BOTTOM + SP--), .value = value, .cycle = cycle});
     }
 
 
     Byte MOS6502::pull_byte_from_stack() {
         cycle++;
-        return read_byte(STACK_BOTTOM + (++SP));
+        return memory.fetch_byte(STACK_BOTTOM + ++SP, cycle);
     }
 
 
     void MOS6502::pull_from_stack(Register to) {
         set_register(to, pull_byte_from_stack());
-        cycle ++;
+        cycle++;
     }
 
 
@@ -290,15 +294,24 @@ namespace Emulator {
 
 
     void MOS6502::increment_memory(AddressingMode mode) {
-        Word address = determine_address(mode, true);
-        write_byte(read_byte(address) + 1, address, true);
+        const Word address = determine_address(mode, true);
+        auto value = memory.fetch_byte(address, cycle);
+        Byte newValue = value + 1;
+
+        set_writing_flags(newValue);
+        memory.set_byte({.address = address, .value = newValue, .cycle = cycle});
+
         cycle++;
     }
 
 
     void MOS6502::decrement_memory(AddressingMode mode) {
-        Word address = determine_address(mode, true);
-        write_byte(read_byte(address) - 1, address, true);
+        const Word address = determine_address(mode, true);
+        Byte value = memory.fetch_byte(address, cycle);
+        Byte newValue = value - 1;
+
+        set_writing_flags(newValue);
+        memory.set_byte({.address = address, .value = newValue, .cycle = cycle});
         cycle++;
     }
 
@@ -324,10 +337,13 @@ namespace Emulator {
 
     void MOS6502::shift_left_memory(AddressingMode mode) {
         Word address = determine_address(mode, true);
-        Byte value = read_byte(address);
+        Byte value = memory.fetch_byte(address, cycle);
 
         SR[CARRY] = get_bit(value, 7);
-        write_byte(value << 1, address, true);
+
+        Byte newValue = value << 1;
+        set_writing_flags(newValue);
+        memory.set_byte({.address = address, .value = newValue, .cycle = cycle});
         cycle++;
     }
 
@@ -341,10 +357,12 @@ namespace Emulator {
 
     void MOS6502::shift_right_memory(AddressingMode mode) {
         Word address = determine_address(mode, true);
-        Byte value = read_byte(address);
+        Byte value = memory.fetch_byte(address, cycle);
+        Byte newValue = value >> 1;
 
         SR[CARRY] = get_bit(value, 0);
-        write_byte(value >> 1, address, true);
+        set_writing_flags(newValue);
+        memory.set_byte({.address = address, .value = newValue, .cycle = cycle});
         cycle++;
     }
 
@@ -359,11 +377,12 @@ namespace Emulator {
 
     void MOS6502::rotate_left_memory(AddressingMode mode) {
         Word address = determine_address(mode, true);
-        Byte value = read_byte(address);
+        Byte value = memory.fetch_byte(address, cycle);
+        Byte newValue = (value << 1) + SR[CARRY];
 
-        const bool newCarry = get_bit(value, 7);
-        write_byte((value << 1) + SR[CARRY], address, true);
-        SR[CARRY] = newCarry;
+        SR[CARRY] = get_bit(value, 7);
+        set_writing_flags(newValue);
+        memory.set_byte({.address = address, .value = newValue, .cycle = cycle});
         cycle++;
     }
 
@@ -382,13 +401,14 @@ namespace Emulator {
 
     void MOS6502::rotate_right_memory(AddressingMode mode) {
         Word address = determine_address(mode, true);
-        Byte value = read_byte(address);
+        Byte value = memory.fetch_byte(address, cycle);
         const bool newCarry = get_bit(value, 0);
         value >>= 1;
         set_bit(value, 7, SR[CARRY]);
 
-        write_byte(value, address, true);
         SR[CARRY] = newCarry;
+        set_writing_flags(value);
+        memory.set_byte({.address = address, .value = value, .cycle = cycle});
         cycle++;
     }
 
@@ -453,7 +473,7 @@ namespace Emulator {
     void MOS6502::brk() {
         // it stores initial PC + 2, where initial is the address of the command
         push_word_to_stack(PC + 1);
-        PC = read_reversed_word(BRK_HANDLER);
+        PC = memory.fetch_word(BRK_HANDLER, cycle);
         SR[BREAK] = SET;
         cycle++;
     }
@@ -467,7 +487,7 @@ namespace Emulator {
 
 
     void MOS6502::reset() {
-        PC = read_reversed_word(RESET_LOCATION);
+        PC = memory.fetch_word(RESET_LOCATION, cycle);
         cycle = 7;
         SR[INTERRUPT_DISABLE] = true;
     }
@@ -475,7 +495,7 @@ namespace Emulator {
 
 
     Byte MOS6502::read_byte(AddressingMode mode) {
-        return (mode == AddressingMode::IMMEDIATE) ? read_current_byte() : read_byte(determine_address(mode));
+        return (mode == AddressingMode::IMMEDIATE) ? memory.fetch_byte_and_proceed(PC, cycle) : memory.fetch_byte(determine_address(mode), cycle);
     }
 
 
@@ -990,7 +1010,7 @@ namespace Emulator {
 
 
     OpCode MOS6502::execute_current_command() {
-        OpCode opCode{read_current_byte()};
+        OpCode opCode{memory.fetch_byte_and_proceed(PC, cycle)};
         execute_command(opCode);
         return opCode;
     }
@@ -1045,6 +1065,16 @@ namespace Emulator {
         for (int sp = 255; sp >= 0; sp--) {
             std::cout << HEX_BYTE(sp) << ": " << HEX_BYTE(memory[STACK_BOTTOM + sp]) << '\n';
         }
+    }
+
+    void MOS6502::set_writing_flags(Byte value) {
+        SR[ZERO] = value == 0;
+        SR[NEGATIVE] = (char)value < 0;
+    }
+
+    void MOS6502::write_byte(AddressingMode mode, Byte value, bool elapseCycleWhenNotCrossingPage) {
+        assert(mode != AddressingMode::IMMEDIATE);
+        memory.set_byte(ROM::SetByteInputAddressNotModified{.address = determine_address(mode, elapseCycleWhenNotCrossingPage), .value = value, .cycle = cycle});
     }
 
 }

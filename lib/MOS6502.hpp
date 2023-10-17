@@ -194,23 +194,27 @@ namespace Emulator {
 
         void set_register(Register reg, Byte value);
 
+        void set_writing_flags(Byte value);
+
         /// reads the byte at the address specified by program counter and increments the latter
-        Byte read_current_byte();
+//        Byte read_current_byte();
 
         /// reads word wih least significant byte of which being at PC; increases PC by 2
-        Word read_current_word();
+//        Word read_current_word();
 
         /// reads word, least significant byte of which is pointed at by the address
-        Word read_reversed_word(Word address);
+//        Word read_reversed_word(Word address);
 
         /// reads byte from memory determining the address according to the given scheme
-        Byte read_byte(AddressingMode mode); // { return read_byte(determine_address(mode)); };
+        Byte read_byte(AddressingMode mode);
+
+        void write_byte(AddressingMode mode, Byte value, bool elapseCycleWhenNotCrossingPage);
 
         /// reads byte from memory at a given address
-        Byte read_byte(Word address);
+//        Byte read_byte(Word address);
 
         /// writes the specified value to the specified address in memory
-        void write_byte(Byte value, Word address, bool set_flags = false);
+//        void write_byte(Byte value, Word address, bool set_flags = false);
 
         [[nodiscard]] Byte get_register(Register reg) const;
 

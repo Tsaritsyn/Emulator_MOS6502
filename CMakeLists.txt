@@ -128,6 +128,11 @@ add_executable(Emulator_MOS6502_Test
         test/MOS6502_TestBRK.cpp
         test/TestNOP.cpp
         test/MOS6502_TestRTI.cpp
+        lib/Operation.cpp
+        lib/Operation.hpp
+        lib/Error.hpp
+        lib/ROM.cpp
+        lib/ROM.hpp
 )
 
 target_include_directories(Emulator_MOS6502_Test PRIVATE lib test)

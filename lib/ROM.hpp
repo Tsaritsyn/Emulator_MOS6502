@@ -15,18 +15,25 @@ namespace Emulator {
         ROM(): m_bytes{} {};
 
         Byte& operator [](Word address) { return m_bytes[address]; }
+        [[nodiscard]] Byte operator [](Word address) const { return m_bytes[address]; }
 
-        Byte operator [](Word address) const { return m_bytes[address]; }
+        [[nodiscard]] Byte fetch_byte_and_proceed(Word &address, size_t &cycle) const { cycle++; return m_bytes[address++]; }
+        [[nodiscard]] Byte fetch_byte(Word address, size_t &cycle) const { cycle++; return m_bytes[address]; }
 
-        Byte fetch_byte(Word &address, size_t &cycle) const { cycle++; return m_bytes[address++]; }
+        [[nodiscard]] Word fetch_word_and_proceed(Word &address, size_t &cycle) const;
+        [[nodiscard]] Word fetch_word(Word address, size_t &cycle) const;
 
-        Word fetch_word(Word &address, size_t &cycle) const;
+        struct SetByteInputAddressModified { Word &address; Byte value; size_t &cycle; };
+        void set_byte_and_proceed(SetByteInputAddressModified input) { input.cycle++; m_bytes[input.address++] = input.value; }
 
-        struct SetByteInput { Word &address; Byte value; size_t &cycle; };
-        void set_byte(SetByteInput input) { input.cycle++; m_bytes[input.address++] = input.value; }
+        struct SetByteInputAddressNotModified { Word address; Byte value; size_t &cycle; };
+        void set_byte(SetByteInputAddressNotModified input) { input.cycle++; m_bytes[input.address] = input.value; }
 
-        struct SetWordInput { Word &address; Word value; size_t cycle; };
-        void set_word(SetWordInput input);
+        struct SetWordInputAddressModified { Word &address; Word value; size_t cycle; };
+        void set_word_and_proceed(SetWordInputAddressModified input);
+
+        struct SetWordInputAddressNotModified { Word address; Word value; size_t cycle; };
+        void set_word(SetWordInputAddressNotModified input);
 
     private:
         std::array<Byte, UINT16_MAX> m_bytes;
