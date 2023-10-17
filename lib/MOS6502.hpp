@@ -6,6 +6,7 @@
 #define EMULATOR_MOS6502_MOS6502_HPP
 
 #include "MOS6502_definitions.hpp"
+#include "ROM.hpp"
 
 #include <optional>
 #include <bitset>

@@ -15,11 +15,16 @@
 #define HEX_WORD(word) "0x" << std::uppercase << std::setfill('0') << std::setw(4) << std::hex << ((int)(word)) << std::dec
 #define HEX_CULL_BYTE(byte) std::uppercase << std::setfill('0') << std::setw(2) << std::hex << ((int)(byte)) << std::dec
 
+// https://stackoverflow.com/questions/4239993/determining-endianness-at-compile-time
+#if 'AB' == 0x4142
+#define BIG_ENDIAN 1
+#else
+#define BIG_ENDIAN 0
+#endif
 
 namespace Emulator {
     using Byte = uint8_t;
     using Word = uint16_t;
-    using ROM = std::array<Byte, UINT16_MAX>;
     using ProcessorStatus = std::bitset<8>;
 
 
@@ -32,18 +37,19 @@ namespace Emulator {
 
 
     struct WordToBytes {
-        // TODO: depend on the endianness https://stackoverflow.com/questions/1001307/detecting-endianness-programmatically-in-a-c-program
+#if BIG_ENDIAN
         Byte &low = converter.bytes[0];
         Byte &high = converter.bytes[1];
+#else
+        Byte &low = converter.bytes[1];
+        Byte &high = converter.bytes[0];
+#endif
         Word &word = converter.word;
 
         WordToBytes(Word word = 0): converter{.word = word} {};
 
     private:
-        union {
-            Word word;
-            Byte bytes[2];
-        } converter;
+        union { Word word; Byte bytes[2]; } converter;
     };
 
 
@@ -702,7 +708,7 @@ namespace Emulator {
         CPY_ZERO_PAGE   = 0xC4,
         CPY_ABSOLUTE    = 0xCC,
 
-        DEC_ZER0_PAGE   = 0xC6,
+        DEC_ZERO_PAGE   = 0xC6,
         DEC_ZERO_PAGE_X = 0xD6,
         DEC_ABSOLUTE    = 0xCE,
         DEC_ABSOLUTE_X  = 0xDE,

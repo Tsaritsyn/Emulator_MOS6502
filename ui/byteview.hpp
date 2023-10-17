@@ -11,6 +11,7 @@
 #include <QHBoxLayout>
 
 #include "MOS6502_definitions.hpp"
+#include "ROM.hpp"
 
 using namespace Emulator;
 

@@ -256,7 +256,7 @@ namespace Emulator {
 
             case Instruction::DEC:
                 switch (addressingMode.value_or(AddressingMode::ZERO_PAGE)) {
-                    case AddressingMode::ZERO_PAGE:   return DEC_ZER0_PAGE;
+                    case AddressingMode::ZERO_PAGE:   return DEC_ZERO_PAGE;
                     case AddressingMode::ZERO_PAGE_X: return DEC_ZERO_PAGE_X;
                     case AddressingMode::ABSOLUTE:    return DEC_ABSOLUTE;
                     case AddressingMode::ABSOLUTE_X:  return DEC_ABSOLUTE_X;
@@ -562,7 +562,7 @@ namespace Emulator {
             case CPY_ZERO_PAGE:   [[fallthrough]];
             case CPY_ABSOLUTE:    return "CPY";
 
-            case DEC_ZER0_PAGE:   [[fallthrough]];
+            case DEC_ZERO_PAGE:   [[fallthrough]];
             case DEC_ZERO_PAGE_X: [[fallthrough]];
             case DEC_ABSOLUTE:    [[fallthrough]];
             case DEC_ABSOLUTE_X:  return "DEC";
@@ -685,9 +685,10 @@ namespace Emulator {
             case TXA_IMPLICIT:    return "TXA";
             case TXS_IMPLICIT:    return "TXS";
             case TYA_IMPLICIT:    return "TYA";
-        }
 
-        return std::vformat("0x{:02x}", std::make_format_args(byte));
+            default:
+                return std::vformat("0x{:02x}", std::make_format_args(byte));
+        }
     }
 
 }

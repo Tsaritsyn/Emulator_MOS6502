@@ -3,6 +3,8 @@ project(Emulator_MOS6502)
 
 set(CMAKE_CXX_STANDARD 23)
 
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O1 -Wa,-mbig-obj" )
+
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
@@ -41,6 +43,11 @@ add_executable(Emulator_MOS6502 main.cpp
         ui/pageview.hpp
         ui/byteview.cpp
         ui/byteview.hpp
+        lib/Operation.cpp
+        lib/Operation.hpp
+        lib/Error.hpp
+        lib/ROM.cpp
+        lib/ROM.hpp
 )
 
 target_include_directories(Emulator_MOS6502 PRIVATE lib ui)

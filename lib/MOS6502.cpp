@@ -644,7 +644,7 @@ namespace Emulator {
                 compare_register(Register::Y, AddressingMode::ABSOLUTE);
                 return;
 
-            case OpCode::DEC_ZER0_PAGE:
+            case OpCode::DEC_ZERO_PAGE:
                 decrement_memory(AddressingMode::ZERO_PAGE);
                 return;
             case OpCode::DEC_ZERO_PAGE_X:
