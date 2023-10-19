@@ -15,6 +15,8 @@
 #include "MOS6502_helpers.hpp"
 #include "helpers.hpp"
 
+#define TESTING
+
 
 
 using namespace Emulator;
@@ -40,8 +42,6 @@ private:
                         size_t expectedCycle,
                         const std::string& testID,
                         ProcessorStatus expectedFlags = 0) const;
-
-    Byte& stack(Byte address) noexcept;
 
 public:
     enum struct ArithmeticOperation {ADD, SUB};

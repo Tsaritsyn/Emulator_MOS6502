@@ -6,6 +6,7 @@
 #define EMULATOR_MOS6502_HELPERS_HPP
 
 #include "MOS6502_definitions.hpp"
+#include "ProcessorStatus.hpp"
 
 using namespace Emulator;
 

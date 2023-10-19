@@ -7,8 +7,8 @@
 
 ProcessorStatus set_register_flags_for(Byte value) {
     ProcessorStatus flags{};
-    flags[ZERO] = value == 0;
-    flags[NEGATIVE] = (char)value < 0;
+    flags[Flag::ZERO] = value == 0;
+    flags[Flag::NEGATIVE] = (char)value < 0;
     return flags;
 }
 
@@ -27,10 +27,10 @@ std::pair<Byte, ProcessorStatus> add_with_carry(Byte value1, Byte value2, bool c
     ProcessorStatus flags{};
 
     const auto &[unsignedResult, unsignedOverflow] = add_within_range(value1, value2, carry, 0, UINT8_MAX);
-    flags[CARRY] = unsignedOverflow;
+    flags[Flag::CARRY] = unsignedOverflow;
 
     const auto &[_, signedOverflow] = add_within_range((char)value1, (char)value2, carry, INT8_MIN, INT8_MAX);
-    flags[OVERFLOW_F] = signedOverflow;
+    flags[Flag::OVERFLOW_F] = signedOverflow;
 
     return {unsignedResult, flags | set_register_flags_for(unsignedResult)};
 }
@@ -44,10 +44,10 @@ std::pair<Byte, ProcessorStatus> subtract_with_carry(Byte value1, Byte value2, b
     ProcessorStatus flags{};
 
     const auto &[unsignedResult, unsignedOverflow] = subtract_within_range(value1, value2, carry, 0, UINT8_MAX);
-    flags[CARRY] = !unsignedOverflow;
+    flags[Flag::CARRY] = !unsignedOverflow;
 
     const auto &[_, signedOverflow] = subtract_within_range((char)value1, (char)value2, carry, INT8_MIN, INT8_MAX);
-    flags[OVERFLOW_F] = signedOverflow;
+    flags[Flag::OVERFLOW_F] = signedOverflow;
 
     return {unsignedResult, flags | set_register_flags_for(unsignedResult)};
 }

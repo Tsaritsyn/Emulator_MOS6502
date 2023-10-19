@@ -18,8 +18,10 @@ void MOS6502_TestFixture::reset() noexcept {
     AC = 0;
     X = 0;
     Y = 0;
-    SR = 0;
+    SR.reset();
     SP = 255;
+
+    memory.reset();
 }
 
 std::optional<Location> MOS6502_TestFixture::prepare_memory(const Addressing &addressing) noexcept {
@@ -39,13 +41,13 @@ std::optional<Location> MOS6502_TestFixture::prepare_memory(const Addressing &ad
             const auto [address, index] = addressing.getZeroPageX().value();
             X = index;
             memory[PC + 1] = address;
-            return {std::forward<Word>(address + index)};
+            return {std::forward<Word>((Byte)(address + index))};
         }
         case AddressingMode::ZERO_PAGE_Y: {
             const auto [address, index] = addressing.getZeroPageY().value();
             Y = index;
             memory[PC + 1] = address;
-            return {std::forward<Word>(address + index)};
+            return {std::forward<Word>((Byte)(address + index))};
         }
         case AddressingMode::RELATIVE: {
             const auto [PC_, offset] = addressing.getRelative().value();
@@ -124,6 +126,8 @@ void MOS6502_TestFixture::test_transfer(Register from, Register to, Byte value) 
             default:
                 return {"test_transfer: cannot move value from " + to_string(from) + " to " + to_string(to)};
         }
+
+        std::unreachable();
     }();
     ASSERT_FALSE(instructionResult.failed()) << instructionResult.fail_message();
 
@@ -137,10 +141,12 @@ void MOS6502_TestFixture::test_transfer(Register from, Register to, Byte value) 
         for (const auto opCode: opcodeResult) {
             (*this)[from] = value;
             memory[PC] = opCode;
-            execute_current_command();
+
+            maxNumberOfCommandsToExecute = 1;
+            execute();
 
             EXPECT_EQ((*this)[to], value) << testID;
-            EXPECT_EQ(SR, (to == Register::SP) ? 0 : set_register_flags_for(value)) << testID;
+            EXPECT_EQ(SR, (to == Register::SP) ? ProcessorStatus(0) : set_register_flags_for(value)) << testID;
             EXPECT_EQ(PC, 1) << testID;
             EXPECT_EQ(cycle, 2) << testID;
         }
@@ -164,7 +170,8 @@ MOS6502_TestFixture::prepare_and_execute(Instruction instruction, std::optional<
     }
     for (const auto opCode: result) memory[PC] = opCode;
 
-    execute_current_command();
+    maxNumberOfCommandsToExecute = 1;
+    execute();
     return location;
 }
 
@@ -283,17 +290,15 @@ void MOS6502_TestFixture::test_push_to_stack(Register reg, Byte value) {
         ASSERT_FALSE(opcodeResult.failed()) << testID << ' ' << opcodeResult.fail_message();
 
         for (const auto opCode: opcodeResult) memory[PC] = opCode;
-        execute_current_command();
 
-        EXPECT_EQ(stack(SP + 1), value) << testID;
+        maxNumberOfCommandsToExecute = 1;
+        execute();
+
+        EXPECT_EQ(memory.stack(SP + 1), value) << testID;
         EXPECT_EQ(SP, 254) << testID;
         EXPECT_EQ(cycle, 3) << testID;
         EXPECT_EQ(PC, 1) << testID;
     }
-}
-
-Byte &MOS6502_TestFixture::stack(Byte address) noexcept {
-    return memory[STACK_BOTTOM + address];
 }
 
 void MOS6502_TestFixture::test_pull_from_stack(Register reg, Byte value) {
@@ -313,14 +318,16 @@ void MOS6502_TestFixture::test_pull_from_stack(Register reg, Byte value) {
         std::string testID = std::vformat("Test {}(value: {:d})",
                                           std::make_format_args(to_string(instruction), value));
 
-        stack(SP--) = value;
+        memory.stack(SP--) = value;
 
         const auto opcodeResult = opcode(instruction);
         ASSERT_FALSE(opcodeResult.failed()) << opcodeResult.fail_message();
 
         for (const auto opCode: opcodeResult) {
             memory[PC] = opCode;
-            execute_current_command();
+
+            maxNumberOfCommandsToExecute = 1;
+            execute();
 
             EXPECT_EQ((reg == Emulator::Register::AC) ? AC : SR, value) << testID;
             EXPECT_EQ(SP, 255) << testID;
@@ -345,7 +352,7 @@ void MOS6502_TestFixture::test_logical(LogicalOperation operation, Byte value, B
         std::unreachable();
     }();
 
-    std::string testID = std::vformat("Test {}(AC: {:#02x}, memory: {:#02x}, addressing: {})",
+    std::string testID = std::vformat("Test {}(AC: 0x{:02x}, memory: 0x{:02x}, addressing: {})",
                                             std::make_format_args(to_string(instruction), AC, mem, addressing.to_string()));
 
     const auto durationResult = [&addressing]() -> Result<size_t> {
@@ -395,9 +402,9 @@ void MOS6502_TestFixture::test_bit_test(Byte value, Byte mem, const Addressing &
         prepare_and_execute(Instruction::BIT, addressing, mem);
 
         ProcessorStatus expectedFlags{};
-        expectedFlags[ZERO] = (value & mem) == 0;
-        expectedFlags[OVERFLOW_F] = get_bit(mem, OVERFLOW_F);
-        expectedFlags[NEGATIVE] = get_bit(mem, NEGATIVE);
+        expectedFlags[Flag::ZERO] = (value & mem) == 0;
+        expectedFlags[Flag::OVERFLOW_F] = get_bit(mem, (int)Flag::OVERFLOW_F);
+        expectedFlags[Flag::NEGATIVE] = get_bit(mem, (int)Flag::NEGATIVE);
 
         EXPECT_EQ(SR, expectedFlags) << testID;
         EXPECT_EQ(cycle, duration) << testID;
@@ -419,7 +426,7 @@ void MOS6502_TestFixture::test_arithmetics(MOS6502_TestFixture::ArithmeticOperat
         std::unreachable();
     }();
 
-    std::string testID = std::vformat("Test {}(AC: {:#02x}, memory: {:#02x}, carry: {:d}, addressing: {})",
+    std::string testID = std::vformat("Test {}(AC: {:d}, memory: {:d}, carry: {:d}, addressing: {})",
                                       std::make_format_args(to_string(instruction), AC, mem, carry, addressing.to_string()));
 
     const auto &[expectedResult, expectedFlags] = arithmeticFn(value, mem, carry);
@@ -442,7 +449,7 @@ void MOS6502_TestFixture::test_arithmetics(MOS6502_TestFixture::ArithmeticOperat
 
     for (const auto duration: durationResult) {
         AC = value;
-        SR[CARRY] = carry;
+        SR[Flag::CARRY] = carry;
         prepare_and_execute(instruction, addressing, mem);
         check_location(Register::AC, expectedResult, addressing.PC_shift(), duration, testID,
                        expectedFlags);
@@ -490,9 +497,9 @@ void MOS6502_TestFixture::test_compare_register(Register reg, Byte registerValue
             prepare_and_execute(instruction, addressing, memoryValue);
 
             ProcessorStatus expectedFlags{};
-            expectedFlags[ZERO] = registerValue == memoryValue;
-            expectedFlags[CARRY] = registerValue >= memoryValue;
-            expectedFlags[NEGATIVE] = registerValue < memoryValue;
+            expectedFlags[Flag::ZERO] = registerValue == memoryValue;
+            expectedFlags[Flag::CARRY] = registerValue >= memoryValue;
+            expectedFlags[Flag::NEGATIVE] = registerValue < memoryValue;
 
             EXPECT_EQ(cycle, duration);
             EXPECT_EQ(PC, addressing.PC_shift());
@@ -614,7 +621,7 @@ void MOS6502_TestFixture::test_shift(MOS6502_TestFixture::ShiftDirection directi
 
     for (const auto duration: durationResult) {
         ProcessorStatus expectedFlags = set_register_flags_for(expectedResult);
-        expectedFlags[CARRY] = expectedCarry;
+        expectedFlags[Flag::CARRY] = expectedCarry;
 
         const auto locationResult = prepare_and_execute(instruction, addressing, value);
         ASSERT_FALSE(locationResult.failed()) << testID << ' ' << locationResult.fail_message();
@@ -666,9 +673,9 @@ void MOS6502_TestFixture::test_rotate(MOS6502_TestFixture::ShiftDirection direct
 
     for (const auto duration: durationResult) {
         ProcessorStatus expectedFlags = set_register_flags_for(expectedResult);
-        expectedFlags[CARRY] = expectedCarry;
+        expectedFlags[Flag::CARRY] = expectedCarry;
 
-        SR[CARRY] = carry;
+        SR[Flag::CARRY] = carry;
         const auto locationResult = prepare_and_execute(instruction, addressing, value);
         ASSERT_FALSE(locationResult.failed()) << testID << ' ' << locationResult.fail_message();
 
@@ -734,8 +741,8 @@ void MOS6502_TestFixture::test_jump_to_subroutine(Word address) {
     ASSERT_FALSE(result.failed()) << testID << ' ' << result.fail_message();
 
     ASSERT_EQ(SP, 253) << testID;
-    ASSERT_EQ(stack(255), pcBuf.high) << testID;
-    ASSERT_EQ(stack(254), pcBuf.low) << testID;
+    ASSERT_EQ(memory.stack(255), pcBuf.high) << testID;
+    ASSERT_EQ(memory.stack(254), pcBuf.low) << testID;
     ASSERT_EQ(PC, address) << testID;
     ASSERT_EQ(cycle, 6) << testID;
 }
@@ -744,8 +751,8 @@ void MOS6502_TestFixture::test_return_from_subroutine(Word targetPC) {
     reset();
 
     const WordToBytes pcBuf(targetPC);
-    stack(SP--) = pcBuf.high;
-    stack(SP--) = pcBuf.low;
+    memory.stack(SP--) = pcBuf.high;
+    memory.stack(SP--) = pcBuf.low;
 
     const auto instruction = Instruction::RTS;
 
@@ -767,10 +774,10 @@ void MOS6502_TestFixture::test_branch(Flag flag, bool value, bool targetValue, W
 
     const auto instructionResult = [flag, targetValue]() -> Result<Instruction> {
         switch (flag) {
-            case NEGATIVE: return (targetValue) ? Instruction::BMI : Instruction::BPL;
-            case CARRY: return (targetValue) ? Instruction::BCS : Instruction::BCC;
-            case ZERO: return (targetValue) ? Instruction::BEQ : Instruction::BNE;
-            case OVERFLOW_F: return (targetValue) ? Instruction::BVS : Instruction::BVC;
+            case Flag::NEGATIVE: return (targetValue) ? Instruction::BMI : Instruction::BPL;
+            case Flag::CARRY: return (targetValue) ? Instruction::BCS : Instruction::BCC;
+            case Flag::ZERO: return (targetValue) ? Instruction::BEQ : Instruction::BNE;
+            case Flag::OVERFLOW_F: return (targetValue) ? Instruction::BVS : Instruction::BVC;
             default:
                 return {"test_branch: unsupported flag " + to_string(flag) + "for branching"};
         }
@@ -805,16 +812,16 @@ void MOS6502_TestFixture::test_brk(Word initialPC, Word interruptVector) {
     std::string testID = std::vformat("Test {}(initial PC: {:#04x}, interrupt vector: {:#04x})",
                                       std::make_format_args(to_string(instruction), initialPC, interruptVector));
 
-    write_word(interruptVector, BRK_HANDLER);
+    write_word(interruptVector, ROM::BRK_HANDLER);
     const auto executionResult = prepare_and_execute(instruction);
     ASSERT_FALSE(executionResult.failed()) << testID << ' ' << executionResult.fail_message();
 
     EXPECT_EQ(SP, 253) << testID;
-    EXPECT_EQ(stack(255), storedPC.high) << testID;
-    EXPECT_EQ(stack(254), storedPC.low) << testID;
+    EXPECT_EQ(memory.stack(255), storedPC.high) << testID;
+    EXPECT_EQ(memory.stack(254), storedPC.low) << testID;
     EXPECT_EQ(PC, interruptVector) << testID;
     EXPECT_EQ(cycle, 6) << testID;
-    EXPECT_EQ(SR[BREAK], SET) << testID;
+    EXPECT_EQ(SR[Flag::BREAK], SET) << testID;
 }
 
 void MOS6502_TestFixture::test_nop() {
@@ -834,9 +841,9 @@ void MOS6502_TestFixture::test_return_from_interrupt(Word previousPC, Byte previ
     reset();
 
     const WordToBytes previousPCbuf(previousPC);
-    stack(SP--) = previousPCbuf.high;
-    stack(SP--) = previousPCbuf.low;
-    stack(SP--) = previousSR;
+    memory.stack(SP--) = previousPCbuf.high;
+    memory.stack(SP--) = previousPCbuf.low;
+    memory.stack(SP--) = previousSR;
 
     constexpr Instruction instruction = Instruction::RTI;
     std::string testID = std::vformat("Test {}(previous PC: {:#04x}, previous SR: {})",
