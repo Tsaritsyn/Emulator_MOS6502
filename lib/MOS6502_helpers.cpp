@@ -4,8 +4,10 @@
 
 #include <iostream>
 #include <format>
+#include <utility>
+#include <algorithm>
+
 #include "MOS6502_helpers.hpp"
-#include "Result.hpp"
 
 namespace Emulator {
 
@@ -47,20 +49,6 @@ namespace Emulator {
             case Register::Y:  return "Y";
             case Register::SP: return "SP";
             case Register::SR: return "SR";
-        }
-        std::unreachable();
-    }
-
-
-    std::string to_string(Flag flag) {
-        switch (flag) {
-            case NEGATIVE:          return "Negative";
-            case OVERFLOW_F:        return "Overflow";
-            case BREAK:             return "Break";
-            case DECIMAL:           return "Decimal";
-            case INTERRUPT_DISABLE: return "Interrupt disable";
-            case ZERO:              return "Zero";
-            case CARRY:             return "Carry";
         }
         std::unreachable();
     }
@@ -687,6 +675,28 @@ namespace Emulator {
             default:
                 return std::vformat("0x{:02x}", std::make_format_args(byte));
         }
+    }
+
+    int add_with_overflow(int a, int b, bool &overflow, int rmin, int rmax) {
+        const auto diff = rmax + 1 - rmin;
+
+        int result = a + b + overflow;
+        overflow = (result < rmin) || result > rmax;
+
+        while (result < rmin) result += diff;
+        while (result > rmax) result -= diff;
+        return result;
+    }
+
+    int subtract_with_overflow(int a, int b, bool &overflow, int rmin, int rmax) {
+        const auto diff = rmax + 1 - rmin;
+
+        int result = a - b - !overflow;
+        overflow = !((result < rmin) || result > rmax);
+
+        while (result < rmin) result += diff;
+        while (result > rmax) result -= diff;
+        return result;
     }
 
 }

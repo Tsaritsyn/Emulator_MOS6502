@@ -7,21 +7,17 @@
 
 #include <string>
 #include <utility>
+#include <format>
 
 #include "MOS6502_definitions.hpp"
 
 namespace Emulator {
-
-    struct Error {
-        std::string message;
-
-        Error(std::string message = ""): message(std::move(message)) {}
-    };
-
-    struct InvalidOperation: Error {
+    struct InvalidOperation {
         Byte opCode;
 
-        InvalidOperation(Byte opCode): opCode(opCode), Error(std::vformat("illegal opcode {:02x}", std::make_format_args(opCode))) {}
+        [[nodiscard]] std::string to_string() const noexcept {
+            return std::vformat("Given opcode {:#02x} does not correspond to any known operation", std::make_format_args(opCode));
+        }
     };
 }
 

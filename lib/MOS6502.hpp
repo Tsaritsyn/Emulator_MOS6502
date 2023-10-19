@@ -5,11 +5,14 @@
 #ifndef EMULATOR_MOS6502_MOS6502_HPP
 #define EMULATOR_MOS6502_MOS6502_HPP
 
-#include "MOS6502_definitions.hpp"
+#include "MOS6502_helpers.hpp"
 #include "ROM.hpp"
+#include "Operation.hpp"
+#include "ProcessorStatus.hpp"
 
 #include <optional>
 #include <bitset>
+#include <functional>
 
 
 namespace Emulator {
@@ -20,10 +23,25 @@ namespace Emulator {
 
     public:
 
-        static constexpr Word STACK_BOTTOM = 0x0100;
-        static constexpr Word INTERRUPT_HANDLER = 0xFFFA;
-        static constexpr Word RESET_LOCATION = 0xFFFC;
-        static constexpr Word BRK_HANDLER = 0xFFFE;
+        /*
+         * Successful termination statuses
+         */
+
+        struct StopOnBreak { Word address; };
+        /// address of the next command
+        struct StopOnMaxReached { Word address; };
+
+        using SuccessfulTermination = std::variant<StopOnBreak, StopOnMaxReached>;
+
+        /*
+         * Error termination statuses
+         */
+
+        struct UnknownOperation { Word address; };
+
+        using ErrorTermination = std::variant<UnknownOperation>;
+
+
 
         bool verbose = false;
 
@@ -43,146 +61,25 @@ namespace Emulator {
         void reset();
 
         /// sets the memory of the processor to the exact same values as the given new memory
-        void burn(const ROM &newMemory) { memory = newMemory; }
+        void burn(const ROM &newMemory) noexcept { memory = newMemory; }
 
-        void execute_command(OpCode opCode);
-
-        OpCode execute_current_command();
-
-        void execute(bool stopOnBRK);
+        std::expected<SuccessfulTermination, ErrorTermination> execute();
 
         Byte& operator [](const Location& address);
 
         Byte operator [](const Location& address) const;
 
+        void execute(const Operation& operation) noexcept;
+
+        void set_stop_on_break(bool value) noexcept { stopOnBRK = value; }
+
+        void set_maximum_number_of_commands_to_execute(size_t value) noexcept { maxNumberOfCommandsToExecute = value; }
+
 
     private:
         friend class MOS6502_TestFixture;
 
-        // ******************* //
-        // REGISTER OPERATIONS //
-        // ******************* //
-
-        void load_register(Register reg, AddressingMode mode);
-
-        void store_register(Register reg, AddressingMode mode);
-
-        void transfer_registers(Register from, Register to);
-
-
-
-        // **************** //
-        // STACK OPERATIONS //
-        // **************** //
-
-        void push_to_stack(Register reg);
-
-        void pull_from_stack(Register to);
-
-
-        // ****************** //
-        // LOGICAL OPERATIONS //
-        // ****************** //
-
-        /**
-         * Performs specified operation on AC and a byte from memory.
-         * Result is written back to AC.
-         */
-        void logical(LogicalOperation operation, AddressingMode mode);
-
-        /**
-         * This instructions is used to test if one or more bits are set in a target memory location.
-         * The mask pattern in A is ANDed with the value in memory to set or clear the zero flag, but the result is not kept.
-         * Bits 7 and 6 of the value from memory are copied into the N and V flags.
-         */
-        void bit_test(AddressingMode mode);
-
-
-        // ********************* //
-        // ARITHMETIC OPERATIONS //
-        // ********************* //
-
-        /**
-         * Adds value in memory to the accumulator.
-         * The result is written back to accumulator.
-         */
-        void add_with_carry(AddressingMode mode);
-
-        /**
-         * Subtracts value in memory from the accumulator.
-         * The result is written back to accumulator.
-         */
-        void subtract_with_carry(AddressingMode mode);
-
-        /**
-         * Compares value in register to the value in memory.
-         * Can only be used with AC, X or Y.
-         * If register is greater or equal, carry flag is set, if less, negative flag is set, if equal, zero flag is set.
-         */
-        void compare_register(Register reg, AddressingMode mode);
-
-
-        // ************************* //
-        // INCREMENTS AND DECREMENTS //
-        // ************************* //
-
-        void increment_memory(AddressingMode mode);
-
-        void decrement_memory(AddressingMode mode);
-
-        void increment_register(Register reg);
-
-        void decrement_register(Register reg);
-
-
-        // ****** //
-        // SHIFTS //
-        // ****** //
-
-        void shift_left_accumulator();
-
-        void shift_left_memory(AddressingMode mode);
-
-        void shift_right_accumulator();
-
-        void shift_right_memory(AddressingMode mode);
-
-        void rotate_left_accumulator();
-
-        void rotate_left_memory(AddressingMode mode);
-
-        void rotate_right_accumulator();
-
-        void rotate_right_memory(AddressingMode mode);
-
-
-        // *************** //
-        // JUMPS AND CALLS //
-        // *************** //
-
-        void jump(AddressingMode mode);
-
-        void jump_to_subroutine();
-
-        void return_from_subroutine();
-
-
-        // ******** //
-        // BRANCHES //
-        // ******** //
-
-        void branch_if(Flag flag_to_check, bool value_to_expect);
-
-
-        // **************** //
-        // SYSTEM FUNCTIONS //
-        // **************** //
-
-        void brk();
-
-        void nop() { cycle++; };
-
-        void return_from_interrupt();
+        using ByteOperator = Byte(MOS6502::*)(Byte);
 
 
 
@@ -190,33 +87,61 @@ namespace Emulator {
         // HELPER FUNCTIONS //
         // **************** //
 
+        [[nodiscard]] Byte index_zero_page(Byte address, Byte index) noexcept;
+        [[nodiscard]] Word index_absolute(Word address, Byte index) noexcept;
+
+        /*
+         * Resolve the actual address of the stored byte
+         */
+
+        static Word resolve_zero_page(Byte address) noexcept              { return address; }
+        Word resolve_zero_page_indexed(Byte address, Byte index) noexcept { return index_zero_page(address, index); }
+        static Word resolve_absolute(Word address) noexcept               { return address; }
+        Word resolve_absolute_indexed(Word address, Byte index) noexcept  { return index_absolute(address, index); }
+        Word resolve_indirect(Word address) noexcept                      { return memory.fetch_word(address, cycle); }
+        Word resolve_indirect_X(Byte address) noexcept                    { return memory.fetch_word(index_zero_page(address, X), cycle); }
+        Word resolve_indirect_Y(Byte address) noexcept                    { return index_absolute(memory.fetch_word(address, cycle), Y); }
+
+
+        /*
+         * Fetching a byte from memory using different addressing modes
+         */
+
+        [[nodiscard]] Byte fetch_from_zero_page(Byte address) noexcept                     { return memory.fetch_byte(resolve_zero_page(address), cycle); }
+        [[nodiscard]] Byte fetch_from_zero_page_indexed(Byte address, Byte index) noexcept { return memory.fetch_byte(resolve_zero_page_indexed(address, index), cycle); }
+        [[nodiscard]] Byte fetch_from_absolute(Word address) noexcept                      { return memory.fetch_byte(resolve_absolute(address), cycle); }
+        [[nodiscard]] Byte fetch_from_absolute_indexed(Word address, Byte index) noexcept  {  return memory.fetch_byte(resolve_absolute_indexed(address, index), cycle); }
+        [[nodiscard]] Byte fetch_from_indirect(Word address) noexcept                      { return memory.fetch_byte(resolve_indirect(address), cycle); }
+        [[nodiscard]] Byte fetch_from_indirect_X(Byte address) noexcept                    { return memory.fetch_byte(resolve_indirect_X(address), cycle); }
+        [[nodiscard]] Byte fetch_from_indirect_Y(Byte address) noexcept                    { return memory.fetch_byte(resolve_indirect_Y(address), cycle); }
+
+
+        /*
+         * Write the given value to the address resolved according to the mode
+         */
+
+        void write_to_zero_page(Byte value, Byte address) noexcept                     { memory.set_byte({.address = resolve_zero_page(address), .value = value, .cycle = cycle}); }
+        void write_to_zero_page_indexed(Byte value, Byte address, Byte index) noexcept { memory.set_byte({.address = resolve_zero_page_indexed(address, index), .value = value, .cycle = cycle}); }
+        void write_to_absolute(Byte value, Word address) noexcept                      { memory.set_byte({.address = resolve_absolute(address), .value = value, .cycle = cycle}); }
+        void write_to_absolute_indexed(Byte value, Word address, Byte index) noexcept  { memory.set_byte({.address = resolve_absolute_indexed(address, index), .value = value, .cycle = cycle}); }
+        void write_to_indirect_X(Byte value, Byte address) noexcept                    { memory.set_byte({.address = resolve_indirect_X(address), .value = value, .cycle = cycle}); }
+        void write_to_indirect_Y(Byte value, Byte address) noexcept                    { memory.set_byte({.address = resolve_indirect_Y(address), .value = value, .cycle = cycle}); }
+
+
+        /*
+         * Replacing a byte of memory with a new value
+         */
+
+        void perform_at_zero_page(Byte address, ByteOperator byteOperator) noexcept;
+        void perform_at_zero_page_indexed(Byte address, Byte index, ByteOperator byteOperator) noexcept;
+        void perform_at_absolute(Word address, ByteOperator byteOperator) noexcept;
+        void perform_at_absolute_indexed(Word address, Byte index, ByteOperator byteOperator) noexcept;
+
         void set_register(Register reg, Byte value);
 
         void set_writing_flags(Byte value);
 
-        /// reads the byte at the address specified by program counter and increments the latter
-//        Byte read_current_byte();
-
-        /// reads word wih least significant byte of which being at PC; increases PC by 2
-//        Word read_current_word();
-
-        /// reads word, least significant byte of which is pointed at by the address
-//        Word read_reversed_word(Word address);
-
-        /// reads byte from memory determining the address according to the given scheme
-        Byte read_byte(AddressingMode mode);
-
-        void write_byte(AddressingMode mode, Byte value, bool elapseCycleWhenNotCrossingPage);
-
-        /// reads byte from memory at a given address
-//        Byte read_byte(Word address);
-
-        /// writes the specified value to the specified address in memory
-//        void write_byte(Byte value, Word address, bool set_flags = false);
-
         [[nodiscard]] Byte get_register(Register reg) const;
-
-        Word determine_address(AddressingMode mode, bool elapseCycleWhenNotCrossingPage = false);
 
         void push_byte_to_stack(Byte value);
 
@@ -228,16 +153,33 @@ namespace Emulator {
         /// first pulls the most significant byte, then the least significant
         Word pull_word_from_stack();
 
-        /**
-         * Performs two byte additions, first low byte of the target with other byte, than high byte of the target with carry from the first step.
-         * If the first step overflows Byte, 1 cycle will be elapsed, otherwise none.
-         */
-        Word add_word(Word word, Byte byte, bool takeCycleIfLowNotOverflowed = false);
+        void add_to_accumulator(Byte value) noexcept;
 
-        static Byte add_bytes(Byte target, Byte other, bool &carry);
+        void and_with_accumulator(Byte value) noexcept;
 
-        static Byte subtract_bytes(Byte target, Byte other, bool &carry);
+        Byte shift_left(Byte value) noexcept;
 
+        void branch(char offset) noexcept;
+
+        void bit_test(Byte value) noexcept;
+
+        void compare(Byte reg, Byte value) noexcept;
+
+        Byte decrement(Byte value) noexcept;
+
+        void xor_with_accumulator(Byte value) noexcept;
+
+        Byte increment(Byte value) noexcept;
+
+        Byte shift_right(Byte value) noexcept;
+
+        void or_with_accumulator(Byte value) noexcept;
+
+        Byte rotate_left(Byte value) noexcept;
+
+        Byte rotate_right(Byte value) noexcept;
+
+        void subtract_from_accumulator(Byte value) noexcept;
 
 
     protected:
@@ -266,6 +208,13 @@ namespace Emulator {
 
         /// current cycle of the processor
         size_t cycle;
+
+        // auxiliary variables, not defined by the MOS6502 specifications
+        bool pageCrossed;
+
+        // execution conditions
+        bool stopOnBRK;
+        std::optional<size_t> maxNumberOfCommandsToExecute;
     };
 }
 

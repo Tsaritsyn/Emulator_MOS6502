@@ -397,13 +397,14 @@ namespace Emulator {
             TYA
             >;
 
-    std::string description(const Operation &operation);
 
-    std::vector<Byte> encode(const Operation &operation);
 
+    std::string description(const Operation &operation) noexcept;
+
+    std::vector<Byte> encode(const Operation &operation) noexcept;
 
     /// PC and cycle are inout parameters
-    std::expected<Operation, InvalidOperation> decode(const ROM &memory, Word &PC, size_t &cycle);
+    std::expected<Operation, InvalidOperation> decode(const ROM &memory, Word &PC, size_t &cycle) noexcept;
 }
 
 #endif //EMULATOR_MOS6502_OPERATION_HPP

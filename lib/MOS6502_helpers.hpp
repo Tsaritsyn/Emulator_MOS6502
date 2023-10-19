@@ -14,6 +14,7 @@
 
 #include "MOS6502_definitions.hpp"
 #include "Result.hpp"
+#include "ProcessorStatus.hpp"
 
 namespace Emulator {
 
@@ -26,8 +27,6 @@ namespace Emulator {
     std::string to_string(Instruction instruction);
 
     std::string to_string(Register reg);
-
-    std::string to_string(Flag flag);
 
     template <class T>
     std::ostream& operator <<(std::ostream &os, const std::vector<T> &vec) {
@@ -46,6 +45,11 @@ namespace Emulator {
     }
 
     std::string byte_description(Byte byte);
+
+    int add_with_overflow(int a, int b, bool &overflow, int rmin, int rmax);
+
+    int subtract_with_overflow(int a, int b, bool &overflow, int rmin, int rmax);
 }
+
 
 #endif //EMULATOR_MOS6502_MOS6502_HELPERS_HPP

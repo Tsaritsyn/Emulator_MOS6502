@@ -48,6 +48,8 @@ add_executable(Emulator_MOS6502 main.cpp
         lib/Error.hpp
         lib/ROM.cpp
         lib/ROM.hpp
+        lib/ProcessorStatus.cpp
+        lib/ProcessorStatus.hpp
 )
 
 target_include_directories(Emulator_MOS6502 PRIVATE lib ui)
@@ -133,6 +135,8 @@ add_executable(Emulator_MOS6502_Test
         lib/Error.hpp
         lib/ROM.cpp
         lib/ROM.hpp
+        lib/ProcessorStatus.cpp
+        lib/ProcessorStatus.hpp
 )
 
 target_include_directories(Emulator_MOS6502_Test PRIVATE lib test)

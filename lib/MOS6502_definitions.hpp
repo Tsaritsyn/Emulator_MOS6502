@@ -7,13 +7,7 @@
 
 #include <cstdint>
 #include <array>
-#include <iomanip>
-#include <bitset>
 #include <variant>
-
-//#define HEX_BYTE(byte) "0x" << std::uppercase << std::setfill('0') << std::setw(2) << std::hex << ((int)(byte)) << std::dec
-//#define HEX_WORD(word) "0x" << std::uppercase << std::setfill('0') << std::setw(4) << std::hex << ((int)(word)) << std::dec
-//#define HEX_CULL_BYTE(byte) std::uppercase << std::setfill('0') << std::setw(2) << std::hex << ((int)(byte)) << std::dec
 
 // https://stackoverflow.com/questions/4239993/determining-endianness-at-compile-time
 #if 'AB' == 0x4142
@@ -25,7 +19,6 @@
 namespace Emulator {
     using Byte = uint8_t;
     using Word = uint16_t;
-    using ProcessorStatus = std::bitset<8>;
 
 
     constexpr bool CLEAR = false;
@@ -45,51 +38,6 @@ namespace Emulator {
 
     private:
         union { Word word; Byte bytes[2]; } converter;
-    };
-
-
-    enum Flag {
-        /**
-         * The negative flag is set if the result of the last operation had bit 7 set to a one.
-         */
-        NEGATIVE = 7,
-
-        /**
-         * The overflow flag is set during arithmetic operations if the result has yielded an invalid 2's complement result
-         *  (e.g. adding to positive numbers and ending up with a negative result: 64 + 64 => -128).
-         * It is determined by looking at the carry between bits 6 and 7 and between bit 7 and the carry flag.
-         */
-        OVERFLOW_F = 6,
-
-        /**
-         * The break command bit is set when a BRK instruction has been executed and an interrupt has been generated to process it.
-         */
-        BREAK = 4,
-
-        /**
-         * While the decimal mode flag is set the processor will obey the rules of Binary Coded Decimal (BCD) arithmetic during addition and subtraction.
-         * The flag can be explicitly set using 'Set Decimal Flag' (SED) and cleared with 'Clear Decimal Flag' (CLD).
-         */
-         // TODO: implement addition and subtraction in decimal mode
-        DECIMAL = 3,
-
-        /**
-         * The interrupt disable flag is set if the program has executed a 'Set Interrupt Disable' (SEI) instruction.
-         * While this flag is set the processor will not respond to interrupts from devices until it is cleared by a 'Clear Interrupt Disable' (CLI) instruction.
-         */
-        INTERRUPT_DISABLE = 2,
-
-        /**
-         * The zero flag is set if the result of the last operation as was zero.
-         */
-        ZERO = 1,
-
-        /**
-         * The carry flag is set if the last operation caused an overflow from bit 7 of the result or an underflow from bit 0.
-         * This condition is set during arithmetic, comparison and during logical shifts.
-         * It can be explicitly set using the 'Set Carry Flag' (SEC) instruction and cleared with 'Clear Carry Flag' (CLC).
-         */
-        CARRY = 0
     };
 
 
