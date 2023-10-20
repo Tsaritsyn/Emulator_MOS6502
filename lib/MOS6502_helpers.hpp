@@ -22,10 +22,6 @@ namespace Emulator {
 
     bool get_bit(Byte byte, int number);
 
-    std::string to_string(AddressingMode mode);
-
-    std::string to_string(Instruction instruction);
-
     std::string to_string(Register reg);
 
     template <class T>
@@ -34,14 +30,6 @@ namespace Emulator {
         for (const auto &element: vec) os << element << ", ";
         os << '}';
         return os;
-    }
-
-    Result<OpCode> opcode(Instruction instruction, std::optional<AddressingMode> addressingMode = std::nullopt);
-
-    template <typename T>
-    std::string to_string(std::optional<T> opt) {
-        if (opt.has_value()) return to_string(opt.value());
-        else return "nullopt";
     }
 
     std::string byte_description(Byte byte);

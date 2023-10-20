@@ -26,66 +26,66 @@ void MOS6502_TestFixture::reset() noexcept {
 
 std::optional<Location> MOS6502_TestFixture::prepare_memory(const Addressing &addressing) noexcept {
     switch (addressing.getMode()) {
-        case AddressingMode::IMPLICIT:
+        case AddressingModeTest::IMPLICIT:
             return std::nullopt;
-        case AddressingMode::ACCUMULATOR:
+        case AddressingModeTest::ACCUMULATOR:
             return Register::AC;
-        case AddressingMode::IMMEDIATE:
+        case AddressingModeTest::IMMEDIATE:
             return std::forward<Word>(PC + 1);
-        case AddressingMode::ZERO_PAGE: {
+        case AddressingModeTest::ZERO_PAGE: {
             const auto [address] = addressing.getZeroPage().value();
             memory[PC + 1] = address;
             return {address};
         }
-        case AddressingMode::ZERO_PAGE_X: {
+        case AddressingModeTest::ZERO_PAGE_X: {
             const auto [address, index] = addressing.getZeroPageX().value();
             X = index;
             memory[PC + 1] = address;
             return {std::forward<Word>((Byte)(address + index))};
         }
-        case AddressingMode::ZERO_PAGE_Y: {
+        case AddressingModeTest::ZERO_PAGE_Y: {
             const auto [address, index] = addressing.getZeroPageY().value();
             Y = index;
             memory[PC + 1] = address;
             return {std::forward<Word>((Byte)(address + index))};
         }
-        case AddressingMode::RELATIVE: {
+        case AddressingModeTest::RELATIVE: {
             const auto [PC_, offset] = addressing.getRelative().value();
             PC = PC_;
             memory[PC + 1] = offset;
             return std::nullopt;
         }
-        case AddressingMode::ABSOLUTE: {
+        case AddressingModeTest::ABSOLUTE: {
             const auto [address] = addressing.getAbsolute().value();
             write_word(address, PC + 1);
             return address;
         }
-        case AddressingMode::ABSOLUTE_X: {
+        case AddressingModeTest::ABSOLUTE_X: {
             const auto [address, index] = addressing.getAbsoluteX().value();
             X = index;
             write_word(address, PC + 1);
             return {std::forward<Word>(address + index)};
         }
-        case AddressingMode::ABSOLUTE_Y: {
+        case AddressingModeTest::ABSOLUTE_Y: {
             const auto [address, index] = addressing.getAbsoluteY().value();
             Y = index;
             write_word(address, PC + 1);
             return {std::forward<Word>(address + index)};
         }
-        case AddressingMode::INDIRECT: {
+        case AddressingModeTest::INDIRECT: {
             const auto [tableAddress, targetAddress] = addressing.getIndirect().value();
             write_word(targetAddress, tableAddress);
             write_word(tableAddress, PC + 1);
             return targetAddress;
         }
-        case AddressingMode::INDIRECT_X: {
+        case AddressingModeTest::INDIRECT_X: {
             const auto [tableAddress, targetAddress, index] = addressing.getIndirectX().value();
             X = index;
             write_word(targetAddress, (Byte)(tableAddress + index));
             memory[PC + 1] = tableAddress;
             return targetAddress;
         }
-        case AddressingMode::INDIRECT_Y: {
+        case AddressingModeTest::INDIRECT_Y: {
             const auto [tableAddress, targetAddress, index] = addressing.getIndirectY().value();
             Y = index;
             write_word(targetAddress, tableAddress);
@@ -162,7 +162,7 @@ MOS6502_TestFixture::prepare_and_execute(Instruction instruction, std::optional<
     if (value.has_value() && location.has_value()) (*this)[location.value()] = value.value();
 
     // if addressing provided, will use its mode, otherwise nullopt
-    const auto result = opcode(instruction, addressing.and_then([](const Addressing& addr) -> std::optional<AddressingMode> { return addr.getMode(); }));
+    const auto result = opcode(instruction, addressing.and_then([](const Addressing& addr) -> std::optional<AddressingModeTest> { return addr.getMode(); }));
     if (result.failed()) {
         std::stringstream ss;
         ss << "Could not determine opcode.\n" << result.fail_message();
@@ -195,15 +195,15 @@ void MOS6502_TestFixture::test_loading(Register reg, Byte value, const Addressin
 
         const auto durationResult = [&addressing, instruction]() -> Result<size_t> {
             switch (addressing.getMode()) {
-                case AddressingMode::IMMEDIATE:   return 2;
-                case AddressingMode::ZERO_PAGE:   return 3;
-                case AddressingMode::ZERO_PAGE_X: [[fallthrough]];
-                case AddressingMode::ZERO_PAGE_Y: [[fallthrough]];
-                case AddressingMode::ABSOLUTE:    return 4;
-                case AddressingMode::ABSOLUTE_X:  [[fallthrough]];
-                case AddressingMode::ABSOLUTE_Y:  return 4 + addressing.page_crossed();
-                case AddressingMode::INDIRECT_X:  return 6;
-                case AddressingMode::INDIRECT_Y:  return 5 + addressing.page_crossed();
+                case AddressingModeTest::IMMEDIATE:   return 2;
+                case AddressingModeTest::ZERO_PAGE:   return 3;
+                case AddressingModeTest::ZERO_PAGE_X: [[fallthrough]];
+                case AddressingModeTest::ZERO_PAGE_Y: [[fallthrough]];
+                case AddressingModeTest::ABSOLUTE:    return 4;
+                case AddressingModeTest::ABSOLUTE_X:  [[fallthrough]];
+                case AddressingModeTest::ABSOLUTE_Y:  return 4 + addressing.page_crossed();
+                case AddressingModeTest::INDIRECT_X:  return 6;
+                case AddressingModeTest::INDIRECT_Y:  return 5 + addressing.page_crossed();
                 default:
                     return {"loading_parameters: provided addressing mode " + to_string(addressing.getMode())
                             + " is not supported by " + to_string(instruction) + " instruction"};
@@ -238,14 +238,14 @@ void MOS6502_TestFixture::test_storage(Register reg, Byte value, const Addressin
 
         const auto durationResult = [&addressing, instruction]() -> Result<size_t> {
             switch (addressing.getMode()) {
-                case AddressingMode::ZERO_PAGE:   return 3;
-                case AddressingMode::ZERO_PAGE_X: [[fallthrough]];
-                case AddressingMode::ZERO_PAGE_Y: [[fallthrough]];
-                case AddressingMode::ABSOLUTE:    return 4;
-                case AddressingMode::ABSOLUTE_X:  [[fallthrough]];
-                case AddressingMode::ABSOLUTE_Y:  return 5;
-                case AddressingMode::INDIRECT_X:  [[fallthrough]];
-                case AddressingMode::INDIRECT_Y:  return 6;
+                case AddressingModeTest::ZERO_PAGE:   return 3;
+                case AddressingModeTest::ZERO_PAGE_X: [[fallthrough]];
+                case AddressingModeTest::ZERO_PAGE_Y: [[fallthrough]];
+                case AddressingModeTest::ABSOLUTE:    return 4;
+                case AddressingModeTest::ABSOLUTE_X:  [[fallthrough]];
+                case AddressingModeTest::ABSOLUTE_Y:  return 5;
+                case AddressingModeTest::INDIRECT_X:  [[fallthrough]];
+                case AddressingModeTest::INDIRECT_Y:  return 6;
                 default:
                     return {"loading_parameters: provided addressing mode " + to_string(addressing.getMode())
                             + " is not supported by " + to_string(instruction) + " instruction"};
@@ -357,14 +357,14 @@ void MOS6502_TestFixture::test_logical(LogicalOperation operation, Byte value, B
 
     const auto durationResult = [&addressing]() -> Result<size_t> {
         switch (addressing.getMode()) {
-            case Emulator::AddressingMode::IMMEDIATE:   return 2;
-            case Emulator::AddressingMode::ZERO_PAGE:   return 3;
-            case Emulator::AddressingMode::ZERO_PAGE_X: [[fallthrough]];
-            case Emulator::AddressingMode::ABSOLUTE:    return 4;
-            case Emulator::AddressingMode::ABSOLUTE_X:  [[fallthrough]];
-            case Emulator::AddressingMode::ABSOLUTE_Y:  return 4 + addressing.page_crossed();
-            case Emulator::AddressingMode::INDIRECT_X:  return 6;
-            case Emulator::AddressingMode::INDIRECT_Y:  return 5 + addressing.page_crossed();
+            case AddressingModeTest::IMMEDIATE:   return 2;
+            case AddressingModeTest::ZERO_PAGE:   return 3;
+            case AddressingModeTest::ZERO_PAGE_X: [[fallthrough]];
+            case AddressingModeTest::ABSOLUTE:    return 4;
+            case AddressingModeTest::ABSOLUTE_X:  [[fallthrough]];
+            case AddressingModeTest::ABSOLUTE_Y:  return 4 + addressing.page_crossed();
+            case AddressingModeTest::INDIRECT_X:  return 6;
+            case AddressingModeTest::INDIRECT_Y:  return 5 + addressing.page_crossed();
             default:
                 return {"test_logical: provided addressing mode " + to_string(addressing.getMode())
                         + " is not supported by EOR instruction"};
@@ -388,8 +388,8 @@ void MOS6502_TestFixture::test_bit_test(Byte value, Byte mem, const Addressing &
 
     const auto durationResult = [&addressing]() -> Result<size_t> {
         switch (addressing.getMode()) {
-            case AddressingMode::ZERO_PAGE: return 3;
-            case AddressingMode::ABSOLUTE:  return 4;
+            case AddressingModeTest::ZERO_PAGE: return 3;
+            case AddressingModeTest::ABSOLUTE:  return 4;
             default:
                 return {"test_bit_test: provided addressing mode " + to_string(addressing.getMode())
                         + " is not supported by BIT instruction"};
@@ -433,14 +433,14 @@ void MOS6502_TestFixture::test_arithmetics(MOS6502_TestFixture::ArithmeticOperat
 
     const auto durationResult = [&addressing, instruction]() -> Result<size_t> {
         switch (addressing.getMode()) {
-            case Emulator::AddressingMode::IMMEDIATE:   return 2;
-            case Emulator::AddressingMode::ZERO_PAGE:   return 3;
-            case Emulator::AddressingMode::ZERO_PAGE_X: [[fallthrough]];
-            case Emulator::AddressingMode::ABSOLUTE:    return 4;
-            case Emulator::AddressingMode::ABSOLUTE_X:  [[fallthrough]];
-            case Emulator::AddressingMode::ABSOLUTE_Y:  return 4 + addressing.page_crossed();
-            case Emulator::AddressingMode::INDIRECT_X:  return 6;
-            case Emulator::AddressingMode::INDIRECT_Y:  return 5 + addressing.page_crossed();
+            case AddressingModeTest::IMMEDIATE:   return 2;
+            case AddressingModeTest::ZERO_PAGE:   return 3;
+            case AddressingModeTest::ZERO_PAGE_X: [[fallthrough]];
+            case AddressingModeTest::ABSOLUTE:    return 4;
+            case AddressingModeTest::ABSOLUTE_X:  [[fallthrough]];
+            case AddressingModeTest::ABSOLUTE_Y:  return 4 + addressing.page_crossed();
+            case AddressingModeTest::INDIRECT_X:  return 6;
+            case AddressingModeTest::INDIRECT_Y:  return 5 + addressing.page_crossed();
             default:
                 return {"test_arithmetics: provided addressing mode " + to_string(addressing.getMode()) + " is not supported by " + to_string(instruction) + " instruction"};
         }
@@ -477,14 +477,14 @@ void MOS6502_TestFixture::test_compare_register(Register reg, Byte registerValue
 
         const auto durationResult = [&addressing, instruction]() -> Result<size_t> {
             switch (addressing.getMode()) {
-                case Emulator::AddressingMode::IMMEDIATE:   return 2;
-                case Emulator::AddressingMode::ZERO_PAGE:   return 3;
-                case Emulator::AddressingMode::ZERO_PAGE_X: [[fallthrough]];
-                case Emulator::AddressingMode::ABSOLUTE:    return 4;
-                case Emulator::AddressingMode::ABSOLUTE_X:  [[fallthrough]];
-                case Emulator::AddressingMode::ABSOLUTE_Y:  return 4 + addressing.page_crossed();
-                case Emulator::AddressingMode::INDIRECT_X:  return 6;
-                case Emulator::AddressingMode::INDIRECT_Y:  return 5 + addressing.page_crossed();
+                case AddressingModeTest::IMMEDIATE:   return 2;
+                case AddressingModeTest::ZERO_PAGE:   return 3;
+                case AddressingModeTest::ZERO_PAGE_X: [[fallthrough]];
+                case AddressingModeTest::ABSOLUTE:    return 4;
+                case AddressingModeTest::ABSOLUTE_X:  [[fallthrough]];
+                case AddressingModeTest::ABSOLUTE_Y:  return 4 + addressing.page_crossed();
+                case AddressingModeTest::INDIRECT_X:  return 6;
+                case AddressingModeTest::INDIRECT_Y:  return 5 + addressing.page_crossed();
                 default:
                     return {"test_compare_register: provided addressing mode " + to_string(addressing.getMode())
                             + " is not supported by " + to_string(instruction) + " instruction"};
@@ -524,10 +524,10 @@ void MOS6502_TestFixture::test_deincrement_memory(ChangeByOne operation, Byte va
 
     const auto durationResult = [&addressing, instruction]() -> Result<size_t> {
         switch (addressing.getMode()) {
-            case AddressingMode::ZERO_PAGE:   return 5;
-            case AddressingMode::ZERO_PAGE_X: [[fallthrough]];
-            case AddressingMode::ABSOLUTE:    return 6;
-            case AddressingMode::ABSOLUTE_X:  return 7;
+            case AddressingModeTest::ZERO_PAGE:   return 5;
+            case AddressingModeTest::ZERO_PAGE_X: [[fallthrough]];
+            case AddressingModeTest::ABSOLUTE:    return 6;
+            case AddressingModeTest::ABSOLUTE_X:  return 7;
             default:
                 return {"test_deincrement_memory: provided addressing mode " + to_string(addressing.getMode()) + " is not supported by " + to_string(instruction) + " instruction"};
         }
@@ -553,14 +553,14 @@ void MOS6502_TestFixture::test_deincrement_register(MOS6502_TestFixture::ChangeB
         switch (reg) {
             case Emulator::Register::X: {
                 switch (operation) {
-                    case ChangeByOne::INCREMENT: return Emulator::Instruction::INX;
+                    case ChangeByOne::INCREMENT: return Instruction::INX;
                     case ChangeByOne::DECREMENT: return Instruction::DEX;
                 }
                 std::unreachable();
             }
             case Emulator::Register::Y: {
                 switch (operation) {
-                    case ChangeByOne::INCREMENT: return Emulator::Instruction::INY;
+                    case ChangeByOne::INCREMENT: return Instruction::INY;
                     case ChangeByOne::DECREMENT: return Instruction::DEY;
                 }
                 std::unreachable();
@@ -608,11 +608,11 @@ void MOS6502_TestFixture::test_shift(MOS6502_TestFixture::ShiftDirection directi
 
     const auto durationResult = [&addressing, instruction]() -> Result<size_t> {
         switch (addressing.getMode()) {
-            case AddressingMode::ACCUMULATOR: return 2;
-            case AddressingMode::ZERO_PAGE:   return 5;
-            case AddressingMode::ZERO_PAGE_X: [[fallthrough]];
-            case AddressingMode::ABSOLUTE:    return 6;
-            case AddressingMode::ABSOLUTE_X:  return 7;
+            case AddressingModeTest::ACCUMULATOR: return 2;
+            case AddressingModeTest::ZERO_PAGE:   return 5;
+            case AddressingModeTest::ZERO_PAGE_X: [[fallthrough]];
+            case AddressingModeTest::ABSOLUTE:    return 6;
+            case AddressingModeTest::ABSOLUTE_X:  return 7;
             default:
                 return {"test_shift: provided addressing mode " + to_string(addressing.getMode()) + " is not supported by " + to_string(instruction) + " instruction"};
         }
@@ -660,11 +660,11 @@ void MOS6502_TestFixture::test_rotate(MOS6502_TestFixture::ShiftDirection direct
 
     const auto durationResult = [&addressing, instruction]() -> Result<size_t> {
         switch (addressing.getMode()) {
-            case AddressingMode::ACCUMULATOR: return 2;
-            case AddressingMode::ZERO_PAGE:   return 5;
-            case AddressingMode::ZERO_PAGE_X: [[fallthrough]];
-            case AddressingMode::ABSOLUTE:    return 6;
-            case AddressingMode::ABSOLUTE_X:  return 7;
+            case AddressingModeTest::ACCUMULATOR: return 2;
+            case AddressingModeTest::ZERO_PAGE:   return 5;
+            case AddressingModeTest::ZERO_PAGE_X: [[fallthrough]];
+            case AddressingModeTest::ABSOLUTE:    return 6;
+            case AddressingModeTest::ABSOLUTE_X:  return 7;
             default:
                 return {"test_rotate: provided addressing mode " + to_string(addressing.getMode()) + " is not supported by " + to_string(instruction) + " instruction"};
         }
@@ -697,8 +697,8 @@ void MOS6502_TestFixture::test_jump(const Addressing &addressing) {
 
     const auto durationResult = [&addressing]() -> Result<size_t> {
         switch (addressing.getMode()) {
-            case AddressingMode::ABSOLUTE: return 3;
-            case AddressingMode::INDIRECT: return 5;
+            case AddressingModeTest::ABSOLUTE: return 3;
+            case AddressingModeTest::INDIRECT: return 5;
             default:
                 return {"test_jump: provided addressing mode " + to_string(addressing.getMode()) + " is not supported by " + to_string(instruction) + " instruction"};
         }
@@ -713,10 +713,10 @@ void MOS6502_TestFixture::test_jump(const Addressing &addressing) {
         ASSERT_FALSE(locationResult.failed()) << testID << ' ' << locationResult.fail_message();
 
         switch (addressing.getMode()) {
-            case Emulator::AddressingMode::ABSOLUTE:
+            case AddressingModeTest::ABSOLUTE:
                 EXPECT_EQ(PC, addressing.getAbsolute().value().address) << testID;
                 break;
-            case Emulator::AddressingMode::INDIRECT:
+            case AddressingModeTest::INDIRECT:
                 EXPECT_EQ(PC, addressing.getIndirect().value().targetAddress) << testID;
                 break;
             default:
@@ -856,5 +856,25 @@ void MOS6502_TestFixture::test_return_from_interrupt(Word previousPC, Byte previ
     EXPECT_EQ(SR, previousSR) << testID;
     EXPECT_EQ(SP, 255) << testID;
     EXPECT_EQ(cycle, 6) << testID;
+}
+
+
+Byte &MOS6502_TestFixture::operator[](const Location &address) {
+    if (const auto memoryAddress = std::get_if<Word>(&address)) return memory[*memoryAddress];
+    if (const auto reg = std::get_if<Register>(&address))
+        switch (*reg) {
+            case Register::AC: return AC;
+            case Register::X: return X;
+            case Register::Y: return Y;
+            case Register::SP: return SP;
+            case Register::SR: throw std::invalid_argument("SR cannot be set via subscript operator");
+        }
+    std::unreachable();
+}
+
+Byte MOS6502_TestFixture::operator[](const Location &address) const {
+    if (const auto memoryAddress = std::get_if<Word>(&address)) return memory[*memoryAddress];
+    if (const auto reg = std::get_if<Register>(&address)) return get_register(*reg);
+    std::unreachable();
 }
 

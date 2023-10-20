@@ -15,8 +15,6 @@
 #include "MOS6502_helpers.hpp"
 #include "helpers.hpp"
 
-#define TESTING
-
 
 
 using namespace Emulator;
@@ -47,6 +45,10 @@ public:
     enum struct ArithmeticOperation {ADD, SUB};
     enum struct ChangeByOne {INCREMENT, DECREMENT};
     enum struct ShiftDirection {LEFT, RIGHT};
+
+    Byte& operator [](const Location& address);
+
+    Byte operator [](const Location& address) const;
 
     void test_loading(Register reg, Byte value, const Addressing& addressing);
 

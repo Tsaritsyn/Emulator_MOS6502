@@ -65,15 +65,7 @@ namespace Emulator {
 
         std::expected<SuccessfulTermination, ErrorTermination> execute();
 
-        Byte& operator [](const Location& address);
-
-        Byte operator [](const Location& address) const;
-
         void execute(const Operation& operation) noexcept;
-
-        void set_stop_on_break(bool value) noexcept { stopOnBRK = value; }
-
-        void set_maximum_number_of_commands_to_execute(size_t value) noexcept { maxNumberOfCommandsToExecute = value; }
 
 
     private:
@@ -87,61 +79,34 @@ namespace Emulator {
         // HELPER FUNCTIONS //
         // **************** //
 
+        /// reads the word with low byte at PC and advances the PC
+        [[nodiscard]] Word fetch_word() noexcept;
+
+        /// reads the word with low byte at the given address
+        [[nodiscard]] Word fetch_word(Word address) noexcept;
+
+        /// reads the next operation
+        [[nodiscard]] std::expected<Operation, InvalidOperation> fetch_operation() noexcept;
+
+
         [[nodiscard]] Byte index_zero_page(Byte address, Byte index) noexcept;
         [[nodiscard]] Word index_absolute(Word address, Byte index) noexcept;
 
-        /*
-         * Resolve the actual address of the stored byte
-         */
+        /// resolve the actual address of the stored byte
+        Word resolve(Word address, AddressingMode mode) noexcept;
 
-        static Word resolve_zero_page(Byte address) noexcept              { return address; }
-        Word resolve_zero_page_indexed(Byte address, Byte index) noexcept { return index_zero_page(address, index); }
-        static Word resolve_absolute(Word address) noexcept               { return address; }
-        Word resolve_absolute_indexed(Word address, Byte index) noexcept  { return index_absolute(address, index); }
-        Word resolve_indirect(Word address) noexcept                      { return memory.fetch_word(address, cycle); }
-        Word resolve_indirect_X(Byte address) noexcept                    { return memory.fetch_word(index_zero_page(address, X), cycle); }
-        Word resolve_indirect_Y(Byte address) noexcept                    { return index_absolute(memory.fetch_word(address, cycle), Y); }
+        /// fetch a byte from memory using different addressing modes
+        [[nodiscard]] Byte fetch_from(Word address, AddressingMode mode) noexcept;
 
+        /// write the given value to the address resolved according to the mode
+        void write_to(Word address, AddressingMode mode, Byte value) noexcept;
 
-        /*
-         * Fetching a byte from memory using different addressing modes
-         */
-
-        [[nodiscard]] Byte fetch_from_zero_page(Byte address) noexcept                     { return memory.fetch_byte(resolve_zero_page(address), cycle); }
-        [[nodiscard]] Byte fetch_from_zero_page_indexed(Byte address, Byte index) noexcept { return memory.fetch_byte(resolve_zero_page_indexed(address, index), cycle); }
-        [[nodiscard]] Byte fetch_from_absolute(Word address) noexcept                      { return memory.fetch_byte(resolve_absolute(address), cycle); }
-        [[nodiscard]] Byte fetch_from_absolute_indexed(Word address, Byte index) noexcept  {  return memory.fetch_byte(resolve_absolute_indexed(address, index), cycle); }
-        [[nodiscard]] Byte fetch_from_indirect(Word address) noexcept                      { return memory.fetch_byte(resolve_indirect(address), cycle); }
-        [[nodiscard]] Byte fetch_from_indirect_X(Byte address) noexcept                    { return memory.fetch_byte(resolve_indirect_X(address), cycle); }
-        [[nodiscard]] Byte fetch_from_indirect_Y(Byte address) noexcept                    { return memory.fetch_byte(resolve_indirect_Y(address), cycle); }
-
-
-        /*
-         * Write the given value to the address resolved according to the mode
-         */
-
-        void write_to_zero_page(Byte value, Byte address) noexcept                     { memory.set_byte({.address = resolve_zero_page(address), .value = value, .cycle = cycle}); }
-        void write_to_zero_page_indexed(Byte value, Byte address, Byte index) noexcept { memory.set_byte({.address = resolve_zero_page_indexed(address, index), .value = value, .cycle = cycle}); }
-        void write_to_absolute(Byte value, Word address) noexcept                      { memory.set_byte({.address = resolve_absolute(address), .value = value, .cycle = cycle}); }
-        void write_to_absolute_indexed(Byte value, Word address, Byte index) noexcept  { memory.set_byte({.address = resolve_absolute_indexed(address, index), .value = value, .cycle = cycle}); }
-        void write_to_indirect_X(Byte value, Byte address) noexcept                    { memory.set_byte({.address = resolve_indirect_X(address), .value = value, .cycle = cycle}); }
-        void write_to_indirect_Y(Byte value, Byte address) noexcept                    { memory.set_byte({.address = resolve_indirect_Y(address), .value = value, .cycle = cycle}); }
-
-
-        /*
-         * Replacing a byte of memory with a new value
-         */
-
-        void perform_at_zero_page(Byte address, ByteOperator byteOperator) noexcept;
-        void perform_at_zero_page_indexed(Byte address, Byte index, ByteOperator byteOperator) noexcept;
-        void perform_at_absolute(Word address, ByteOperator byteOperator) noexcept;
-        void perform_at_absolute_indexed(Word address, Byte index, ByteOperator byteOperator) noexcept;
+        /// replacing a byte of memory with a new value
+        void perform_at(Word address, AddressingMode mode, ByteOperator byteOperator) noexcept;
 
         void set_register(Register reg, Byte value);
 
         void set_writing_flags(Byte value);
-
-        [[nodiscard]] Byte get_register(Register reg) const;
 
         void push_byte_to_stack(Byte value);
 
@@ -183,6 +148,8 @@ namespace Emulator {
 
 
     protected:
+
+        [[nodiscard]] Byte get_register(Register reg) const;
 
         /// program counter
         Word PC;

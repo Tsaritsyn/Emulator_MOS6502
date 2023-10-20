@@ -137,6 +137,7 @@ add_executable(Emulator_MOS6502_Test
         lib/ROM.hpp
         lib/ProcessorStatus.cpp
         lib/ProcessorStatus.hpp
+        test/MOS6502_test_definitions.hpp
 )
 
 target_include_directories(Emulator_MOS6502_Test PRIVATE lib test)

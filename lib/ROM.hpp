@@ -29,22 +29,11 @@ namespace Emulator {
         /// returns read-write value at a given address
         Byte& operator [](Word address);
 
-        /// returns value at the given address, incrementing the address and the cycle
-        [[nodiscard]] Byte fetch_byte_and_proceed(Word &address, size_t &cycle) const;
         /// returns value at the given address, incrementing only the cycle
         [[nodiscard]] Byte fetch_byte(Word address, size_t &cycle) const;
 
-        /// returns big-endian word with the low byte stored at the given address, increases address and cycle
-        [[nodiscard]] Word fetch_word_and_proceed(Word &address, size_t &cycle) const;
-        /// returns big-endian word with the low byte stored at the given address, increases only cycle
-        [[nodiscard]] Word fetch_word(Word address, size_t &cycle) const;
-
         /// simply returns a big-endian word with the low byte stored at the given address
         [[nodiscard]] Word get_word(Word address) const;
-
-        struct SetByteInputAddressModified { Word &address; Byte value; size_t &cycle; };
-        /// writes the byte to the given address incrementing the address and the cycle
-        void set_byte_and_proceed(SetByteInputAddressModified input);
 
         struct SetByteInputAddressNotModified { Word address; Byte value; size_t &cycle; };
         /// writes the byte to the given address incrementing only the cycle

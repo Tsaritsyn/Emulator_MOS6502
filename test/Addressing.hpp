@@ -38,7 +38,7 @@ struct Addressing {
     static Addressing IndirectY(Byte tableAddress, Word targetAddress, Byte Y) noexcept;
 
 
-    [[nodiscard]] AddressingMode getMode() const { return mode; }
+    [[nodiscard]] AddressingModeTest getMode() const { return mode; }
 
     [[nodiscard]] std::optional<EmptyT> getImplicit() const noexcept;
     [[nodiscard]] std::optional<EmptyT> getAccumulator() const noexcept;
@@ -65,9 +65,9 @@ struct Addressing {
 
 
 private:
-    Addressing(AddressingMode mode): mode{mode} { args.none = {}; };
+    Addressing(AddressingModeTest mode): mode{mode} { args.none = {}; };
 
-    AddressingMode mode;
+    AddressingModeTest mode;
 
 private:
 

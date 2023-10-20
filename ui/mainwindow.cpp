@@ -51,7 +51,7 @@ void MainWindow::execute_program() {
     MOS6502 cpu{};
     cpu.burn(memory);
     cpu.reset();
-    cpu.execute(true);
+    cpu.execute();
 
     std::cout << cpu.dump(false) << '\n';
 };
