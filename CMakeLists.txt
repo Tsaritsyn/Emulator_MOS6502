@@ -5,28 +5,8 @@ set(CMAKE_CXX_STANDARD 23)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O1 -Wa,-mbig-obj" )
 
-set(CMAKE_AUTOMOC ON)
-set(CMAKE_AUTORCC ON)
-set(CMAKE_AUTOUIC ON)
 
-set(QT6_INSTALL_LOCATION "D:\\Qt\\6.6.0\\mingw_64\\")
-list(APPEND CMAKE_PREFIX_PATH "${QT6_INSTALL_LOCATION}")
 
-find_package(Qt6 COMPONENTS
-        Core
-        Gui
-        Widgets
-        REQUIRED)
-
-include(FetchContent)
-FetchContent_Declare(
-        googletest
-        # Specify the commit you depend on and update it regularly.
-        URL https://github.com/google/googletest/archive/8a6feabf04bec8fb125e0df0ad1195c42350725f.zip
-)
-# For Windows: Prevent overriding the parent project's compiler/linker settings
-set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
-FetchContent_MakeAvailable(googletest)
 
 add_executable(Emulator_MOS6502 main.cpp
         lib/MOS6502.cpp
@@ -53,6 +33,22 @@ add_executable(Emulator_MOS6502 main.cpp
 )
 
 target_include_directories(Emulator_MOS6502 PRIVATE lib ui)
+
+
+
+
+set(CMAKE_AUTOMOC ON)
+set(CMAKE_AUTORCC ON)
+set(CMAKE_AUTOUIC ON)
+
+set(QT6_INSTALL_LOCATION "D:\\Qt\\6.6.0\\mingw_64\\")
+list(APPEND CMAKE_PREFIX_PATH "${QT6_INSTALL_LOCATION}")
+
+find_package(Qt6 COMPONENTS
+        Core
+        Gui
+        Widgets
+        REQUIRED)
 
 target_link_libraries(Emulator_MOS6502
         Qt::Core
@@ -93,6 +89,16 @@ endif ()
 
 
 
+
+include(FetchContent)
+FetchContent_Declare(
+        googletest
+        # Specify the commit you depend on and update it regularly.
+        URL https://github.com/google/googletest/archive/8a6feabf04bec8fb125e0df0ad1195c42350725f.zip
+)
+# For Windows: Prevent overriding the parent project's compiler/linker settings
+set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+FetchContent_MakeAvailable(googletest)
 
 add_executable(Emulator_MOS6502_Test
         lib/MOS6502.cpp
