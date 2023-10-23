@@ -32,8 +32,6 @@ namespace Emulator {
         return os;
     }
 
-    std::string byte_description(Byte byte);
-
     int add_with_overflow(int a, int b, bool &overflow, int rmin, int rmax);
 
     int subtract_with_overflow(int a, int b, bool &overflow, int rmin, int rmax);

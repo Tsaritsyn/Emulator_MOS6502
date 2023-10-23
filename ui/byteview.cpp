@@ -9,7 +9,9 @@
 #include <QMessageBox>
 
 #include "byteview.hpp"
-#include "MOS6502_helpers.hpp"
+#include "helpers.hpp"
+
+constexpr int DEFAULT_DATA = -1;
 
 
 ByteView::ByteView(ROM &memory_, Word address_, QWidget *parent): QWidget(parent), memory{memory_}, address{address_} {
@@ -17,69 +19,82 @@ ByteView::ByteView(ROM &memory_, Word address_, QWidget *parent): QWidget(parent
     setLayout(mainLayout);
     layout()->setSizeConstraint(QLayout::SetMinimumSize);
 
-    auto indexLabel = new QLabel(std::format("0x{:04x}", address).c_str(), this);
-    valueLabel = new QTextEdit(std::format("{:d}", memory[address]).c_str(), this);
-    assemblyDecodingLabel = new QLabel(this);
-    auto commentLabel = new QTextEdit("", this);
+    auto addressLabel = new QLabel(std::format("0x{:04x}", address).c_str(), this);
+    valueEditor = new MyTextEdit(std::format("{:d}", memory[address]).c_str(), this);
+    assemblySelector = new QComboBox(this);
+    auto commentEditor = new QTextEdit("", this);
 
-    valueLabel->setFixedHeight(indexLabel->height());
-    valueLabel->setFixedWidth(indexLabel->width());
-    commentLabel->setFixedHeight(indexLabel->height());
+    valueEditor->setFixedHeight(addressLabel->height());
+    valueEditor->setFixedWidth(addressLabel->width());
+    commentEditor->setFixedHeight(addressLabel->height());
 
-    update_decoding();
+    for (auto opcode: allOpcodes) assemblySelector->addItem(byte_description(opcode).c_str(), opcode);
+    assemblySelector->addItem("Raw", DEFAULT_DATA);
+    update_assembly();
 
-    layout()->addWidget(indexLabel);
-    layout()->addWidget(valueLabel);
-    layout()->addWidget(assemblyDecodingLabel);
-    layout()->addWidget(commentLabel);
+    layout()->addWidget(addressLabel);
+    layout()->addWidget(valueEditor);
+    layout()->addWidget(assemblySelector);
+    layout()->addWidget(commentEditor);
 
-    connect(valueLabel, &QTextEdit::textChanged, this, &ByteView::change_value);
+    connect(valueEditor, &MyTextEdit::textEntered, this, [this](){
+        auto text = valueEditor->toPlainText().toStdString();
+        set_memory(text);
+        update_assembly();
+    });
+    connect(assemblySelector, &QComboBox::currentIndexChanged, this, [this](){
+        auto data = assemblySelector->currentData().toInt();
+        if (data != DEFAULT_DATA) set_memory(data);
+        update_value_text();
+    });
 }
 
-void ByteView::change_value() {
-    std::string labelText = valueLabel->toPlainText().toStdString();
+void ByteView::update_assembly() {
+    const auto index = assemblySelector->findData(memory[address]);
+    if (index == -1) assemblySelector->setCurrentIndex(assemblySelector->findData(DEFAULT_DATA));
+    else assemblySelector->setCurrentIndex(index);
+}
 
-    std::cout << "Text changed to " << labelText << '\n';
-
+void ByteView::set_memory(const std::string& text) {
     int newValue;
     try {
         size_t start;
-        if (labelText.starts_with("0x")) {
+        if (text.starts_with("0x")) {
             start = 2;
-            newValue = std::stoi(labelText, &start, 16);
+            newValue = std::stoi(text, &start, 16);
         }
-        else newValue = std::stoi(labelText, &start, 10);
+        else newValue = std::stoi(text, &start, 10);
     }
     catch (const std::invalid_argument &e) {
         return;
     }
 
-    std::cout << "New value extracted: " << newValue << '\n';
+    set_memory(newValue);
+}
 
-    if (newValue <= UINT8_MAX) {
-        std::cout << "Setting memory...\n";
-        auto result = memory.set_byte(address, static_cast<Byte>(newValue));
-        std::cout << "Result obtained\n";
+void ByteView::set_memory(int value) {
+    if (value >= 0 && value <= UINT8_MAX) {
+        auto result = memory.set_byte(address, static_cast<Byte>(value));
         if (!result.has_value()) {
-            std::cout << "Result is an error\n";
             QMessageBox::warning(this,
                                  "Attempt to override stack",
                                  QString::fromStdString(std::vformat("Writing to address 0x{:04x} that belongs to stack", std::make_format_args(result.error().address)))
             );
         }
-        else {
-            std::cout << "Result is successful\n";
-            update_decoding();
-        }
+        else update_assembly();
     }
 }
 
-void ByteView::update_decoding() {
-    assemblyDecodingLabel->setText(byte_description(memory[address]).c_str());
+void ByteView::update_value_text() {
+    valueEditor->setText(QString::fromStdString(std::vformat("0x{:02x}", std::make_format_args(memory[address]))));
+
+    auto cursor = valueEditor->textCursor();
+    cursor.movePosition(QTextCursor::End);
+    valueEditor->setTextCursor(cursor);
 }
 
 ByteView::~ByteView() {
-    delete valueLabel;
-    delete assemblyDecodingLabel;
+    delete valueEditor;
+    delete assemblySelector;
     delete mainLayout;
 }
