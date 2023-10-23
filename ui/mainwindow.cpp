@@ -6,8 +6,11 @@
 
 #include <QInputDialog>
 #include <iostream>
+#include <QMessageBox>
 #include "mainwindow.hpp"
 #include "MOS6502.hpp"
+
+using namespace Emulator;
 
 
 MainWindow::MainWindow(ROM &memory, QWidget* parent): QMainWindow(parent), memory(memory) {
@@ -16,9 +19,6 @@ MainWindow::MainWindow(ROM &memory, QWidget* parent): QMainWindow(parent), memor
     pageViewsLayout = std::make_unique<QHBoxLayout>(mainWidget.get());
     mainWidget->setLayout(pageViewsLayout.get());
     setCentralWidget(mainWidget.get());
-
-//    add_page_view();
-//    add_page_view();
 
     execute = std::make_unique<QAction>("Execute", this);
     connect(execute.get(), &QAction::triggered, this, &MainWindow::execute_program);
@@ -51,7 +51,22 @@ void MainWindow::execute_program() {
     MOS6502 cpu{};
     cpu.burn(memory);
     cpu.reset();
-    cpu.execute();
+    cpu.stop_on_break(true);
+
+    auto executionStatus = cpu.execute();
+
+    if (!executionStatus.has_value()) {
+        std::visit(Overload{
+                [this](MOS6502::UnknownOperation error) {
+                    QMessageBox::warning(this,
+                                         "Execution terminated unexpectedly",
+                                         QString::fromStdString(std::vformat("Could not parse operation at 0x{:04x}",std::make_format_args(error.address)))
+                                         );
+                },
+        },
+                executionStatus.error()
+                );
+    }
 
     std::cout << cpu.dump(false) << '\n';
 };

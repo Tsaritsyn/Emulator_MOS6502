@@ -41,9 +41,9 @@ namespace Emulator {
 
         using ErrorTermination = std::variant<UnknownOperation>;
 
+        void stop_on_break(bool value) { stopOnBRK = value; }
 
 
-        bool verbose = false;
 
 
         [[nodiscard]] std::string dump(bool include_memory = false) const;
