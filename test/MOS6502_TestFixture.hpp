@@ -41,12 +41,14 @@ private:
                         const std::string& testID,
                         ProcessorStatus expectedFlags = 0) const;
 
-    Byte& stack(Byte address) noexcept;
-
 public:
     enum struct ArithmeticOperation {ADD, SUB};
     enum struct ChangeByOne {INCREMENT, DECREMENT};
     enum struct ShiftDirection {LEFT, RIGHT};
+
+    Byte& operator [](const Location& address);
+
+    Byte operator [](const Location& address) const;
 
     void test_loading(Register reg, Byte value, const Addressing& addressing);
 

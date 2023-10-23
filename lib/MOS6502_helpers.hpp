@@ -10,9 +10,11 @@
 #include <iostream>
 #include <optional>
 #include <utility>
+#include <expected>
 
 #include "MOS6502_definitions.hpp"
 #include "Result.hpp"
+#include "ProcessorStatus.hpp"
 
 namespace Emulator {
 
@@ -20,13 +22,7 @@ namespace Emulator {
 
     bool get_bit(Byte byte, int number);
 
-    std::ostream &operator<<(std::ostream &os, AddressingMode mode);
-
-    std::ostream &operator<<(std::ostream &os, Instruction instruction);
-
-    std::ostream &operator<<(std::ostream &os, Register aRegister);
-
-    std::ostream &operator<<(std::ostream &os, Flag flag);
+    std::string to_string(Register reg);
 
     template <class T>
     std::ostream& operator <<(std::ostream &os, const std::vector<T> &vec) {
@@ -36,13 +32,12 @@ namespace Emulator {
         return os;
     }
 
-    Result<OpCode> opcode(Instruction instruction, std::optional<AddressingMode> addressingMode = std::nullopt);
+    std::string byte_description(Byte byte);
 
-    template<Printable T>
-    std::ostream &operator<<(std::ostream &os, std::optional<T> opt) {
-        if (opt.has_value()) return os << opt.value();
-        else return os << "nullopt";
-    }
+    int add_with_overflow(int a, int b, bool &overflow, int rmin, int rmax);
+
+    int subtract_with_overflow(int a, int b, bool &overflow, int rmin, int rmax);
 }
+
 
 #endif //EMULATOR_MOS6502_MOS6502_HELPERS_HPP

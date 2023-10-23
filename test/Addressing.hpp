@@ -38,7 +38,7 @@ struct Addressing {
     static Addressing IndirectY(Byte tableAddress, Word targetAddress, Byte Y) noexcept;
 
 
-    [[nodiscard]] AddressingMode getMode() const { return mode; }
+    [[nodiscard]] AddressingModeTest getMode() const { return mode; }
 
     [[nodiscard]] std::optional<EmptyT> getImplicit() const noexcept;
     [[nodiscard]] std::optional<EmptyT> getAccumulator() const noexcept;
@@ -58,14 +58,16 @@ struct Addressing {
     [[nodiscard]] int PC_shift() const noexcept;
     [[nodiscard]] bool page_crossed() const noexcept;
 
+    [[nodiscard]] std::string to_string() const;
 
-    friend std::ostream &operator<<(std::ostream &os, const Addressing &addressing);
+
+//    friend std::ostream &operator<<(std::ostream &os, const Addressing &addressing);
 
 
 private:
-    Addressing(AddressingMode mode): mode{mode} { args.none = {}; };
+    Addressing(AddressingModeTest mode): mode{mode} { args.none = {}; };
 
-    AddressingMode mode;
+    AddressingModeTest mode;
 
 private:
 

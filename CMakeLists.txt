@@ -3,6 +3,21 @@ project(Emulator_MOS6502)
 
 set(CMAKE_CXX_STANDARD 23)
 
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O1 -Wa,-mbig-obj" )
+
+set(CMAKE_AUTOMOC ON)
+set(CMAKE_AUTORCC ON)
+set(CMAKE_AUTOUIC ON)
+
+set(QT6_INSTALL_LOCATION "D:\\Qt\\6.6.0\\mingw_64\\")
+list(APPEND CMAKE_PREFIX_PATH "${QT6_INSTALL_LOCATION}")
+
+find_package(Qt6 COMPONENTS
+        Core
+        Gui
+        Widgets
+        REQUIRED)
+
 include(FetchContent)
 FetchContent_Declare(
         googletest
@@ -22,9 +37,62 @@ add_executable(Emulator_MOS6502 main.cpp
         lib/Result.hpp
         lib/programs.cpp
         lib/programs.hpp
+        ui/mainwindow.cpp
+        ui/mainwindow.hpp
+        ui/pageview.cpp
+        ui/pageview.hpp
+        ui/byteview.cpp
+        ui/byteview.hpp
+        lib/Operation.cpp
+        lib/Operation.hpp
+        lib/Error.hpp
+        lib/ROM.cpp
+        lib/ROM.hpp
+        lib/ProcessorStatus.cpp
+        lib/ProcessorStatus.hpp
 )
 
-target_include_directories(Emulator_MOS6502 PRIVATE lib)
+target_include_directories(Emulator_MOS6502 PRIVATE lib ui)
+
+target_link_libraries(Emulator_MOS6502
+        Qt::Core
+        Qt::Gui
+        Qt::Widgets
+)
+
+if (WIN32 AND NOT DEFINED CMAKE_TOOLCHAIN_FILE)
+    set(DEBUG_SUFFIX)
+    if (MSVC AND CMAKE_BUILD_TYPE MATCHES "Debug")
+        set(DEBUG_SUFFIX "d")
+    endif ()
+    set(QT_INSTALL_PATH "${CMAKE_PREFIX_PATH}")
+    if (NOT EXISTS "${QT_INSTALL_PATH}/bin")
+        set(QT_INSTALL_PATH "${QT_INSTALL_PATH}/..")
+        if (NOT EXISTS "${QT_INSTALL_PATH}/bin")
+            set(QT_INSTALL_PATH "${QT_INSTALL_PATH}/..")
+        endif ()
+    endif ()
+    if (EXISTS "${QT_INSTALL_PATH}/plugins/platforms/qwindows${DEBUG_SUFFIX}.dll")
+        add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+                COMMAND ${CMAKE_COMMAND} -E make_directory
+                "$<TARGET_FILE_DIR:${PROJECT_NAME}>/plugins/platforms/")
+        add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+                COMMAND ${CMAKE_COMMAND} -E copy
+                "${QT_INSTALL_PATH}/plugins/platforms/qwindows${DEBUG_SUFFIX}.dll"
+                "$<TARGET_FILE_DIR:${PROJECT_NAME}>/plugins/platforms/")
+    endif ()
+    foreach (QT_LIB Core Gui Widgets)
+        add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+                COMMAND ${CMAKE_COMMAND} -E copy
+                "${QT_INSTALL_PATH}/bin/Qt6${QT_LIB}${DEBUG_SUFFIX}.dll"
+                "$<TARGET_FILE_DIR:${PROJECT_NAME}>")
+    endforeach (QT_LIB)
+endif ()
+
+
+
+
+
 
 add_executable(Emulator_MOS6502_Test
         lib/MOS6502.cpp
@@ -62,6 +130,14 @@ add_executable(Emulator_MOS6502_Test
         test/MOS6502_TestBRK.cpp
         test/TestNOP.cpp
         test/MOS6502_TestRTI.cpp
+        lib/Operation.cpp
+        lib/Operation.hpp
+        lib/Error.hpp
+        lib/ROM.cpp
+        lib/ROM.hpp
+        lib/ProcessorStatus.cpp
+        lib/ProcessorStatus.hpp
+        test/MOS6502_test_definitions.hpp
 )
 
 target_include_directories(Emulator_MOS6502_Test PRIVATE lib test)
