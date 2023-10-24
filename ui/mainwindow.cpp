@@ -57,12 +57,43 @@ void MainWindow::execute_program() {
 
     if (!executionStatus.has_value()) {
         std::visit(Overload{
-                [this](MOS6502::UnknownOperation error) {
+                [this](MOS6502::ParseError error) {
                     QMessageBox::warning(this,
                                          "Execution terminated unexpectedly",
                                          QString::fromStdString(std::vformat("Could not parse operation at 0x{:04x}",std::make_format_args(error.address)))
                                          );
                 },
+                [this](MOS6502::OperationError errorInOperation) {
+                    std::visit(Overload{
+                            [this](ROM::StackOverride error) {
+                                QMessageBox::warning(this,
+                                                     "Execution terminated unexpectedly",
+                                                     QString::fromStdString(std::vformat("Attempt to override stack value at 0x{:04x}",std::make_format_args(error.address)))
+                                );
+                            },
+                            [this](MOS6502::AddressOverflow error) {
+                                QMessageBox::warning(this,
+                                                     "Execution terminated unexpectedly",
+                                                     QString::fromStdString("Attempt to create address outside of memory bounds")
+                                );
+                            },
+                            [this](MOS6502::StackOverflow error) {
+                                switch (error.type) {
+                                    case MOS6502::StackOverflow::Type::STACK_EMPTY:
+                                        QMessageBox::warning(this,
+                                                             "Execution terminated unexpectedly",
+                                                             QString::fromStdString("Attempt to pull from empty stack")
+                                        );
+                                    case MOS6502::StackOverflow::Type::STACK_FULL:
+                                        QMessageBox::warning(this,
+                                                             "Execution terminated unexpectedly",
+                                                             QString::fromStdString("Attempt to push to full stack")
+                                        );
+                                }
+                            }
+                        },
+                               errorInOperation);
+                }
         },
                 executionStatus.error()
                 );

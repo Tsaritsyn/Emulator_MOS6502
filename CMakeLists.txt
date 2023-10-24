@@ -3,6 +3,10 @@ project(Emulator_MOS6502)
 
 set(CMAKE_CXX_STANDARD 23)
 
+set(CMAKE_AUTOMOC ON)
+set(CMAKE_AUTORCC ON)
+set(CMAKE_AUTOUIC ON)
+
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O1 -Wa,-mbig-obj" )
 
 
@@ -36,10 +40,6 @@ target_include_directories(Emulator_MOS6502 PRIVATE lib ui)
 
 
 
-
-set(CMAKE_AUTOMOC ON)
-set(CMAKE_AUTORCC ON)
-set(CMAKE_AUTOUIC ON)
 
 set(QT6_INSTALL_LOCATION "D:\\Qt\\6.6.0\\mingw_64\\")
 list(APPEND CMAKE_PREFIX_PATH "${QT6_INSTALL_LOCATION}")

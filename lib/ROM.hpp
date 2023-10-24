@@ -6,6 +6,7 @@
 #define EMULATOR_MOS6502_ROM_HPP
 
 #include <format>
+#include <expected>
 
 #include "MOS6502_definitions.hpp"
 
@@ -14,6 +15,9 @@ namespace Emulator {
     class ROM {
 
     public:
+
+        /// address where the attempt to write to was made
+        struct StackOverride { Word address; };
 
         static constexpr Word INTERRUPT_HANDLER = 0xFFFA;
         static constexpr Word RESET_LOCATION = 0xFFFC;
@@ -26,18 +30,17 @@ namespace Emulator {
 
         /// simply returns a value at the given address
         [[nodiscard]] Byte operator [](Word address) const { return m_bytes[address]; }
-        /// returns read-write value at a given address
-        Byte& operator [](Word address);
 
-        /// returns value at the given address, incrementing only the cycle
+        /// returns value at the given address, incrementing the cycle
         [[nodiscard]] Byte fetch_byte(Word address, size_t &cycle) const;
 
         /// simply returns a big-endian word with the low byte stored at the given address
         [[nodiscard]] Word get_word(Word address) const;
 
-        struct SetByteInputAddressNotModified { Word address; Byte value; size_t &cycle; };
+        std::expected<void, StackOverride> set_byte(Word address, Byte value);
+
         /// writes the byte to the given address incrementing only the cycle
-        void set_byte(SetByteInputAddressNotModified input);
+        std::expected<void, StackOverride> set_byte(Word address, Byte value, size_t &cycle);
 
         [[nodiscard]] Byte stack(Byte index) const noexcept { return m_bytes[STACK_BOTTOM + index]; }
         Byte& stack(Byte index) noexcept                    { return m_bytes[STACK_BOTTOM + index]; }

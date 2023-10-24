@@ -14,20 +14,22 @@ Emulator::Word Emulator::ROM::get_word(Emulator::Word address) const {
     return buf.word;
 }
 
-Emulator::Byte &Emulator::ROM::operator[](Emulator::Word address) {
-    if (address >= STACK_BOTTOM && address - STACK_BOTTOM <= UINT8_MAX) {
-        std::cerr << std::vformat("warning: writing to stack address 0x{:04x}\n", std::make_format_args(address));
-//        throw std::runtime_error("");
-    }
-    return m_bytes[address];
-}
-
 Emulator::Byte Emulator::ROM::fetch_byte(Emulator::Word address, size_t &cycle) const {
     cycle++;
     return m_bytes[address];
 }
 
-void Emulator::ROM::set_byte(Emulator::ROM::SetByteInputAddressNotModified input) {
-    input.cycle++;
-    (*this)[input.address] = input.value;
+std::expected<void, Emulator::ROM::StackOverride> Emulator::ROM::set_byte(Word address, Byte value, size_t &cycle) {
+    cycle++;
+    return set_byte(address, value);
+}
+
+std::expected<void, Emulator::ROM::StackOverride> Emulator::ROM::set_byte(Emulator::Word address, Emulator::Byte value) {
+    std::cout << "Address in stack: " << is_in_stack(address) << '\n';
+    if (is_in_stack(address)) {
+        std::cout << "Address in stack\n";
+        return std::unexpected<StackOverride>{address};
+    }
+    m_bytes[address] = value;
+    return {};
 }

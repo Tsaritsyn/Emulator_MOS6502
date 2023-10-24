@@ -62,7 +62,7 @@ namespace Emulator {
         if (include_memory) {
             result += "Remaining memory:\n";
             for (int i = 0x1000; i <= UINT16_MAX; i++)
-                if (!memory.is_in_stack(i)) result += std::vformat("{:#02x} ", std::make_format_args(memory[i]));
+                if (!Emulator::ROM::is_in_stack(i)) result += std::vformat("{:#02x} ", std::make_format_args(memory[i]));
             result += '\n';
         }
 
@@ -89,30 +89,43 @@ namespace Emulator {
 
 
 
-    void MOS6502::push_byte_to_stack(Byte value) {
+    std::expected<void, MOS6502::StackOverflow> MOS6502::push_byte_to_stack(Byte value) {
+        if (SP == 0) return std::unexpected(StackOverflow(StackOverflow::Type::STACK_FULL));
+
         cycle++;
         memory.stack(SP--) = value;
+        return {};
     }
 
 
-    Byte MOS6502::pull_byte_from_stack() {
+    std::expected<Byte, MOS6502::StackOverflow> MOS6502::pull_byte_from_stack() {
+        if (SP == UINT8_MAX) return std::unexpected<StackOverflow>{StackOverflow::Type::STACK_EMPTY};
+
         cycle += 2;
         return memory.stack(++SP);
     }
 
 
-    void MOS6502::push_word_to_stack(Word value) {
+    std::expected<void, MOS6502::StackOverflow> MOS6502::push_word_to_stack(Word value) {
         WordToBytes buf(value);
-        push_byte_to_stack(buf.high);
-        push_byte_to_stack(buf.low);
+
+        auto result = push_byte_to_stack(buf.high);
+        if (!result.has_value()) return result;
+
+        return push_byte_to_stack(buf.low);
     }
 
 
-    Word MOS6502::pull_word_from_stack() {
+    std::expected<Word, MOS6502::StackOverflow> MOS6502::pull_word_from_stack() {
         WordToBytes buf{};
-        buf.low = pull_byte_from_stack();
-        buf.high = pull_byte_from_stack();
-        return buf.word;
+
+        auto result = pull_byte_from_stack();
+        if (result.has_value()) buf.low = result.value();
+
+        return pull_byte_from_stack().transform([buf](Byte byte) -> Word {
+            buf.high = byte;
+            return buf.word;
+        });
     }
 
 
@@ -135,9 +148,10 @@ namespace Emulator {
             if (auto operation = fetch_operation(); operation.has_value()) {
                 if (stopOnBRK && std::holds_alternative<BRK>(operation.value())) return StopOnBreak{.address = commandAddress};
 
-                execute(operation.value());
+                auto result = execute(operation.value());
+                if (!result.has_value()) return std::unexpected{result.error()};
             }
-            else return std::unexpected(UnknownOperation{.address = commandAddress});
+            else return std::unexpected{ParseError(commandAddress)};
 
             commandsExecuted++;
         }
@@ -148,243 +162,274 @@ namespace Emulator {
         SR[Flag::NEGATIVE] = (char)value < 0;
     }
 
-    void MOS6502::execute(const Operation &operation) noexcept {
-        std::visit(Overload {
-                [this](ADC_Immediate op)   { add_to_accumulator(op.value); },
-                [this](ADC_ZeroPage op)    { add_to_accumulator(fetch_from(op.address, AddressingMode::ZERO_PAGE)); },
-                [this](ADC_ZeroPageX op)   { add_to_accumulator(fetch_from(op.address, AddressingMode::ZERO_PAGE_X)); },
-                [this](ADC_Absolute op)    { add_to_accumulator(fetch_from(op.address, AddressingMode::ABSOLUTE)); },
-                [this](ADC_AbsoluteX op)   { add_to_accumulator(fetch_from(op.address, AddressingMode::ABSOLUTE_X)); },
-                [this](ADC_AbsoluteY op)   { add_to_accumulator(fetch_from(op.address, AddressingMode::ABSOLUTE_Y)); },
-                [this](ADC_IndirectX op)   { add_to_accumulator(fetch_from(op.address, AddressingMode::INDIRECT_X)); },
-                [this](ADC_IndirectY op)   { add_to_accumulator(fetch_from(op.address, AddressingMode::INDIRECT_Y)); },
+    MOS6502::ExecutionResult MOS6502::execute(const Operation &operation) noexcept {
+        return std::visit(Overload {
+                [this](ADC_Immediate op) -> ExecutionResult   { add_to_accumulator(op.value); return {}; },
+                [this](ADC_ZeroPage op) -> ExecutionResult    { add_to_accumulator(fetch_from(op.address, AddressingMode::ZERO_PAGE)); return {}; },
+                [this](ADC_ZeroPageX op) -> ExecutionResult   { add_to_accumulator(fetch_from(op.address, AddressingMode::ZERO_PAGE_X)); return {}; },
+                [this](ADC_Absolute op) -> ExecutionResult    { add_to_accumulator(fetch_from(op.address, AddressingMode::ABSOLUTE)); return {}; },
+                [this](ADC_AbsoluteX op) -> ExecutionResult   { add_to_accumulator(fetch_from(op.address, AddressingMode::ABSOLUTE_X)); return {}; },
+                [this](ADC_AbsoluteY op) -> ExecutionResult   { add_to_accumulator(fetch_from(op.address, AddressingMode::ABSOLUTE_Y)); return {}; },
+                [this](ADC_IndirectX op) -> ExecutionResult   { add_to_accumulator(fetch_from(op.address, AddressingMode::INDIRECT_X)); return {}; },
+                [this](ADC_IndirectY op) -> ExecutionResult   { add_to_accumulator(fetch_from(op.address, AddressingMode::INDIRECT_Y)); return {}; },
 
-                [this](AND_Immediate op)   { and_with_accumulator(op.value); },
-                [this](AND_ZeroPage op)    { and_with_accumulator(fetch_from(op.address, AddressingMode::ZERO_PAGE)); },
-                [this](AND_ZeroPageX op)   { and_with_accumulator(fetch_from(op.address, AddressingMode::ZERO_PAGE_X)); },
-                [this](AND_Absolute op)    { and_with_accumulator(fetch_from(op.address, AddressingMode::ABSOLUTE)); },
-                [this](AND_AbsoluteX op)   { and_with_accumulator(fetch_from(op.address, AddressingMode::ABSOLUTE_X)); },
-                [this](AND_AbsoluteY op)   { and_with_accumulator(fetch_from(op.address, AddressingMode::ABSOLUTE_Y)); },
-                [this](AND_IndirectX op)   { and_with_accumulator(fetch_from(op.address, AddressingMode::INDIRECT_X)); },
-                [this](AND_IndirectY op)   { and_with_accumulator(fetch_from(op.address, AddressingMode::INDIRECT_Y)); },
+                [this](AND_Immediate op) -> ExecutionResult   { and_with_accumulator(op.value); return {}; },
+                [this](AND_ZeroPage op) -> ExecutionResult    { and_with_accumulator(fetch_from(op.address, AddressingMode::ZERO_PAGE)); return {}; },
+                [this](AND_ZeroPageX op) -> ExecutionResult   { and_with_accumulator(fetch_from(op.address, AddressingMode::ZERO_PAGE_X)); return {}; },
+                [this](AND_Absolute op) -> ExecutionResult    { and_with_accumulator(fetch_from(op.address, AddressingMode::ABSOLUTE)); return {}; },
+                [this](AND_AbsoluteX op) -> ExecutionResult   { and_with_accumulator(fetch_from(op.address, AddressingMode::ABSOLUTE_X)); return {}; },
+                [this](AND_AbsoluteY op) -> ExecutionResult   { and_with_accumulator(fetch_from(op.address, AddressingMode::ABSOLUTE_Y)); return {}; },
+                [this](AND_IndirectX op) -> ExecutionResult   { and_with_accumulator(fetch_from(op.address, AddressingMode::INDIRECT_X)); return {}; },
+                [this](AND_IndirectY op) -> ExecutionResult   { and_with_accumulator(fetch_from(op.address, AddressingMode::INDIRECT_Y)); return {}; },
 
-                [this](ASL_Accumulator op) { set_register(Register::AC, shift_left(AC)); },
-                [this](ASL_ZeroPage op)    { perform_at(op.address, AddressingMode::ZERO_PAGE, &MOS6502::shift_left); },
-                [this](ASL_ZeroPageX op)   { perform_at(op.address, AddressingMode::ZERO_PAGE_X, &MOS6502::shift_left); },
-                [this](ASL_Absolute op)    { perform_at(op.address, AddressingMode::ABSOLUTE, &MOS6502::shift_left); },
-                [this](ASL_AbsoluteX op)   {
-                    perform_at(op.address, AddressingMode::ABSOLUTE_X, &MOS6502::shift_left);
-                    // this instruction takes an additional cycle even when the page is not crossed
-                    if (!pageCrossed) cycle++;
-                    },
+                [this](ASL_Accumulator op) -> ExecutionResult { set_register(Register::AC, shift_left(AC)); return {}; },
+                [this](ASL_ZeroPage op) -> ExecutionResult    { return perform_at(op.address, AddressingMode::ZERO_PAGE, &MOS6502::shift_left); },
+                [this](ASL_ZeroPageX op) -> ExecutionResult   { return perform_at(op.address, AddressingMode::ZERO_PAGE_X, &MOS6502::shift_left); },
+                [this](ASL_Absolute op) -> ExecutionResult    { return perform_at(op.address, AddressingMode::ABSOLUTE, &MOS6502::shift_left); },
+                [this](ASL_AbsoluteX op) -> ExecutionResult   {
+                    return perform_at(op.address, AddressingMode::ABSOLUTE_X, &MOS6502::shift_left).transform([this]() {
+                        // this instruction takes an additional cycle even when the page is not crossed
+                        if (!pageCrossed) cycle++;
+                    });
+                },
 
-                [this](BCS op)             { if (SR[Flag::CARRY]) branch(op.offset); },
-                [this](BCC op)             { if (!SR[Flag::CARRY]) branch(op.offset); },
-                [this](BEQ op)             { if (SR[Flag::ZERO]) branch(op.offset); },
-                [this](BNE op)             { if (!SR[Flag::ZERO]) branch(op.offset); },
-                [this](BMI op)             { if (SR[Flag::NEGATIVE]) branch(op.offset); },
-                [this](BPL op)             { if (!SR[Flag::NEGATIVE]) branch(op.offset); },
-                [this](BVS op)             { if (SR[Flag::OVERFLOW_F]) branch(op.offset); },
-                [this](BVC op)             { if (!SR[Flag::OVERFLOW_F]) branch(op.offset); },
+                [this](BCS op) -> ExecutionResult             { if (SR[Flag::CARRY]) return branch(op.offset); return {}; },
+                [this](BCC op) -> ExecutionResult             { if (!SR[Flag::CARRY]) return branch(op.offset); return {}; },
+                [this](BEQ op) -> ExecutionResult             { if (SR[Flag::ZERO]) return branch(op.offset); return {}; },
+                [this](BNE op) -> ExecutionResult             { if (!SR[Flag::ZERO]) return branch(op.offset); return {}; },
+                [this](BMI op) -> ExecutionResult             { if (SR[Flag::NEGATIVE]) return branch(op.offset); return {}; },
+                [this](BPL op) -> ExecutionResult             { if (!SR[Flag::NEGATIVE]) return branch(op.offset); return {}; },
+                [this](BVS op) -> ExecutionResult             { if (SR[Flag::OVERFLOW_F]) return branch(op.offset); return {}; },
+                [this](BVC op) -> ExecutionResult             { if (!SR[Flag::OVERFLOW_F]) return branch(op.offset); return {}; },
 
-                [this](BIT_ZeroPage op)    { bit_test(fetch_from(op.address, AddressingMode::ZERO_PAGE)); },
-                [this](BIT_Absolute op)    { bit_test(fetch_from(op.address, AddressingMode::ABSOLUTE)); },
+                [this](BIT_ZeroPage op) -> ExecutionResult    { bit_test(fetch_from(op.address, AddressingMode::ZERO_PAGE)); return {}; },
+                [this](BIT_Absolute op) -> ExecutionResult    { bit_test(fetch_from(op.address, AddressingMode::ABSOLUTE)); return {}; },
 
-                [this](BRK op) {
+                [this](BRK op) -> ExecutionResult {
                     // for some reason, the byte right next to the BRK command must be skipped
-                    push_word_to_stack(PC + 1);
-                    PC = fetch_word(ROM::BRK_HANDLER);
-                    SR[Flag::BREAK] = SET;
-                    cycle++;
+                    return push_word_to_stack(PC + 1).transform([this](){
+                        PC = fetch_word(ROM::BRK_HANDLER);
+                        SR[Flag::BREAK] = SET;
+                        cycle++;
+                    });
                 },
 
-                [this](CLC op)             { SR[Flag::CARRY] = CLEAR; cycle++; },
-                [this](CLD op)             { SR[Flag::DECIMAL] = CLEAR; cycle++; },
-                [this](CLI op)             { SR[Flag::INTERRUPT_DISABLE] = CLEAR; cycle++; },
-                [this](CLV op)             { SR[Flag::OVERFLOW_F] = CLEAR; cycle++; },
+                [this](CLC op) -> ExecutionResult             { SR[Flag::CARRY] = CLEAR; cycle++; return {}; },
+                [this](CLD op) -> ExecutionResult             { SR[Flag::DECIMAL] = CLEAR; cycle++; return {}; },
+                [this](CLI op) -> ExecutionResult             { SR[Flag::INTERRUPT_DISABLE] = CLEAR; cycle++; return {}; },
+                [this](CLV op) -> ExecutionResult             { SR[Flag::OVERFLOW_F] = CLEAR; cycle++; return {}; },
 
-                [this](CMP_Immediate op)   { compare(AC, op.value); },
-                [this](CMP_ZeroPage op)    { compare(AC, fetch_from(op.address, AddressingMode::ZERO_PAGE)); },
-                [this](CMP_ZeroPageX op)   { compare(AC, fetch_from(op.address, AddressingMode::ZERO_PAGE_X)); },
-                [this](CMP_Absolute op)    { compare(AC, fetch_from(op.address, AddressingMode::ABSOLUTE)); },
-                [this](CMP_AbsoluteX op)   { compare(AC, fetch_from(op.address, AddressingMode::ABSOLUTE_X)); },
-                [this](CMP_AbsoluteY op)   { compare(AC, fetch_from(op.address, AddressingMode::ABSOLUTE_Y)); },
-                [this](CMP_IndirectX op)   { compare(AC, fetch_from(op.address, AddressingMode::INDIRECT_X)); },
-                [this](CMP_IndirectY op)   { compare(AC, fetch_from(op.address, AddressingMode::INDIRECT_Y)); },
+                [this](CMP_Immediate op) -> ExecutionResult   { compare(AC, op.value); return {}; },
+                [this](CMP_ZeroPage op) -> ExecutionResult    { compare(AC, fetch_from(op.address, AddressingMode::ZERO_PAGE)); return {}; },
+                [this](CMP_ZeroPageX op) -> ExecutionResult   { compare(AC, fetch_from(op.address, AddressingMode::ZERO_PAGE_X)); return {}; },
+                [this](CMP_Absolute op) -> ExecutionResult    { compare(AC, fetch_from(op.address, AddressingMode::ABSOLUTE)); return {}; },
+                [this](CMP_AbsoluteX op) -> ExecutionResult   { compare(AC, fetch_from(op.address, AddressingMode::ABSOLUTE_X)); return {}; },
+                [this](CMP_AbsoluteY op) -> ExecutionResult   { compare(AC, fetch_from(op.address, AddressingMode::ABSOLUTE_Y)); return {}; },
+                [this](CMP_IndirectX op) -> ExecutionResult   { compare(AC, fetch_from(op.address, AddressingMode::INDIRECT_X)); return {}; },
+                [this](CMP_IndirectY op) -> ExecutionResult   { compare(AC, fetch_from(op.address, AddressingMode::INDIRECT_Y)); return {}; },
 
-                [this](CPX_Immediate op)   { compare(X, op.value); },
-                [this](CPX_ZeroPage op)    { compare(X, fetch_from(op.address, AddressingMode::ZERO_PAGE)); },
-                [this](CPX_Absolute op)    { compare(X, fetch_from(op.address, AddressingMode::ABSOLUTE)); },
+                [this](CPX_Immediate op) -> ExecutionResult   { compare(X, op.value); return {}; },
+                [this](CPX_ZeroPage op) -> ExecutionResult    { compare(X, fetch_from(op.address, AddressingMode::ZERO_PAGE)); return {}; },
+                [this](CPX_Absolute op) -> ExecutionResult    { compare(X, fetch_from(op.address, AddressingMode::ABSOLUTE)); return {}; },
 
-                [this](CPY_Immediate op)   { compare(Y, op.value); },
-                [this](CPY_ZeroPage op)    { compare(Y, fetch_from(op.address, AddressingMode::ZERO_PAGE)); },
-                [this](CPY_Absolute op)    { compare(Y, fetch_from(op.address, AddressingMode::ABSOLUTE)); },
+                [this](CPY_Immediate op) -> ExecutionResult   { compare(Y, op.value); return {}; },
+                [this](CPY_ZeroPage op) -> ExecutionResult    { compare(Y, fetch_from(op.address, AddressingMode::ZERO_PAGE)); return {}; },
+                [this](CPY_Absolute op) -> ExecutionResult    { compare(Y, fetch_from(op.address, AddressingMode::ABSOLUTE)); return {}; },
 
-                [this](DEC_ZeroPage op)    { perform_at(op.address, AddressingMode::ZERO_PAGE, &MOS6502::decrement); },
-                [this](DEC_ZeroPageX op)   { perform_at(op.address, AddressingMode::ZERO_PAGE_X, &MOS6502::decrement); },
-                [this](DEC_Absolute op)    { perform_at(op.address, AddressingMode::ABSOLUTE, &MOS6502::decrement); },
-                [this](DEC_AbsoluteX op)   {
-                    perform_at(op.address, AddressingMode::ABSOLUTE_X, &MOS6502::decrement);
-                    // this instruction takes an additional cycle even when the page is not crossed
-                    if (!pageCrossed) cycle++;
-                    },
-
-                [this](DEX op)             { set_register(Register::X, X - 1); cycle++; },
-                [this](DEY op)             { set_register(Register::Y, Y - 1); cycle++; },
-
-                [this](EOR_Immediate op)   { xor_with_accumulator(op.value); },
-                [this](EOR_ZeroPage op)    { xor_with_accumulator(fetch_from(op.address, AddressingMode::ZERO_PAGE)); },
-                [this](EOR_ZeroPageX op)   { xor_with_accumulator(fetch_from(op.address, AddressingMode::ZERO_PAGE_X)); },
-                [this](EOR_Absolute op)    { xor_with_accumulator(fetch_from(op.address, AddressingMode::ABSOLUTE)); },
-                [this](EOR_AbsoluteX op)   { xor_with_accumulator(fetch_from(op.address, AddressingMode::ABSOLUTE_X)); },
-                [this](EOR_AbsoluteY op)   { xor_with_accumulator(fetch_from(op.address, AddressingMode::ABSOLUTE_Y)); },
-                [this](EOR_IndirectX op)   { xor_with_accumulator(fetch_from(op.address, AddressingMode::INDIRECT_X)); },
-                [this](EOR_IndirectY op)   { xor_with_accumulator(fetch_from(op.address, AddressingMode::INDIRECT_Y)); },
-
-                [this](INC_ZeroPage op)    { perform_at(op.address, AddressingMode::ZERO_PAGE, &MOS6502::increment); },
-                [this](INC_ZeroPageX op)   { perform_at(op.address, AddressingMode::ZERO_PAGE_X, &MOS6502::increment); },
-                [this](INC_Absolute op)    { perform_at(op.address, AddressingMode::ABSOLUTE, &MOS6502::increment); },
-                [this](INC_AbsoluteX op)   {
-                    perform_at(op.address, AddressingMode::ABSOLUTE_X, &MOS6502::increment);
-                    // this instruction takes an additional cycle even when the page is not crossed
-                    if (!pageCrossed) cycle++;
+                [this](DEC_ZeroPage op) -> ExecutionResult    { return perform_at(op.address, AddressingMode::ZERO_PAGE, &MOS6502::decrement); },
+                [this](DEC_ZeroPageX op) -> ExecutionResult   { return perform_at(op.address, AddressingMode::ZERO_PAGE_X, &MOS6502::decrement); },
+                [this](DEC_Absolute op) -> ExecutionResult    { return perform_at(op.address, AddressingMode::ABSOLUTE, &MOS6502::decrement); },
+                [this](DEC_AbsoluteX op) -> ExecutionResult   {
+                    return perform_at(op.address, AddressingMode::ABSOLUTE_X, &MOS6502::decrement).transform([this]() {
+                        // this instruction takes an additional cycle even when the page is not crossed
+                        if (!pageCrossed) cycle++;
+                    });
                 },
 
-                [this](INX op)             { set_register(Register::X, X + 1); cycle++; },
-                [this](INY op)             { set_register(Register::Y, Y + 1); cycle++; },
+                [this](DEX op) -> ExecutionResult             { set_register(Register::X, X - 1); cycle++; return {}; },
+                [this](DEY op) -> ExecutionResult             { set_register(Register::Y, Y - 1); cycle++; return {}; },
 
-                [this](JMP_Absolute op)    { PC = op.address; },
-                [this](JMP_Indirect op)    { PC = fetch_word(op.address); },
+                [this](EOR_Immediate op) -> ExecutionResult   { xor_with_accumulator(op.value); return {}; },
+                [this](EOR_ZeroPage op) -> ExecutionResult    { xor_with_accumulator(fetch_from(op.address, AddressingMode::ZERO_PAGE)); return {}; },
+                [this](EOR_ZeroPageX op) -> ExecutionResult   { xor_with_accumulator(fetch_from(op.address, AddressingMode::ZERO_PAGE_X)); return {}; },
+                [this](EOR_Absolute op) -> ExecutionResult    { xor_with_accumulator(fetch_from(op.address, AddressingMode::ABSOLUTE)); return {}; },
+                [this](EOR_AbsoluteX op) -> ExecutionResult   { xor_with_accumulator(fetch_from(op.address, AddressingMode::ABSOLUTE_X)); return {}; },
+                [this](EOR_AbsoluteY op) -> ExecutionResult   { xor_with_accumulator(fetch_from(op.address, AddressingMode::ABSOLUTE_Y)); return {}; },
+                [this](EOR_IndirectX op) -> ExecutionResult   { xor_with_accumulator(fetch_from(op.address, AddressingMode::INDIRECT_X)); return {}; },
+                [this](EOR_IndirectY op) -> ExecutionResult   { xor_with_accumulator(fetch_from(op.address, AddressingMode::INDIRECT_Y)); return {}; },
 
-                [this](JSR op) {
-                    push_word_to_stack(PC - 1);
-                    PC = op.address;
-                    cycle++;
+                [this](INC_ZeroPage op) -> ExecutionResult    { return perform_at(op.address, AddressingMode::ZERO_PAGE, &MOS6502::increment); },
+                [this](INC_ZeroPageX op) -> ExecutionResult   { return perform_at(op.address, AddressingMode::ZERO_PAGE_X, &MOS6502::increment); },
+                [this](INC_Absolute op) -> ExecutionResult    { return perform_at(op.address, AddressingMode::ABSOLUTE, &MOS6502::increment); },
+                [this](INC_AbsoluteX op) -> ExecutionResult   {
+                    return perform_at(op.address, AddressingMode::ABSOLUTE_X, &MOS6502::increment).transform([this]() {
+                        // this instruction takes an additional cycle even when the page is not crossed
+                        if (!pageCrossed) cycle++;
+                    });
                 },
 
-                [this](LDA_Immediate op)   { set_register(Register::AC, op.value); },
-                [this](LDA_ZeroPage op)    { set_register(Register::AC, fetch_from(op.address, AddressingMode::ZERO_PAGE)); },
-                [this](LDA_ZeroPageX op)   { set_register(Register::AC, fetch_from(op.address, AddressingMode::ZERO_PAGE_X)); },
-                [this](LDA_Absolute op)    { set_register(Register::AC, fetch_from(op.address, AddressingMode::ABSOLUTE)); },
-                [this](LDA_AbsoluteX op)   { set_register(Register::AC, fetch_from(op.address, AddressingMode::ABSOLUTE_X)); },
-                [this](LDA_AbsoluteY op)   { set_register(Register::AC, fetch_from(op.address, AddressingMode::ABSOLUTE_Y)); },
-                [this](LDA_IndirectX op)   { set_register(Register::AC, fetch_from(op.address, AddressingMode::INDIRECT_X)); },
-                [this](LDA_IndirectY op)   { set_register(Register::AC, fetch_from(op.address, AddressingMode::INDIRECT_Y)); },
+                [this](INX op) -> ExecutionResult             { set_register(Register::X, X + 1); cycle++; return {}; },
+                [this](INY op) -> ExecutionResult             { set_register(Register::Y, Y + 1); cycle++; return {}; },
 
-                [this](LDX_Immediate op)   { set_register(Register::X, op.value); },
-                [this](LDX_ZeroPage op)    { set_register(Register::X, fetch_from(op.address, AddressingMode::ZERO_PAGE)); },
-                [this](LDX_ZeroPageY op)   { set_register(Register::X, fetch_from(op.address, AddressingMode::ZERO_PAGE_Y)); },
-                [this](LDX_Absolute op)    { set_register(Register::X, fetch_from(op.address, AddressingMode::ABSOLUTE)); },
-                [this](LDX_AbsoluteY op)   { set_register(Register::X, fetch_from(op.address, AddressingMode::ABSOLUTE_Y)); },
+                [this](JMP_Absolute op) -> ExecutionResult    { PC = op.address; return {}; },
+                [this](JMP_Indirect op) -> ExecutionResult    { PC = fetch_word(op.address); return {}; },
 
-                [this](LDY_Immediate op)   { set_register(Register::Y, op.value); },
-                [this](LDY_ZeroPage op)    { set_register(Register::Y, fetch_from(op.address, AddressingMode::ZERO_PAGE)); },
-                [this](LDY_ZeroPageX op)   { set_register(Register::Y, fetch_from(op.address, AddressingMode::ZERO_PAGE_X)); },
-                [this](LDY_Absolute op)    { set_register(Register::Y, fetch_from(op.address, AddressingMode::ABSOLUTE)); },
-                [this](LDY_AbsoluteX op)   { set_register(Register::Y, fetch_from(op.address, AddressingMode::ABSOLUTE_X)); },
-
-                [this](LSR_Accumulator op) { set_register(Register::AC, shift_right(AC)); },
-                [this](LSR_ZeroPage op)    { perform_at(op.address, AddressingMode::ZERO_PAGE, &MOS6502::shift_right); },
-                [this](LSR_ZeroPageX op)   { perform_at(op.address, AddressingMode::ZERO_PAGE_X, &MOS6502::shift_right); },
-                [this](LSR_Absolute op)    { perform_at(op.address, AddressingMode::ABSOLUTE, &MOS6502::shift_right); },
-                [this](LSR_AbsoluteX op)   {
-                    perform_at(op.address, AddressingMode::ABSOLUTE_X, &MOS6502::shift_right);
-                    // this instruction takes an additional cycle even when the page is not crossed
-                    if (!pageCrossed) cycle++;
-                    },
-
-                [this](NOP op)             { cycle++; },
-
-                [this](ORA_Immediate op)   { or_with_accumulator(op.value); },
-                [this](ORA_ZeroPage op)    { or_with_accumulator(fetch_from(op.address, AddressingMode::ZERO_PAGE)); },
-                [this](ORA_ZeroPageX op)   { or_with_accumulator(fetch_from(op.address, AddressingMode::ZERO_PAGE_X)); },
-                [this](ORA_Absolute op)    { or_with_accumulator(fetch_from(op.address, AddressingMode::ABSOLUTE)); },
-                [this](ORA_AbsoluteX op)   { or_with_accumulator(fetch_from(op.address, AddressingMode::ABSOLUTE_X)); },
-                [this](ORA_AbsoluteY op)   { or_with_accumulator(fetch_from(op.address, AddressingMode::ABSOLUTE_Y)); },
-                [this](ORA_IndirectX op)   { or_with_accumulator(fetch_from(op.address, AddressingMode::INDIRECT_X)); },
-                [this](ORA_IndirectY op)   { or_with_accumulator(fetch_from(op.address, AddressingMode::INDIRECT_Y)); },
-
-                [this](PHA op)             { push_byte_to_stack(AC); cycle++; },
-                [this](PHP op)             { push_byte_to_stack(SR.to_byte()); cycle++; },
-
-                [this](PLA op)             { set_register(Register::AC, pull_byte_from_stack()); cycle++; },
-                [this](PLP op)             { set_register(Register::SR, pull_byte_from_stack()); cycle++; },
-
-                [this](ROL_Accumulator op) { set_register(Register::AC, rotate_left(AC)); },
-                [this](ROL_ZeroPage op)    { perform_at(op.address, AddressingMode::ZERO_PAGE, &MOS6502::rotate_left); },
-                [this](ROL_ZeroPageX op)   { perform_at(op.address, AddressingMode::ZERO_PAGE_X, &MOS6502::rotate_left); },
-                [this](ROL_Absolute op)    { perform_at(op.address, AddressingMode::ABSOLUTE, &MOS6502::rotate_left); },
-                [this](ROL_AbsoluteX op)   {
-                    perform_at(op.address, AddressingMode::ABSOLUTE_X, &MOS6502::rotate_left);
-                    // this instruction takes an additional cycle even when the page is not crossed
-                    if (!pageCrossed) cycle++;
-                    },
-
-                [this](ROR_Accumulator op) { set_register(Register::AC, rotate_right(AC)); },
-                [this](ROR_ZeroPage op)    { perform_at(op.address, AddressingMode::ZERO_PAGE, &MOS6502::rotate_right); },
-                [this](ROR_ZeroPageX op)   { perform_at(op.address, AddressingMode::ZERO_PAGE_X, &MOS6502::rotate_right); },
-                [this](ROR_Absolute op)    { perform_at(op.address, AddressingMode::ABSOLUTE, &MOS6502::rotate_right); },
-                [this](ROR_AbsoluteX op)   {
-                    perform_at(op.address, AddressingMode::ABSOLUTE_X, &MOS6502::rotate_right);
-                    // this instruction takes an additional cycle even when the page is not crossed
-                    if (!pageCrossed) cycle++;
-                    },
-
-                [this](RTI op) {
-                    SR = pull_byte_from_stack();
-                    PC = pull_word_from_stack();
-                    cycle--;
+                [this](JSR op) -> ExecutionResult {
+                    return push_word_to_stack(PC - 1).transform([this, op](){
+                        PC = op.address;
+                        cycle++;
+                    });
                 },
 
-                [this](RTS op)             { PC = pull_word_from_stack() + 1; cycle++; },
+                [this](LDA_Immediate op) -> ExecutionResult   { set_register(Register::AC, op.value); return {}; },
+                [this](LDA_ZeroPage op) -> ExecutionResult    { set_register(Register::AC, fetch_from(op.address, AddressingMode::ZERO_PAGE)); return {}; },
+                [this](LDA_ZeroPageX op) -> ExecutionResult   { set_register(Register::AC, fetch_from(op.address, AddressingMode::ZERO_PAGE_X)); return {}; },
+                [this](LDA_Absolute op) -> ExecutionResult    { set_register(Register::AC, fetch_from(op.address, AddressingMode::ABSOLUTE)); return {}; },
+                [this](LDA_AbsoluteX op) -> ExecutionResult   { set_register(Register::AC, fetch_from(op.address, AddressingMode::ABSOLUTE_X)); return {}; },
+                [this](LDA_AbsoluteY op) -> ExecutionResult   { set_register(Register::AC, fetch_from(op.address, AddressingMode::ABSOLUTE_Y)); return {}; },
+                [this](LDA_IndirectX op) -> ExecutionResult   { set_register(Register::AC, fetch_from(op.address, AddressingMode::INDIRECT_X)); return {}; },
+                [this](LDA_IndirectY op) -> ExecutionResult   { set_register(Register::AC, fetch_from(op.address, AddressingMode::INDIRECT_Y)); return {}; },
 
-                [this](SBC_Immediate op)   { subtract_from_accumulator(op.value); },
-                [this](SBC_ZeroPage op)    { subtract_from_accumulator(fetch_from(op.address, AddressingMode::ZERO_PAGE)); },
-                [this](SBC_ZeroPageX op)   { subtract_from_accumulator(fetch_from(op.address, AddressingMode::ZERO_PAGE_X)); },
-                [this](SBC_Absolute op)    { subtract_from_accumulator(fetch_from(op.address, AddressingMode::ABSOLUTE)); },
-                [this](SBC_AbsoluteX op)   { subtract_from_accumulator(fetch_from(op.address, AddressingMode::ABSOLUTE_X)); },
-                [this](SBC_AbsoluteY op)   { subtract_from_accumulator(fetch_from(op.address, AddressingMode::ABSOLUTE_Y)); },
-                [this](SBC_IndirectX op)   { subtract_from_accumulator(fetch_from(op.address, AddressingMode::INDIRECT_X)); },
-                [this](SBC_IndirectY op)   { subtract_from_accumulator(fetch_from(op.address, AddressingMode::INDIRECT_Y)); },
+                [this](LDX_Immediate op) -> ExecutionResult   { set_register(Register::X, op.value); return {}; },
+                [this](LDX_ZeroPage op) -> ExecutionResult    { set_register(Register::X, fetch_from(op.address, AddressingMode::ZERO_PAGE)); return {}; },
+                [this](LDX_ZeroPageY op) -> ExecutionResult   { set_register(Register::X, fetch_from(op.address, AddressingMode::ZERO_PAGE_Y)); return {}; },
+                [this](LDX_Absolute op) -> ExecutionResult    { set_register(Register::X, fetch_from(op.address, AddressingMode::ABSOLUTE)); return {}; },
+                [this](LDX_AbsoluteY op) -> ExecutionResult   { set_register(Register::X, fetch_from(op.address, AddressingMode::ABSOLUTE_Y)); return {}; },
 
-                [this](SEC op)             { SR[Flag::CARRY] = SET; },
-                [this](SED op)             { SR[Flag::DECIMAL] = SET; },
-                [this](SEI op)             { SR[Flag::INTERRUPT_DISABLE] = SET; },
+                [this](LDY_Immediate op) -> ExecutionResult   { set_register(Register::Y, op.value); return {}; },
+                [this](LDY_ZeroPage op) -> ExecutionResult    { set_register(Register::Y, fetch_from(op.address, AddressingMode::ZERO_PAGE)); return {}; },
+                [this](LDY_ZeroPageX op) -> ExecutionResult   { set_register(Register::Y, fetch_from(op.address, AddressingMode::ZERO_PAGE_X)); return {}; },
+                [this](LDY_Absolute op) -> ExecutionResult    { set_register(Register::Y, fetch_from(op.address, AddressingMode::ABSOLUTE)); return {}; },
+                [this](LDY_AbsoluteX op) -> ExecutionResult   { set_register(Register::Y, fetch_from(op.address, AddressingMode::ABSOLUTE_X)); return {}; },
 
-                [this](STA_ZeroPage op)    { write_to(op.address, AddressingMode::ZERO_PAGE, AC); },
-                [this](STA_ZeroPageX op)   { write_to(op.address, AddressingMode::ZERO_PAGE_X, AC); },
-                [this](STA_Absolute op)    { write_to(op.address, AddressingMode::ABSOLUTE, AC); },
-                [this](STA_AbsoluteX op)   {
-                    write_to(op.address, AddressingMode::ABSOLUTE_X, AC);
-                    // this instruction takes an additional cycle even when the page is not crossed
-                    if (!pageCrossed) cycle++;
-                    },
-                [this](STA_AbsoluteY op)   {
-                    write_to(op.address, AddressingMode::ABSOLUTE_Y, AC);
-                    // this instruction takes an additional cycle even when the page is not crossed
-                    if (!pageCrossed) cycle++;
-                    },
-                [this](STA_IndirectX op)   { write_to(op.address, AddressingMode::INDIRECT_X, AC); },
-                [this](STA_IndirectY op)   {
-                    write_to(op.address, AddressingMode::INDIRECT_Y, AC);
-                    // this instruction takes an additional cycle even when the page is not crossed
-                    if (!pageCrossed) cycle++;
-                    },
+                [this](LSR_Accumulator op) -> ExecutionResult { set_register(Register::AC, shift_right(AC)); return {}; },
+                [this](LSR_ZeroPage op) -> ExecutionResult    { return perform_at(op.address, AddressingMode::ZERO_PAGE, &MOS6502::shift_right); },
+                [this](LSR_ZeroPageX op) -> ExecutionResult   { return perform_at(op.address, AddressingMode::ZERO_PAGE_X, &MOS6502::shift_right); },
+                [this](LSR_Absolute op) -> ExecutionResult    { return perform_at(op.address, AddressingMode::ABSOLUTE, &MOS6502::shift_right); },
+                [this](LSR_AbsoluteX op) -> ExecutionResult   {
+                    return perform_at(op.address, AddressingMode::ABSOLUTE_X, &MOS6502::shift_right).transform([this]() {
+                        // this instruction takes an additional cycle even when the page is not crossed
+                        if (!pageCrossed) cycle++;
+                    });
+                },
 
-                [this](STX_ZeroPage op)    { write_to(op.address, AddressingMode::ZERO_PAGE, X); },
-                [this](STX_ZeroPageY op)   { write_to(op.address, AddressingMode::ZERO_PAGE_Y, X); },
-                [this](STX_Absolute op)    { write_to(op.address, AddressingMode::ABSOLUTE, X); },
+                [this](NOP op) -> ExecutionResult             { cycle++; return {}; },
 
-                [this](STY_ZeroPage op)    { write_to(op.address, AddressingMode::ZERO_PAGE, Y); },
-                [this](STY_ZeroPageX op)   { write_to(op.address, AddressingMode::ZERO_PAGE_X, Y); },
-                [this](STY_Absolute op)    { write_to(op.address, AddressingMode::ABSOLUTE, Y); },
+                [this](ORA_Immediate op) -> ExecutionResult   { or_with_accumulator(op.value); return {}; },
+                [this](ORA_ZeroPage op) -> ExecutionResult    { or_with_accumulator(fetch_from(op.address, AddressingMode::ZERO_PAGE)); return {}; },
+                [this](ORA_ZeroPageX op) -> ExecutionResult   { or_with_accumulator(fetch_from(op.address, AddressingMode::ZERO_PAGE_X)); return {}; },
+                [this](ORA_Absolute op) -> ExecutionResult    { or_with_accumulator(fetch_from(op.address, AddressingMode::ABSOLUTE)); return {}; },
+                [this](ORA_AbsoluteX op) -> ExecutionResult   { or_with_accumulator(fetch_from(op.address, AddressingMode::ABSOLUTE_X)); return {}; },
+                [this](ORA_AbsoluteY op) -> ExecutionResult   { or_with_accumulator(fetch_from(op.address, AddressingMode::ABSOLUTE_Y)); return {}; },
+                [this](ORA_IndirectX op) -> ExecutionResult   { or_with_accumulator(fetch_from(op.address, AddressingMode::INDIRECT_X)); return {}; },
+                [this](ORA_IndirectY op) -> ExecutionResult   { or_with_accumulator(fetch_from(op.address, AddressingMode::INDIRECT_Y)); return {}; },
 
-                [this](TAX op) { set_register(Register::X, AC); cycle++; },
-                [this](TAY op) { set_register(Register::Y, AC); cycle++; },
-                [this](TSX op) { set_register(Register::X, SP); cycle++; },
-                [this](TXA op) { set_register(Register::AC, X); cycle++; },
-                [this](TXS op) { set_register(Register::SP, X); cycle++; },
-                [this](TYA op) { set_register(Register::AC, Y); cycle++; }
+                [this](PHA op) -> ExecutionResult             { return push_byte_to_stack(AC); cycle++; },
+                [this](PHP op) -> ExecutionResult             { return push_byte_to_stack(SR.to_byte()); cycle++; },
+
+                [this](PLA op) -> ExecutionResult             {
+                    return pull_byte_from_stack().transform([this](Byte value){
+                        set_register(Register::AC, value);
+                        cycle++;
+                    });
+                },
+                [this](PLP op) -> ExecutionResult             {
+                    return pull_byte_from_stack().transform([this](Byte value){
+                        set_register(Register::SR, value);
+                        cycle++;
+                    });
+                },
+
+                [this](ROL_Accumulator op) -> ExecutionResult { set_register(Register::AC, rotate_left(AC)); return {}; },
+                [this](ROL_ZeroPage op) -> ExecutionResult    { return perform_at(op.address, AddressingMode::ZERO_PAGE, &MOS6502::rotate_left); },
+                [this](ROL_ZeroPageX op) -> ExecutionResult   { return perform_at(op.address, AddressingMode::ZERO_PAGE_X, &MOS6502::rotate_left); },
+                [this](ROL_Absolute op) -> ExecutionResult    { return perform_at(op.address, AddressingMode::ABSOLUTE, &MOS6502::rotate_left); },
+                [this](ROL_AbsoluteX op) -> ExecutionResult   {
+                    return perform_at(op.address, AddressingMode::ABSOLUTE_X, &MOS6502::rotate_left).transform([this]() {
+                        // this instruction takes an additional cycle even when the page is not crossed
+                        if (!pageCrossed) cycle++;
+                    });
+                },
+
+                [this](ROR_Accumulator op) -> ExecutionResult { set_register(Register::AC, rotate_right(AC)); return {}; },
+                [this](ROR_ZeroPage op) -> ExecutionResult    { return perform_at(op.address, AddressingMode::ZERO_PAGE, &MOS6502::rotate_right); },
+                [this](ROR_ZeroPageX op) -> ExecutionResult   { return perform_at(op.address, AddressingMode::ZERO_PAGE_X, &MOS6502::rotate_right); },
+                [this](ROR_Absolute op) -> ExecutionResult    { return perform_at(op.address, AddressingMode::ABSOLUTE, &MOS6502::rotate_right); },
+                [this](ROR_AbsoluteX op) -> ExecutionResult   {
+                    return perform_at(op.address, AddressingMode::ABSOLUTE_X, &MOS6502::rotate_right).transform([this]() {
+                        // this instruction takes an additional cycle even when the page is not crossed
+                        if (!pageCrossed) cycle++;
+                    });
+                },
+
+                [this](RTI op) -> ExecutionResult {
+                    auto result = pull_byte_from_stack();
+                    if (result.has_value()) SR = result.value();
+                    else return std::unexpected{result.error()};
+
+                    return pull_byte_from_stack().transform([this](Byte value){
+                        PC = value;
+                        cycle--;
+                    });
+                },
+
+                [this](RTS op) -> ExecutionResult {
+                    return pull_word_from_stack().transform([this](Word value){
+                        PC = value + 1;
+                        cycle++;
+                    });
+                },
+
+                [this](SBC_Immediate op) -> ExecutionResult   { subtract_from_accumulator(op.value); return {}; },
+                [this](SBC_ZeroPage op) -> ExecutionResult    { subtract_from_accumulator(fetch_from(op.address, AddressingMode::ZERO_PAGE)); return {}; },
+                [this](SBC_ZeroPageX op) -> ExecutionResult   { subtract_from_accumulator(fetch_from(op.address, AddressingMode::ZERO_PAGE_X)); return {}; },
+                [this](SBC_Absolute op) -> ExecutionResult    { subtract_from_accumulator(fetch_from(op.address, AddressingMode::ABSOLUTE)); return {}; },
+                [this](SBC_AbsoluteX op) -> ExecutionResult   { subtract_from_accumulator(fetch_from(op.address, AddressingMode::ABSOLUTE_X)); return {}; },
+                [this](SBC_AbsoluteY op) -> ExecutionResult   { subtract_from_accumulator(fetch_from(op.address, AddressingMode::ABSOLUTE_Y)); return {}; },
+                [this](SBC_IndirectX op) -> ExecutionResult   { subtract_from_accumulator(fetch_from(op.address, AddressingMode::INDIRECT_X)); return {}; },
+                [this](SBC_IndirectY op) -> ExecutionResult   { subtract_from_accumulator(fetch_from(op.address, AddressingMode::INDIRECT_Y)); return {}; },
+
+                [this](SEC op) -> ExecutionResult             { SR[Flag::CARRY] = SET; return {}; },
+                [this](SED op) -> ExecutionResult             { SR[Flag::DECIMAL] = SET; return {}; },
+                [this](SEI op) -> ExecutionResult             { SR[Flag::INTERRUPT_DISABLE] = SET; return {}; },
+
+                [this](STA_ZeroPage op) -> ExecutionResult    { return write_to(op.address, AddressingMode::ZERO_PAGE, AC); },
+                [this](STA_ZeroPageX op) -> ExecutionResult   { return write_to(op.address, AddressingMode::ZERO_PAGE_X, AC); },
+                [this](STA_Absolute op) -> ExecutionResult    { return write_to(op.address, AddressingMode::ABSOLUTE, AC); },
+                [this](STA_AbsoluteX op) -> ExecutionResult   {
+                    return write_to(op.address, AddressingMode::ABSOLUTE_X, AC).transform([this](){
+                        // this instruction takes an additional cycle even when the page is not crossed
+                        if (!pageCrossed) cycle++;
+                    });
+                },
+                [this](STA_AbsoluteY op) -> ExecutionResult   {
+                    return write_to(op.address, AddressingMode::ABSOLUTE_Y, AC).transform([this](){
+                        // this instruction takes an additional cycle even when the page is not crossed
+                        if (!pageCrossed) cycle++;
+                    });
+                },
+                [this](STA_IndirectX op) -> ExecutionResult   { return write_to(op.address, AddressingMode::INDIRECT_X, AC); },
+                [this](STA_IndirectY op) -> ExecutionResult   {
+                    return write_to(op.address, AddressingMode::INDIRECT_Y, AC).transform([this](){
+                        // this instruction takes an additional cycle even when the page is not crossed
+                        if (!pageCrossed) cycle++;
+                    });
+                },
+
+                [this](STX_ZeroPage op) -> ExecutionResult    { return write_to(op.address, AddressingMode::ZERO_PAGE, X); },
+                [this](STX_ZeroPageY op) -> ExecutionResult   { return write_to(op.address, AddressingMode::ZERO_PAGE_Y, X); },
+                [this](STX_Absolute op) -> ExecutionResult    { return write_to(op.address, AddressingMode::ABSOLUTE, X); },
+
+                [this](STY_ZeroPage op) -> ExecutionResult    { return write_to(op.address, AddressingMode::ZERO_PAGE, Y); },
+                [this](STY_ZeroPageX op) -> ExecutionResult   { return write_to(op.address, AddressingMode::ZERO_PAGE_X, Y); },
+                [this](STY_Absolute op) -> ExecutionResult    { return write_to(op.address, AddressingMode::ABSOLUTE, Y); },
+
+                [this](TAX op) -> ExecutionResult { set_register(Register::X, AC); cycle++; return {}; },
+                [this](TAY op) -> ExecutionResult { set_register(Register::Y, AC); cycle++; return {}; },
+                [this](TSX op) -> ExecutionResult { set_register(Register::X, SP); cycle++; return {}; },
+                [this](TXA op) -> ExecutionResult { set_register(Register::AC, X); cycle++; return {}; },
+                [this](TXS op) -> ExecutionResult { set_register(Register::SP, X); cycle++; return {}; },
+                [this](TYA op) -> ExecutionResult { set_register(Register::AC, Y); cycle++; return {}; }
             },
                    operation
         );
@@ -408,32 +453,13 @@ namespace Emulator {
         return value << 1;
     }
 
-//    void MOS6502::perform_at_zero_page(Byte address, MOS6502::ByteOperator byteOperator) noexcept {
-//        auto targetAddress = resolve_zero_page(address);
-//        memory.set_byte({.address = targetAddress, .value = (this->*byteOperator)(memory.fetch_byte(targetAddress, cycle)), .cycle = cycle});
-//    }
-//
-//    void MOS6502::perform_at_zero_page_indexed(Byte address, Byte index, MOS6502::ByteOperator byteOperator) noexcept {
-//        auto targetAddress = resolve_zero_page_indexed(address, index);
-//        memory.set_byte({.address = targetAddress, .value = (this->*byteOperator)(memory.fetch_byte(targetAddress, cycle)), .cycle = cycle});
-//    }
-//
-//    void MOS6502::perform_at_absolute(Word address, MOS6502::ByteOperator byteOperator) noexcept {
-//        auto targetAddress = resolve_absolute(address);
-//        memory.set_byte({.address = targetAddress, .value = (this->*byteOperator)(memory.fetch_byte(targetAddress, cycle)), .cycle = cycle});
-//    }
-//
-//    void MOS6502::perform_at_absolute_indexed(Word address, Byte index, MOS6502::ByteOperator byteOperator) noexcept {
-//        auto targetAddress = resolve_absolute_indexed(address, index);
-//        memory.set_byte({.address = targetAddress, .value = (this->*byteOperator)(memory.fetch_byte(targetAddress, cycle)), .cycle = cycle});
-//    }
+    std::expected<void, MOS6502::AddressOverflow> MOS6502::branch(char offset) noexcept {
+        if (offset > UINT16_MAX - PC || (offset < 0 && -offset > PC)) return std::unexpected(AddressOverflow());
 
-    void MOS6502::branch(char offset) noexcept {
-        cycle++;
         Word newPC = PC + offset;
-//        if (WordToBytes(PC).high != WordToBytes(newPC).high) cycle++;
-
         PC = newPC;
+        cycle++;
+        return {};
     }
 
     void MOS6502::bit_test(Byte value) noexcept {
@@ -749,13 +775,13 @@ namespace Emulator {
         return memory.fetch_byte(resolve(address, mode), cycle);
     }
 
-    void MOS6502::write_to(Word address, AddressingMode mode, Byte value) noexcept {
-        memory.set_byte({.address = resolve(address, mode), .value = value, .cycle = cycle});
+    std::expected<void, ROM::StackOverride> MOS6502::write_to(Word address, AddressingMode mode, Byte value) noexcept {
+        return memory.set_byte(resolve(address, mode), value, cycle);
     }
 
-    void MOS6502::perform_at(Word address, AddressingMode mode, MOS6502::ByteOperator byteOperator) noexcept {
+    std::expected<void, ROM::StackOverride> MOS6502::perform_at(Word address, AddressingMode mode, MOS6502::ByteOperator byteOperator) noexcept {
         auto targetAddress = resolve(address, mode);
-        memory.set_byte({.address = targetAddress, .value = (this->*byteOperator)(memory.fetch_byte(targetAddress, cycle)), .cycle = cycle});
+        return memory.set_byte(targetAddress, (this->*byteOperator)(memory.fetch_byte(targetAddress, cycle)), cycle);
     }
 
 }

@@ -37,9 +37,14 @@ namespace Emulator {
          * Error termination statuses
          */
 
-        struct UnknownOperation { Word address; };
+        /// returned when the current byte does not correspond to any known opcode
+        struct ParseError { Word address; };
+        /// when attempting to set an address to a value that is bigger than the memory size (i.e. in branching)
+        struct AddressOverflow {};
+        struct StackOverflow { enum class Type { STACK_FULL, STACK_EMPTY }; Type type; };
 
-        using ErrorTermination = std::variant<UnknownOperation>;
+        using OperationError = std::variant<AddressOverflow, ROM::StackOverride, StackOverflow>;
+        using ErrorTermination = std::variant<ParseError, OperationError>;
 
         void stop_on_break(bool value) { stopOnBRK = value; }
 
@@ -65,7 +70,8 @@ namespace Emulator {
 
         std::expected<SuccessfulTermination, ErrorTermination> execute();
 
-        void execute(const Operation& operation) noexcept;
+        using ExecutionResult = std::expected<void, OperationError>;
+        ExecutionResult execute(const Operation& operation) noexcept;
 
 
     private:
@@ -99,24 +105,26 @@ namespace Emulator {
         [[nodiscard]] Byte fetch_from(Word address, AddressingMode mode) noexcept;
 
         /// write the given value to the address resolved according to the mode
-        void write_to(Word address, AddressingMode mode, Byte value) noexcept;
+        std::expected<void, ROM::StackOverride> write_to(Word address, AddressingMode mode, Byte value) noexcept;
 
         /// replacing a byte of memory with a new value
-        void perform_at(Word address, AddressingMode mode, ByteOperator byteOperator) noexcept;
+        std::expected<void, ROM::StackOverride> perform_at(Word address, AddressingMode mode, ByteOperator byteOperator) noexcept;
 
         void set_register(Register reg, Byte value);
 
         void set_writing_flags(Byte value);
 
-        void push_byte_to_stack(Byte value);
+        std::expected<void, StackOverflow> push_byte_to_stack(Byte value);
 
         /// first pushes the least significant byte, then the most significant
-        void push_word_to_stack(Word value);
+        std::expected<void, StackOverflow> push_word_to_stack(Word value);
 
-        Byte pull_byte_from_stack();
+        std::expected<Byte, StackOverflow> pull_byte_from_stack();
 
         /// first pulls the most significant byte, then the least significant
-        Word pull_word_from_stack();
+        std::expected<Word, StackOverflow> pull_word_from_stack();
+
+
 
         void add_to_accumulator(Byte value) noexcept;
 
@@ -124,7 +132,7 @@ namespace Emulator {
 
         Byte shift_left(Byte value) noexcept;
 
-        void branch(char offset) noexcept;
+        std::expected<void, AddressOverflow> branch(char offset) noexcept;
 
         void bit_test(Byte value) noexcept;
 

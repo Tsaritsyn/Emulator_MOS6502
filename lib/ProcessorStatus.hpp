@@ -86,6 +86,8 @@ namespace Emulator {
         std::array<bool, 8> flags;
     };
 
+    std::ostream& operator <<(std::ostream& os, const ProcessorStatus& status);
+
 }
 
 
