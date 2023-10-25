@@ -8,13 +8,9 @@
 #include <cstdint>
 #include <array>
 #include <variant>
+#include <iostream>
+#include <format>
 
-// https://stackoverflow.com/questions/4239993/determining-endianness-at-compile-time
-#if 'AB' == 0x4142
-#define BIG_ENDIAN 1
-#else
-#define BIG_ENDIAN 0
-#endif
 
 namespace Emulator {
     using Byte = uint8_t;
@@ -25,19 +21,21 @@ namespace Emulator {
     constexpr bool SET = true;
 
     struct WordToBytes {
-#if BIG_ENDIAN
-        Byte &low = converter.bytes[0];
-        Byte &high = converter.bytes[1];
-#else
-        Byte &low = converter.bytes[1];
-        Byte &high = converter.bytes[0];
-#endif
         Word &word = converter.word;
 
-        WordToBytes(Word word = 0): converter{.word = word} {};
+        constexpr WordToBytes(Word word_ = 0): converter{.word = word_} {};
+
+        [[nodiscard]] Byte low() const { return (endianness_detector().converter.bytes[0] == 0x42) ? converter.bytes[0] : converter.bytes[1]; }
+        Byte &low() { return (endianness_detector().converter.bytes[0] == 0x42) ? converter.bytes[0] : converter.bytes[1]; }
+
+        [[nodiscard]] Byte high() const { return (endianness_detector().converter.bytes[0] == 0x42) ? converter.bytes[1] : converter.bytes[0]; }
+        Byte &high() { return (endianness_detector().converter.bytes[0] == 0x42) ? converter.bytes[1] : converter.bytes[0]; }
 
     private:
         union { Word word; Byte bytes[2]; } converter;
+
+        /// used to determine the endianness of the system by observing its low and high bytes
+        constexpr static WordToBytes endianness_detector() { return {0x4142}; }
     };
 
 

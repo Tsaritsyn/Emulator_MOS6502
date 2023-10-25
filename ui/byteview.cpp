@@ -12,7 +12,7 @@
 #include "MOS6502_helpers.hpp"
 
 
-ByteView::ByteView(ROM &memory, Word address, QWidget *parent): QWidget(parent), memory{memory}, address{address} {
+ByteView::ByteView(ROM &memory_, Word address_, QWidget *parent): QWidget(parent), memory{memory_}, address{address_} {
     mainLayout = std::make_unique<QHBoxLayout>(this);
     setLayout(mainLayout.get());
     layout()->setSizeConstraint(QLayout::SetMinimumSize);
@@ -58,7 +58,7 @@ void ByteView::change_value() {
 
     if (newValue <= UINT8_MAX) {
         std::cout << "Setting memory...\n";
-        auto result = memory.set_byte(address, newValue);
+        auto result = memory.set_byte(address, (Byte)newValue);
         std::cout << "Result obtained\n";
         if (!result.has_value()) {
             std::cout << "Result is an error\n";

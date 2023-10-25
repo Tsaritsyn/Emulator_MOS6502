@@ -80,13 +80,15 @@ namespace Emulator {
         bool operator ==(int value) const noexcept { return to_byte() == value; }
         bool operator ==(const ProcessorStatus &other) const noexcept;
 
-        friend std::ostream& operator <<(std::ostream& os, const ProcessorStatus& status);
+        friend std::ostream& operator <<(std::ostream& os, const ProcessorStatus& status) noexcept;
 
     private:
         std::array<bool, 8> flags;
+
+        ProcessorStatus(const std::array<bool, 8>& new_flags) noexcept: flags{new_flags} {}
     };
 
-    std::ostream& operator <<(std::ostream& os, const ProcessorStatus& status);
+    std::ostream& operator <<(std::ostream& os, const ProcessorStatus& status) noexcept;
 
 }
 

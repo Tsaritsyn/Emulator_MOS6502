@@ -12,10 +12,10 @@ PageView::PageView(Byte pageIndex, ROM &memory, QWidget *parent): QWidget(parent
     mainLayout = std::make_unique<QVBoxLayout>(this);
     mainLayout->setSizeConstraint(QLayout::SetMinimumSize);
 
-    for (int i = 0; i < 256; i++) {
+    for (int i = 0; i <= UINT8_MAX; i++) {
         WordToBytes address;
-        address.high = pageIndex;
-        address.low = i;
+        address.high() = pageIndex;
+        address.low() = (Byte)i;
 
         byteViews[i] = std::make_unique<ByteView>(memory, address.word, this);
         mainLayout->addWidget(byteViews[i].get());

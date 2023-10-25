@@ -13,7 +13,7 @@
 using namespace Emulator;
 
 
-MainWindow::MainWindow(ROM &memory, QWidget* parent): QMainWindow(parent), memory(memory) {
+MainWindow::MainWindow(ROM &memory_, QWidget* parent): QMainWindow(parent), memory(memory_) {
     mainWidget = std::make_unique<QWidget>(this);
 
     pageViewsLayout = std::make_unique<QHBoxLayout>(mainWidget.get());
@@ -33,7 +33,7 @@ MainWindow::MainWindow(ROM &memory, QWidget* parent): QMainWindow(parent), memor
 
 
 void MainWindow::add_page_view() {
-    Byte page = QInputDialog::getInt(this, "Page", "Page index", 0, 0, UINT8_MAX);
+    Byte page = (Byte)QInputDialog::getInt(this, "Page", "Page index", 0, 0, UINT8_MAX);
 
     auto scrollArea = std::make_unique<QScrollArea>(mainWidget.get());
 
@@ -71,7 +71,7 @@ void MainWindow::execute_program() {
                                                      QString::fromStdString(std::vformat("Attempt to override stack value at 0x{:04x}",std::make_format_args(error.address)))
                                 );
                             },
-                            [this](MOS6502::AddressOverflow error) {
+                            [this](MOS6502::AddressOverflow) {
                                 QMessageBox::warning(this,
                                                      "Execution terminated unexpectedly",
                                                      QString::fromStdString("Attempt to create address outside of memory bounds")
@@ -84,11 +84,13 @@ void MainWindow::execute_program() {
                                                              "Execution terminated unexpectedly",
                                                              QString::fromStdString("Attempt to pull from empty stack")
                                         );
+                                        break;
                                     case MOS6502::StackOverflow::Type::STACK_FULL:
                                         QMessageBox::warning(this,
                                                              "Execution terminated unexpectedly",
                                                              QString::fromStdString("Attempt to push to full stack")
                                         );
+                                        break;
                                 }
                             }
                         },

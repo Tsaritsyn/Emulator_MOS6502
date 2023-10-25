@@ -79,8 +79,8 @@ std::array<Byte, 29> program_multiplication(Word startAddress) {
 
     const WordToBytes buf(loop);
     program[index++] = JMP_ABSOLUTE;
-    program[index++] = buf.low;
-    program[index++] = buf.high;
+    program[index++] = buf.low();
+    program[index++] = buf.high();
 
 
     /*

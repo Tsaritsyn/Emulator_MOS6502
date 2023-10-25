@@ -46,14 +46,14 @@ namespace Emulator {
         using OperationError = std::variant<AddressOverflow, ROM::StackOverride, StackOverflow>;
         using ErrorTermination = std::variant<ParseError, OperationError>;
 
-        void stop_on_break(bool value) { stopOnBRK = value; }
+        void stop_on_break(bool value) noexcept { stopOnBRK = value; }
 
 
 
 
-        [[nodiscard]] std::string dump(bool include_memory = false) const;
+        [[nodiscard]] std::string dump(bool include_memory = false) const noexcept;
 
-        virtual /**
+         /**
          * Program counter is set to the value of RESET_LOCATION, cycle is set to 7, interrupt disable flag is set to 1.
          * It is recommended to begin the program with setting the stack pointer by LDX <value> and TXS.
          *
@@ -63,12 +63,12 @@ namespace Emulator {
          *  <periphery setting>;
          *  CLI;
          */
-        void reset();
+        void reset() noexcept;
 
         /// sets the memory of the processor to the exact same values as the given new memory
         void burn(const ROM &newMemory) noexcept { memory = newMemory; }
 
-        std::expected<SuccessfulTermination, ErrorTermination> execute();
+        std::expected<SuccessfulTermination, ErrorTermination> execute() noexcept;
 
         using ExecutionResult = std::expected<void, OperationError>;
         ExecutionResult execute(const Operation& operation) noexcept;
@@ -160,15 +160,15 @@ namespace Emulator {
         [[nodiscard]] Byte get_register(Register reg) const;
 
         /// program counter
-        Word PC;
+        Word PC = 0;
         /// accumulator
-        Byte AC;
+        Byte AC = 0;
         /// registers
-        Byte X, Y;
+        Byte X = 0, Y = 0;
         /// status register
-        ProcessorStatus SR;
+        ProcessorStatus SR = 0;
         /// stack pointer
-        Byte SP;
+        Byte SP = UINT8_MAX;
 
         /**
          * CPU memory storing processor stack and instructions referenced by program counter.
@@ -182,13 +182,13 @@ namespace Emulator {
         ROM memory;
 
         /// current cycle of the processor
-        size_t cycle;
+        size_t cycle = 0;
 
         // auxiliary variables, not defined by the MOS6502 specifications
-        bool pageCrossed;
+        bool pageCrossed = false;
 
         // execution conditions
-        bool stopOnBRK;
+        bool stopOnBRK = false;
         std::optional<size_t> maxNumberOfCommandsToExecute;
     };
 }

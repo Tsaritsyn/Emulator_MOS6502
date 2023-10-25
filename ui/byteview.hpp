@@ -34,8 +34,8 @@ private:
 
     std::unique_ptr<QHBoxLayout> mainLayout;
 
-    Word address;
     ROM &memory;
+    Word address;
 };
 
 

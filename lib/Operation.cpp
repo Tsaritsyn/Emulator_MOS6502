@@ -28,7 +28,7 @@ static inline std::vector<Byte> no_argument(OpCode opCode) { return {opCode}; }
 static inline std::vector<Byte> byte_argument(OpCode opCode, Byte arg) { return {opCode, arg}; }
 static std::vector<Byte> word_argument(OpCode opCode, Word arg) {
     WordToBytes buf(arg);
-    return {opCode, buf.low, buf.high};
+    return {opCode, buf.low(), buf.high()};
 }
 
 
@@ -53,7 +53,7 @@ std::string Emulator::description(const Operation &operation) noexcept {
             [](AND_IndirectX op)   { return indirectX_description("AND", op.address); },
             [](AND_IndirectY op)   { return indirectY_description("AND", op.address); },
 
-            [](ASL_Accumulator op) { return accumulator_description("ASL"); },
+            [](ASL_Accumulator)    { return accumulator_description("ASL"); },
             [](ASL_ZeroPage op)    { return zeroPage_description("ASL", op.address); },
             [](ASL_ZeroPageX op)   { return zeroPageX_description("ASL", op.address); },
             [](ASL_Absolute op)    { return absolute_description("ASL", op.address); },
@@ -71,12 +71,12 @@ std::string Emulator::description(const Operation &operation) noexcept {
             [](BIT_ZeroPage op)    { return zeroPage_description("BIT", op.address); },
             [](BIT_Absolute op)    { return absolute_description("BIT", op.address); },
 
-            [](BRK op)             { return std::string("BRK"); },
+            [](BRK)                { return std::string("BRK"); },
 
-            [](CLC op)             { return std::string("CLC"); },
-            [](CLD op)             { return std::string("CLD"); },
-            [](CLI op)             { return std::string("CLI"); },
-            [](CLV op)             { return std::string("CLV"); },
+            [](CLC)                { return std::string("CLC"); },
+            [](CLD)                { return std::string("CLD"); },
+            [](CLI)                { return std::string("CLI"); },
+            [](CLV)                { return std::string("CLV"); },
 
             [](CMP_Immediate op)   { return immediate_description("CMP", op.value); },
             [](CMP_ZeroPage op)    { return zeroPage_description("CMP", op.address); },
@@ -100,8 +100,8 @@ std::string Emulator::description(const Operation &operation) noexcept {
             [](DEC_Absolute op)    { return absolute_description("DEC", op.address); },
             [](DEC_AbsoluteX op)   { return absoluteX_description("DEC", op.address); },
 
-            [](DEX op)             { return std::string("DEX"); },
-            [](DEY op)             { return std::string("DEY"); },
+            [](DEX)                { return std::string("DEX"); },
+            [](DEY)                { return std::string("DEY"); },
 
             [](EOR_Immediate op)   { return immediate_description("EOR", op.value); },
             [](EOR_ZeroPage op)    { return zeroPage_description("EOR", op.address); },
@@ -117,13 +117,13 @@ std::string Emulator::description(const Operation &operation) noexcept {
             [](INC_Absolute op)    { return absolute_description("INC", op.address); },
             [](INC_AbsoluteX op)   { return absoluteX_description("INC", op.address); },
 
-            [](INX op)             { return std::string("INX"); },
-            [](INY op)             { return std::string("INY"); },
+            [](INX)                { return std::string("INX"); },
+            [](INY)                { return std::string("INY"); },
 
             [](JMP_Absolute op)    { return absolute_description("JMP", op.address); },
             [](JMP_Indirect op)    { return indirect_description("JMP", op.address); },
 
-            [](JSR op)             { return std::string("JSR"); },
+            [](JSR)                { return std::string("JSR"); },
 
             [](LDA_Immediate op)   { return immediate_description("LDA", op.value); },
             [](LDA_ZeroPage op)    { return zeroPage_description("LDA", op.address); },
@@ -146,13 +146,13 @@ std::string Emulator::description(const Operation &operation) noexcept {
             [](LDY_Absolute op)    { return absolute_description("LDY", op.address); },
             [](LDY_AbsoluteX op)   { return absoluteX_description("LDY", op.address); },
 
-            [](LSR_Accumulator op) { return accumulator_description("LSR"); },
+            [](LSR_Accumulator)    { return accumulator_description("LSR"); },
             [](LSR_ZeroPage op)    { return zeroPage_description("LSR", op.address); },
             [](LSR_ZeroPageX op)   { return zeroPageX_description("LSR", op.address); },
             [](LSR_Absolute op)    { return absolute_description("LSR", op.address); },
             [](LSR_AbsoluteX op)   { return absoluteX_description("LSR", op.address); },
 
-            [](NOP op)             { return std::string("NOP"); },
+            [](NOP)                { return std::string("NOP"); },
 
             [](ORA_Immediate op)   { return immediate_description("ORA", op.value); },
             [](ORA_ZeroPage op)    { return zeroPage_description("ORA", op.address); },
@@ -163,26 +163,26 @@ std::string Emulator::description(const Operation &operation) noexcept {
             [](ORA_IndirectX op)   { return indirectX_description("ORA", op.address); },
             [](ORA_IndirectY op)   { return indirectY_description("ORA", op.address); },
 
-            [](PHA op)             { return std::string("PHA"); },
-            [](PHP op)             { return std::string("PHP"); },
+            [](PHA)                { return std::string("PHA"); },
+            [](PHP)                { return std::string("PHP"); },
 
-            [](PLA op)             { return std::string("PLA"); },
-            [](PLP op)             { return std::string("PLP"); },
+            [](PLA)                { return std::string("PLA"); },
+            [](PLP)                { return std::string("PLP"); },
 
-            [](ROL_Accumulator op) { return accumulator_description("ROL"); },
+            [](ROL_Accumulator)    { return accumulator_description("ROL"); },
             [](ROL_ZeroPage op)    { return zeroPage_description("ROL", op.address); },
             [](ROL_ZeroPageX op)   { return zeroPageX_description("ROL", op.address); },
             [](ROL_Absolute op)    { return absolute_description("ROL", op.address); },
             [](ROL_AbsoluteX op)   { return absoluteX_description("ROL", op.address); },
 
-            [](ROR_Accumulator op) { return accumulator_description("ROR"); },
+            [](ROR_Accumulator)    { return accumulator_description("ROR"); },
             [](ROR_ZeroPage op)    { return zeroPage_description("ROR", op.address); },
             [](ROR_ZeroPageX op)   { return zeroPageX_description("ROR", op.address); },
             [](ROR_Absolute op)    { return absolute_description("ROR", op.address); },
             [](ROR_AbsoluteX op)   { return absoluteX_description("ROR", op.address); },
 
-            [](RTI op)             { return std::string("RTI"); },
-            [](RTS op)             { return std::string("RTS"); },
+            [](RTI)                { return std::string("RTI"); },
+            [](RTS)                { return std::string("RTS"); },
 
             [](SBC_Immediate op)   { return immediate_description("SBC", op.value); },
             [](SBC_ZeroPage op)    { return zeroPage_description("SBC", op.address); },
@@ -193,9 +193,9 @@ std::string Emulator::description(const Operation &operation) noexcept {
             [](SBC_IndirectX op)   { return indirectX_description("SBC", op.address); },
             [](SBC_IndirectY op)   { return indirectY_description("SBC", op.address); },
 
-            [](SEC op)             { return std::string("SEC"); },
-            [](SED op)             { return std::string("SED"); },
-            [](SEI op)             { return std::string("SEI"); },
+            [](SEC)                { return std::string("SEC"); },
+            [](SED)                { return std::string("SED"); },
+            [](SEI)                { return std::string("SEI"); },
 
             [](STA_ZeroPage op)    { return zeroPage_description("STA", op.address); },
             [](STA_ZeroPageX op)   { return zeroPageX_description("STA", op.address); },
@@ -213,12 +213,12 @@ std::string Emulator::description(const Operation &operation) noexcept {
             [](STY_ZeroPageX op)   { return zeroPageX_description("STY", op.address); },
             [](STY_Absolute op)    { return absolute_description("STY", op.address); },
 
-            [](TAX op)             { return std::string("TAX"); },
-            [](TAY op)             { return std::string("TAY"); },
-            [](TSX op)             { return std::string("TSX"); },
-            [](TXA op)             { return std::string("TXA"); },
-            [](TXS op)             { return std::string("TXS"); },
-            [](TYA op)             { return std::string("TYA"); }
+            [](TAX)                { return std::string("TAX"); },
+            [](TAY)                { return std::string("TAY"); },
+            [](TSX)                { return std::string("TSX"); },
+            [](TXA)                { return std::string("TXA"); },
+            [](TXS)                { return std::string("TXS"); },
+            [](TYA)                { return std::string("TYA"); }
         },
                operation);
 }

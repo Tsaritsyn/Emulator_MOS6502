@@ -44,17 +44,17 @@ namespace Emulator {
     }
 
 
-    std::string MOS6502::dump(bool include_memory) const {
+    std::string MOS6502::dump(bool include_memory) const noexcept {
         auto result = std::vformat("Registers: AC = {:d}, X = {:d}, Y = {:d}\n", std::make_format_args(AC, X, Y));
         result += std::vformat("Program counter = {:#04x}, Stack pointer = {:#02x}\n", std::make_format_args(PC, SP));
         result += std::vformat("Flags: {}\n", std::make_format_args(SR.to_string()));
         result += std::vformat("Current cycle = {:d}\n", std::make_format_args(cycle));
 
         result += "Zero page: ";
-        for (int i = 0; i <= UINT8_MAX; i++) result += std::vformat("{:#02x} ", std::make_format_args(memory[i]));
+        for (Word i = 0; i <= UINT8_MAX; i++) result += std::vformat("{:#02x} ", std::make_format_args(memory[i]));
 
         result += "\nStack: ";
-        for (int i = 0; i <= UINT8_MAX; i++) result += std::vformat("{:#02x} ", std::make_format_args(memory.stack(i)));
+        for (int i = 0; i <= UINT8_MAX; i++) result += std::vformat("{:#02x} ", std::make_format_args(memory.stack((Byte)i)));
 
         result += std::vformat("\nSpecial addresses:\n\tnon-maskable interrupt handler = {:#04x}\n\tpower on reset location = {:#04x}\n\tBRK/interrupt request handler = {:#04x}\n",
                                std::make_format_args(memory.get_word(ROM::INTERRUPT_HANDLER), memory.get_word(ROM::RESET_LOCATION), memory.get_word(ROM::BRK_HANDLER)));
@@ -62,7 +62,7 @@ namespace Emulator {
         if (include_memory) {
             result += "Remaining memory:\n";
             for (int i = 0x1000; i <= UINT16_MAX; i++)
-                if (!Emulator::ROM::is_in_stack(i)) result += std::vformat("{:#02x} ", std::make_format_args(memory[i]));
+                if (!Emulator::ROM::is_in_stack((Word)i)) result += std::vformat("{:#02x} ", std::make_format_args(memory[(Word)i]));
             result += '\n';
         }
 
@@ -109,10 +109,10 @@ namespace Emulator {
     std::expected<void, MOS6502::StackOverflow> MOS6502::push_word_to_stack(Word value) {
         WordToBytes buf(value);
 
-        auto result = push_byte_to_stack(buf.high);
+        auto result = push_byte_to_stack(buf.high());
         if (!result.has_value()) return result;
 
-        return push_byte_to_stack(buf.low);
+        return push_byte_to_stack(buf.low());
     }
 
 
@@ -120,23 +120,23 @@ namespace Emulator {
         WordToBytes buf{};
 
         auto result = pull_byte_from_stack();
-        if (result.has_value()) buf.low = result.value();
+        if (result.has_value()) buf.low() = result.value();
 
-        return pull_byte_from_stack().transform([buf](Byte byte) -> Word {
-            buf.high = byte;
+        return pull_byte_from_stack().transform([&buf](Byte byte) -> Word {
+            buf.high() = byte;
             return buf.word;
         });
     }
 
 
-    void MOS6502::reset() {
+    void MOS6502::reset() noexcept {
         PC = fetch_word(ROM::RESET_LOCATION);
         cycle = 7;
         SR[Flag::INTERRUPT_DISABLE] = true;
     }
 
 
-    std::expected<MOS6502::SuccessfulTermination, MOS6502::ErrorTermination> MOS6502::execute() {
+    std::expected<MOS6502::SuccessfulTermination, MOS6502::ErrorTermination> MOS6502::execute() noexcept {
         size_t commandsExecuted = 0;
         while (true) {
             Word commandAddress = PC;
@@ -182,7 +182,7 @@ namespace Emulator {
                 [this](AND_IndirectX op) -> ExecutionResult   { and_with_accumulator(fetch_from(op.address, AddressingMode::INDIRECT_X)); return {}; },
                 [this](AND_IndirectY op) -> ExecutionResult   { and_with_accumulator(fetch_from(op.address, AddressingMode::INDIRECT_Y)); return {}; },
 
-                [this](ASL_Accumulator op) -> ExecutionResult { set_register(Register::AC, shift_left(AC)); return {}; },
+                [this](ASL_Accumulator) -> ExecutionResult    { set_register(Register::AC, shift_left(AC)); return {}; },
                 [this](ASL_ZeroPage op) -> ExecutionResult    { return perform_at(op.address, AddressingMode::ZERO_PAGE, &MOS6502::shift_left); },
                 [this](ASL_ZeroPageX op) -> ExecutionResult   { return perform_at(op.address, AddressingMode::ZERO_PAGE_X, &MOS6502::shift_left); },
                 [this](ASL_Absolute op) -> ExecutionResult    { return perform_at(op.address, AddressingMode::ABSOLUTE, &MOS6502::shift_left); },
@@ -205,7 +205,7 @@ namespace Emulator {
                 [this](BIT_ZeroPage op) -> ExecutionResult    { bit_test(fetch_from(op.address, AddressingMode::ZERO_PAGE)); return {}; },
                 [this](BIT_Absolute op) -> ExecutionResult    { bit_test(fetch_from(op.address, AddressingMode::ABSOLUTE)); return {}; },
 
-                [this](BRK op) -> ExecutionResult {
+                [this](BRK) -> ExecutionResult {
                     // for some reason, the byte right next to the BRK command must be skipped
                     return push_word_to_stack(PC + 1).transform([this](){
                         PC = fetch_word(ROM::BRK_HANDLER);
@@ -214,10 +214,10 @@ namespace Emulator {
                     });
                 },
 
-                [this](CLC op) -> ExecutionResult             { SR[Flag::CARRY] = CLEAR; cycle++; return {}; },
-                [this](CLD op) -> ExecutionResult             { SR[Flag::DECIMAL] = CLEAR; cycle++; return {}; },
-                [this](CLI op) -> ExecutionResult             { SR[Flag::INTERRUPT_DISABLE] = CLEAR; cycle++; return {}; },
-                [this](CLV op) -> ExecutionResult             { SR[Flag::OVERFLOW_F] = CLEAR; cycle++; return {}; },
+                [this](CLC) -> ExecutionResult                { SR[Flag::CARRY] = CLEAR; cycle++; return {}; },
+                [this](CLD) -> ExecutionResult                { SR[Flag::DECIMAL] = CLEAR; cycle++; return {}; },
+                [this](CLI) -> ExecutionResult                { SR[Flag::INTERRUPT_DISABLE] = CLEAR; cycle++; return {}; },
+                [this](CLV) -> ExecutionResult                { SR[Flag::OVERFLOW_F] = CLEAR; cycle++; return {}; },
 
                 [this](CMP_Immediate op) -> ExecutionResult   { compare(AC, op.value); return {}; },
                 [this](CMP_ZeroPage op) -> ExecutionResult    { compare(AC, fetch_from(op.address, AddressingMode::ZERO_PAGE)); return {}; },
@@ -246,8 +246,8 @@ namespace Emulator {
                     });
                 },
 
-                [this](DEX op) -> ExecutionResult             { set_register(Register::X, X - 1); cycle++; return {}; },
-                [this](DEY op) -> ExecutionResult             { set_register(Register::Y, Y - 1); cycle++; return {}; },
+                [this](DEX) -> ExecutionResult                { set_register(Register::X, X - 1); cycle++; return {}; },
+                [this](DEY) -> ExecutionResult                { set_register(Register::Y, Y - 1); cycle++; return {}; },
 
                 [this](EOR_Immediate op) -> ExecutionResult   { xor_with_accumulator(op.value); return {}; },
                 [this](EOR_ZeroPage op) -> ExecutionResult    { xor_with_accumulator(fetch_from(op.address, AddressingMode::ZERO_PAGE)); return {}; },
@@ -268,8 +268,8 @@ namespace Emulator {
                     });
                 },
 
-                [this](INX op) -> ExecutionResult             { set_register(Register::X, X + 1); cycle++; return {}; },
-                [this](INY op) -> ExecutionResult             { set_register(Register::Y, Y + 1); cycle++; return {}; },
+                [this](INX) -> ExecutionResult                { set_register(Register::X, X + 1); cycle++; return {}; },
+                [this](INY) -> ExecutionResult                { set_register(Register::Y, Y + 1); cycle++; return {}; },
 
                 [this](JMP_Absolute op) -> ExecutionResult    { PC = op.address; return {}; },
                 [this](JMP_Indirect op) -> ExecutionResult    { PC = fetch_word(op.address); return {}; },
@@ -302,7 +302,7 @@ namespace Emulator {
                 [this](LDY_Absolute op) -> ExecutionResult    { set_register(Register::Y, fetch_from(op.address, AddressingMode::ABSOLUTE)); return {}; },
                 [this](LDY_AbsoluteX op) -> ExecutionResult   { set_register(Register::Y, fetch_from(op.address, AddressingMode::ABSOLUTE_X)); return {}; },
 
-                [this](LSR_Accumulator op) -> ExecutionResult { set_register(Register::AC, shift_right(AC)); return {}; },
+                [this](LSR_Accumulator) -> ExecutionResult    { set_register(Register::AC, shift_right(AC)); return {}; },
                 [this](LSR_ZeroPage op) -> ExecutionResult    { return perform_at(op.address, AddressingMode::ZERO_PAGE, &MOS6502::shift_right); },
                 [this](LSR_ZeroPageX op) -> ExecutionResult   { return perform_at(op.address, AddressingMode::ZERO_PAGE_X, &MOS6502::shift_right); },
                 [this](LSR_Absolute op) -> ExecutionResult    { return perform_at(op.address, AddressingMode::ABSOLUTE, &MOS6502::shift_right); },
@@ -313,7 +313,7 @@ namespace Emulator {
                     });
                 },
 
-                [this](NOP op) -> ExecutionResult             { cycle++; return {}; },
+                [this](NOP) -> ExecutionResult                { cycle++; return {}; },
 
                 [this](ORA_Immediate op) -> ExecutionResult   { or_with_accumulator(op.value); return {}; },
                 [this](ORA_ZeroPage op) -> ExecutionResult    { or_with_accumulator(fetch_from(op.address, AddressingMode::ZERO_PAGE)); return {}; },
@@ -324,23 +324,23 @@ namespace Emulator {
                 [this](ORA_IndirectX op) -> ExecutionResult   { or_with_accumulator(fetch_from(op.address, AddressingMode::INDIRECT_X)); return {}; },
                 [this](ORA_IndirectY op) -> ExecutionResult   { or_with_accumulator(fetch_from(op.address, AddressingMode::INDIRECT_Y)); return {}; },
 
-                [this](PHA op) -> ExecutionResult             { return push_byte_to_stack(AC); cycle++; },
-                [this](PHP op) -> ExecutionResult             { return push_byte_to_stack(SR.to_byte()); cycle++; },
+                [this](PHA) -> ExecutionResult                { return push_byte_to_stack(AC); cycle++; },
+                [this](PHP) -> ExecutionResult                { return push_byte_to_stack(SR.to_byte()); cycle++; },
 
-                [this](PLA op) -> ExecutionResult             {
+                [this](PLA) -> ExecutionResult {
                     return pull_byte_from_stack().transform([this](Byte value){
                         set_register(Register::AC, value);
                         cycle++;
                     });
                 },
-                [this](PLP op) -> ExecutionResult             {
+                [this](PLP) -> ExecutionResult {
                     return pull_byte_from_stack().transform([this](Byte value){
                         set_register(Register::SR, value);
                         cycle++;
                     });
                 },
 
-                [this](ROL_Accumulator op) -> ExecutionResult { set_register(Register::AC, rotate_left(AC)); return {}; },
+                [this](ROL_Accumulator) -> ExecutionResult    { set_register(Register::AC, rotate_left(AC)); return {}; },
                 [this](ROL_ZeroPage op) -> ExecutionResult    { return perform_at(op.address, AddressingMode::ZERO_PAGE, &MOS6502::rotate_left); },
                 [this](ROL_ZeroPageX op) -> ExecutionResult   { return perform_at(op.address, AddressingMode::ZERO_PAGE_X, &MOS6502::rotate_left); },
                 [this](ROL_Absolute op) -> ExecutionResult    { return perform_at(op.address, AddressingMode::ABSOLUTE, &MOS6502::rotate_left); },
@@ -351,7 +351,7 @@ namespace Emulator {
                     });
                 },
 
-                [this](ROR_Accumulator op) -> ExecutionResult { set_register(Register::AC, rotate_right(AC)); return {}; },
+                [this](ROR_Accumulator) -> ExecutionResult    { set_register(Register::AC, rotate_right(AC)); return {}; },
                 [this](ROR_ZeroPage op) -> ExecutionResult    { return perform_at(op.address, AddressingMode::ZERO_PAGE, &MOS6502::rotate_right); },
                 [this](ROR_ZeroPageX op) -> ExecutionResult   { return perform_at(op.address, AddressingMode::ZERO_PAGE_X, &MOS6502::rotate_right); },
                 [this](ROR_Absolute op) -> ExecutionResult    { return perform_at(op.address, AddressingMode::ABSOLUTE, &MOS6502::rotate_right); },
@@ -362,7 +362,7 @@ namespace Emulator {
                     });
                 },
 
-                [this](RTI op) -> ExecutionResult {
+                [this](RTI) -> ExecutionResult {
                     auto result = pull_byte_from_stack();
                     if (result.has_value()) SR = result.value();
                     else return std::unexpected{result.error()};
@@ -373,7 +373,7 @@ namespace Emulator {
                     });
                 },
 
-                [this](RTS op) -> ExecutionResult {
+                [this](RTS) -> ExecutionResult {
                     return pull_word_from_stack().transform([this](Word value){
                         PC = value + 1;
                         cycle++;
@@ -389,9 +389,9 @@ namespace Emulator {
                 [this](SBC_IndirectX op) -> ExecutionResult   { subtract_from_accumulator(fetch_from(op.address, AddressingMode::INDIRECT_X)); return {}; },
                 [this](SBC_IndirectY op) -> ExecutionResult   { subtract_from_accumulator(fetch_from(op.address, AddressingMode::INDIRECT_Y)); return {}; },
 
-                [this](SEC op) -> ExecutionResult             { SR[Flag::CARRY] = SET; return {}; },
-                [this](SED op) -> ExecutionResult             { SR[Flag::DECIMAL] = SET; return {}; },
-                [this](SEI op) -> ExecutionResult             { SR[Flag::INTERRUPT_DISABLE] = SET; return {}; },
+                [this](SEC) -> ExecutionResult                { SR[Flag::CARRY] = SET; return {}; },
+                [this](SED) -> ExecutionResult                { SR[Flag::DECIMAL] = SET; return {}; },
+                [this](SEI) -> ExecutionResult                { SR[Flag::INTERRUPT_DISABLE] = SET; return {}; },
 
                 [this](STA_ZeroPage op) -> ExecutionResult    { return write_to(op.address, AddressingMode::ZERO_PAGE, AC); },
                 [this](STA_ZeroPageX op) -> ExecutionResult   { return write_to(op.address, AddressingMode::ZERO_PAGE_X, AC); },
@@ -402,14 +402,14 @@ namespace Emulator {
                         if (!pageCrossed) cycle++;
                     });
                 },
-                [this](STA_AbsoluteY op) -> ExecutionResult   {
+                [this](STA_AbsoluteY op) -> ExecutionResult {
                     return write_to(op.address, AddressingMode::ABSOLUTE_Y, AC).transform([this](){
                         // this instruction takes an additional cycle even when the page is not crossed
                         if (!pageCrossed) cycle++;
                     });
                 },
                 [this](STA_IndirectX op) -> ExecutionResult   { return write_to(op.address, AddressingMode::INDIRECT_X, AC); },
-                [this](STA_IndirectY op) -> ExecutionResult   {
+                [this](STA_IndirectY op) -> ExecutionResult {
                     return write_to(op.address, AddressingMode::INDIRECT_Y, AC).transform([this](){
                         // this instruction takes an additional cycle even when the page is not crossed
                         if (!pageCrossed) cycle++;
@@ -424,12 +424,12 @@ namespace Emulator {
                 [this](STY_ZeroPageX op) -> ExecutionResult   { return write_to(op.address, AddressingMode::ZERO_PAGE_X, Y); },
                 [this](STY_Absolute op) -> ExecutionResult    { return write_to(op.address, AddressingMode::ABSOLUTE, Y); },
 
-                [this](TAX op) -> ExecutionResult { set_register(Register::X, AC); cycle++; return {}; },
-                [this](TAY op) -> ExecutionResult { set_register(Register::Y, AC); cycle++; return {}; },
-                [this](TSX op) -> ExecutionResult { set_register(Register::X, SP); cycle++; return {}; },
-                [this](TXA op) -> ExecutionResult { set_register(Register::AC, X); cycle++; return {}; },
-                [this](TXS op) -> ExecutionResult { set_register(Register::SP, X); cycle++; return {}; },
-                [this](TYA op) -> ExecutionResult { set_register(Register::AC, Y); cycle++; return {}; }
+                [this](TAX) -> ExecutionResult                { set_register(Register::X, AC); cycle++; return {}; },
+                [this](TAY) -> ExecutionResult                { set_register(Register::Y, AC); cycle++; return {}; },
+                [this](TSX) -> ExecutionResult                { set_register(Register::X, SP); cycle++; return {}; },
+                [this](TXA) -> ExecutionResult                { set_register(Register::AC, X); cycle++; return {}; },
+                [this](TXS) -> ExecutionResult                { set_register(Register::SP, X); cycle++; return {}; },
+                [this](TYA) -> ExecutionResult                { set_register(Register::AC, Y); cycle++; return {}; }
             },
                    operation
         );
@@ -439,7 +439,7 @@ namespace Emulator {
         SR[Flag::OVERFLOW_F] = SR[Flag::CARRY];
         add_with_overflow((char)AC, (char)value, SR[Flag::OVERFLOW_F], INT8_MIN, INT8_MAX);
 
-        set_register(Register::AC, add_with_overflow(AC, value, SR[Flag::CARRY], 0, UINT8_MAX));
+        set_register(Register::AC, (Byte)add_with_overflow(AC, value, SR[Flag::CARRY], 0, UINT8_MAX));
     }
 
     void MOS6502::and_with_accumulator(Byte value) noexcept {
@@ -456,8 +456,7 @@ namespace Emulator {
     std::expected<void, MOS6502::AddressOverflow> MOS6502::branch(char offset) noexcept {
         if (offset > UINT16_MAX - PC || (offset < 0 && -offset > PC)) return std::unexpected(AddressOverflow());
 
-        Word newPC = PC + offset;
-        PC = newPC;
+        PC = (Word)(PC + offset);
         cycle++;
         return {};
     }
@@ -532,7 +531,7 @@ namespace Emulator {
         subtract_with_overflow((char)AC, (char)value, SR[Flag::OVERFLOW_F], INT8_MIN, INT8_MAX);
         SR[Flag::OVERFLOW_F] = !SR[Flag::OVERFLOW_F];
 
-        set_register(Register::AC, subtract_with_overflow(AC, value, SR[Flag::CARRY], 0, UINT8_MAX));
+        set_register(Register::AC, (Byte)subtract_with_overflow(AC, value, SR[Flag::CARRY], 0, UINT8_MAX));
     }
 
     Byte MOS6502::index_zero_page(Byte address, Byte index) noexcept {
@@ -543,7 +542,7 @@ namespace Emulator {
 
     Word MOS6502::index_absolute(Word address, Byte index) noexcept {
         Word result = address + index;
-        pageCrossed = WordToBytes(result).high != WordToBytes(address).high;
+        pageCrossed = WordToBytes(result).high() != WordToBytes(address).high();
         if (pageCrossed) cycle++;
         return result;
     }
@@ -551,15 +550,15 @@ namespace Emulator {
 
     Word MOS6502::fetch_word() noexcept {
         WordToBytes result;
-        result.low = memory.fetch_byte(PC++, cycle);
-        result.high = memory.fetch_byte(PC++, cycle);
+        result.low() = memory.fetch_byte(PC++, cycle);
+        result.high() = memory.fetch_byte(PC++, cycle);
         return result.word;
     }
 
     Word MOS6502::fetch_word(Word address) noexcept {
         WordToBytes result;
-        result.low = memory.fetch_byte(address, cycle);
-        result.high = memory.fetch_byte(address + 1, cycle);
+        result.low() = memory.fetch_byte(address, cycle);
+        result.high() = memory.fetch_byte(address + 1, cycle);
         return result.word;
     }
 
@@ -759,12 +758,12 @@ namespace Emulator {
     Word MOS6502::resolve(Word address, AddressingMode mode) noexcept {
         switch (mode) {
             case AddressingMode::ZERO_PAGE:   return address;
-            case AddressingMode::ZERO_PAGE_X: return index_zero_page(address, X);
-            case AddressingMode::ZERO_PAGE_Y: return index_zero_page(address, Y);
+            case AddressingMode::ZERO_PAGE_X: return index_zero_page((Byte)address, X);
+            case AddressingMode::ZERO_PAGE_Y: return index_zero_page((Byte)address, Y);
             case AddressingMode::ABSOLUTE:    return address;
             case AddressingMode::ABSOLUTE_X:  return index_absolute(address, X);
             case AddressingMode::ABSOLUTE_Y:  return index_absolute(address, Y);
-            case AddressingMode::INDIRECT_X:  return fetch_word(index_zero_page(address, X));
+            case AddressingMode::INDIRECT_X:  return fetch_word(index_zero_page((Byte)address, X));
             case AddressingMode::INDIRECT_Y:  return index_absolute(fetch_word(address), Y);
         }
 

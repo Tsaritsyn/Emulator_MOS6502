@@ -62,8 +62,8 @@ class Result {
         T success;
         Message message;
 
-        explicit U(const T& success) noexcept: success{success} {};
-        explicit U(const Message& message) noexcept: message{message} {};
+        explicit U(const T& success_) noexcept: success{success_} {};
+        explicit U(const Message& message_) noexcept: message{message_} {};
 
         ~U() {}
     } m_result;

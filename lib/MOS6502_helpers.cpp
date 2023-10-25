@@ -13,7 +13,7 @@ namespace Emulator {
 
     void set_bit(Byte &byte, int number, bool value) {
         if (value) byte |= 1 << number;
-        else byte &= ~(1 << number);
+        else byte &= ~(Byte)(1 << number);
     }
 
 

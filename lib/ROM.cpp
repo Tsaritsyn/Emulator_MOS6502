@@ -9,8 +9,8 @@
 
 Emulator::Word Emulator::ROM::get_word(Emulator::Word address) const {
     WordToBytes buf;
-    buf.low = m_bytes[address];
-    buf.high = m_bytes[address + 1];
+    buf.low() = m_bytes[address];
+    buf.high() = m_bytes[address + 1];
     return buf.word;
 }
 

@@ -61,8 +61,8 @@ Emulator::ProcessorStatus::ProcessorStatus(Emulator::Byte value) noexcept {
 }
 
 std::string Emulator::ProcessorStatus::to_string() const noexcept {
-    std::string result(flags.size(), '\0');
-    for (int i = 0; i < flags.size(); i++) result[i] = (flags[flags.size() - i - 1]) ? '1' : '0';
+    std::string result;
+    for (auto flag: flags) result += (flag) ? '1' : '0';
     return result;
 }
 
@@ -82,14 +82,14 @@ Emulator::Byte Emulator::ProcessorStatus::to_byte() const noexcept {
 }
 
 Emulator::ProcessorStatus Emulator::ProcessorStatus::operator|(const Emulator::ProcessorStatus &other) const noexcept {
-    auto result = Emulator::ProcessorStatus();
-    for (int i = 0; i < flags.size(); i++)
+    auto result = ProcessorStatus();
+    for (size_t i = 0; i < flags.size(); i++)
         result.flags[i] = flags[i] || other.flags[i];
     return result;
 }
 
 bool Emulator::ProcessorStatus::operator==(const Emulator::ProcessorStatus &other) const noexcept {
-    for (int i = 0; i < flags.size(); i++)
+    for (size_t i = 0; i < flags.size(); i++)
         if (flags[i] != other.flags[i]) return false;
     return true;
 }
@@ -98,12 +98,11 @@ void Emulator::ProcessorStatus::reset() noexcept {
     for (bool & flag : flags) flag = false;
 }
 
-std::ostream &Emulator::operator<<(std::ostream &os, const Emulator::ProcessorStatus &status) {
-    if (std::all_of(status.flags.begin(), status.flags.end(), [](bool flag){ return !flag; }))
+std::ostream &Emulator::operator<<(std::ostream &os, const Emulator::ProcessorStatus &status) noexcept {
+    if (std::ranges::all_of(status.flags, [](bool flag){ return !flag; }))
         return os << "all zero";
 
-    for (int i = 0; i < status.flags.size(); i++) {
-        if (status.flags[i]) os << to_string((Flag)i) << " = " << status.flags[i] << ", ";
-    }
+    int ind = 0;
+    std::ranges::for_each(status.flags, [&ind, &os](bool flag){ os << to_string((Flag)ind++) << " = " << flag << ", "; });
     return os;
 }
