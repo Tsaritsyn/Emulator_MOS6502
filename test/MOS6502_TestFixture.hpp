@@ -7,6 +7,7 @@
 
 #include <gtest/gtest.h>
 #include <ostream>
+#include <concepts>
 
 #include "MOS6502.hpp"
 #include "helpers.hpp"
@@ -20,9 +21,18 @@ class MOS6502_TextFixture: public MOS6502 {
 protected:
     void reset_registers() noexcept;
 
-    std::expected<void, ROM::StackOverride> set_word(Word address, Word value) noexcept;
-};
+    [[nodiscard]] std::expected<void, ROM::StackOverride> set_word(Word address, Word value) noexcept;
 
+    ROM::WriteResult write_immediate(Byte value) noexcept;
+    ROM::WriteResult write_zero_page(Byte address, Byte value) noexcept;
+    ROM::WriteResult write_zero_page_X(Byte address, Byte value) noexcept;
+    ROM::WriteResult write_zero_page_Y(Byte address, Byte value) noexcept;
+    ROM::WriteResult write_absolute(Word address, Byte value) noexcept;
+    ROM::WriteResult write_absolute_X(Word address, Byte value) noexcept;
+    ROM::WriteResult write_absolute_Y(Word address, Byte value) noexcept;
+    ROM::WriteResult write_indirect_X(Byte tableAddress, Word targetAddress, Byte value) noexcept;
+    ROM::WriteResult write_indirect_Y(Byte tableAddress, Word targetAddress, Byte value) noexcept;
+};
 
 
 struct ArithmeticTestParameters {
@@ -36,6 +46,15 @@ struct ArithmeticTestParameters {
 
 class MOS6502_TestFixture_Arithmetic: public ::testing::TestWithParam<ArithmeticTestParameters>, public MOS6502_TextFixture {
     void SetUp() override;
+
+public:
+
+    void test_arithmetic(OpCode opcode,
+                         const ArithmeticTestParameters &params,
+                         Word size,
+                         size_t duration,
+                         const std::function<ROM::WriteResult(Byte)> &writer
+                         );
 };
 
 class MOS6502_TestFixture_ADC: public MOS6502_TestFixture_Arithmetic {};

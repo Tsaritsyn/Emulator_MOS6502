@@ -7,19 +7,19 @@
 #include "ROM.hpp"
 
 
-Emulator::Word Emulator::ROM::get_word(Emulator::Word address) const {
+Emulator::Word Emulator::ROM::get_word(Emulator::Word address) const noexcept {
     WordToBytes buf;
     buf.low() = m_bytes[address];
     buf.high() = m_bytes[address + 1];
     return buf.word;
 }
 
-Emulator::Byte Emulator::ROM::fetch_byte(Emulator::Word address, size_t &cycle) const {
+Emulator::Byte Emulator::ROM::fetch_byte(Emulator::Word address, size_t &cycle) const noexcept {
     cycle++;
     return m_bytes[address];
 }
 
-std::expected<void, Emulator::ROM::StackOverride> Emulator::ROM::set_byte(Word address, Byte value, size_t &cycle) {
+std::expected<void, Emulator::ROM::StackOverride> Emulator::ROM::set_byte(Word address, Byte value, size_t &cycle) noexcept {
     cycle++;
     return set_byte(address, value);
 }
