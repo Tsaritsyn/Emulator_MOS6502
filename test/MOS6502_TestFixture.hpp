@@ -63,5 +63,7 @@ class MOS6502_TestFixture_SBC: public MOS6502_TestFixture_BinaryOp {};
 
 class MOS6502_TestFixture_AND: public MOS6502_TestFixture_BinaryOp {};
 
+class MOS6502_TestFixture_OR: public MOS6502_TestFixture_BinaryOp {};
+
 
 #endif //EMULATOR_MOS6502_MOS6502_TESTFIXTURE_HPP

@@ -103,7 +103,7 @@ TEST_P(MOS6502_TestFixture_AND, Test_IndirectY_PageCrossing) {
 
 INSTANTIATE_TEST_SUITE_P(WithZero, MOS6502_TestFixture_AND, ::testing::Values(
         BinaryOpParameters{1, 0, false, 0, {Flag::ZERO}},
-        BinaryOpParameters{0, 1, false, 0, {Flag::ZERO}},
+        BinaryOpParameters{10, 0, false, 0, {Flag::ZERO}},
         BinaryOpParameters{0, 0, false, 0, {Flag::ZERO}}
 ));
 
