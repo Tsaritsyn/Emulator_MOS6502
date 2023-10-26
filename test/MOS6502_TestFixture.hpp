@@ -35,8 +35,8 @@ protected:
 };
 
 
-struct ArithmeticTestParameters {
-    friend std::ostream &operator<<(std::ostream &os, const ArithmeticTestParameters &parameters);
+struct BinaryOpParameters {
+    friend std::ostream &operator<<(std::ostream &os, const BinaryOpParameters &parameters);
 
     Byte AC, memory;
     bool carry;
@@ -44,22 +44,24 @@ struct ArithmeticTestParameters {
     std::vector<Flag> flagsSet;
 };
 
-class MOS6502_TestFixture_Arithmetic: public ::testing::TestWithParam<ArithmeticTestParameters>, public MOS6502_TextFixture {
+class MOS6502_TestFixture_BinaryOp: public ::testing::TestWithParam<BinaryOpParameters>, public MOS6502_TextFixture {
     void SetUp() override;
 
 public:
 
     void test_arithmetic(OpCode opcode,
-                         const ArithmeticTestParameters &params,
+                         const BinaryOpParameters &params,
                          Word size,
                          size_t duration,
                          const std::function<ROM::WriteResult(Byte)> &writer
                          );
 };
 
-class MOS6502_TestFixture_ADC: public MOS6502_TestFixture_Arithmetic {};
+class MOS6502_TestFixture_ADC: public MOS6502_TestFixture_BinaryOp {};
 
-class MOS6502_TestFixture_SBC: public MOS6502_TestFixture_Arithmetic {};
+class MOS6502_TestFixture_SBC: public MOS6502_TestFixture_BinaryOp {};
+
+class MOS6502_TestFixture_AND: public MOS6502_TestFixture_BinaryOp {};
 
 
 #endif //EMULATOR_MOS6502_MOS6502_TESTFIXTURE_HPP

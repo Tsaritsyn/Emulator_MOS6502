@@ -21,16 +21,16 @@ std::expected<void, ROM::StackOverride> MOS6502_TextFixture::set_word(Word addre
             );
 }
 
-void MOS6502_TestFixture_Arithmetic::SetUp() {
+void MOS6502_TestFixture_BinaryOp::SetUp() {
     reset_registers();
     memory.reset();
 }
 
-void MOS6502_TestFixture_Arithmetic::test_arithmetic(OpCode opcode,
-                                                     const ArithmeticTestParameters &params,
-                                                     Word size,
-                                                     size_t duration,
-                                                     const std::function<ROM::WriteResult(Byte)> &writer) {
+void MOS6502_TestFixture_BinaryOp::test_arithmetic(OpCode opcode,
+                                                   const BinaryOpParameters &params,
+                                                   Word size,
+                                                   size_t duration,
+                                                   const std::function<ROM::WriteResult(Byte)> &writer) {
     AC = params.AC;
     SR[Emulator::Flag::CARRY] = params.carry;
 
@@ -92,7 +92,7 @@ ROM::WriteResult MOS6502_TextFixture::write_indirect_Y(Byte tableAddress, Word t
         .and_then([this, targetAddress, value](){ return memory.set_byte(targetAddress + Y, value); });
 }
 
-std::ostream &operator<<(std::ostream &os, const ArithmeticTestParameters &parameters) {
+std::ostream &operator<<(std::ostream &os, const BinaryOpParameters &parameters) {
     os << std::format("({:d}, {:d}, {:d}) -> {:d}, flags set: [", parameters.AC, parameters.memory, parameters.carry, parameters.result);
     std::ranges::for_each(parameters.flagsSet, [&os](Flag flag){ os << flag << ", "; });
     return os << ']';

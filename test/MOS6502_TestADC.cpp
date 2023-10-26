@@ -102,43 +102,43 @@ TEST_P(MOS6502_TestFixture_ADC, Test_IndirectY_PageCrossing) {
 
 
 INSTANTIATE_TEST_SUITE_P(NoFlags, MOS6502_TestFixture_ADC, ::testing::Values(
-    ArithmeticTestParameters{1, 0, false, 1, {}},
-    ArithmeticTestParameters{0, 1, false, 1, {}},
-    ArithmeticTestParameters{0, 0, true, 1, {}}
+        BinaryOpParameters{1, 0, false, 1, {}},
+        BinaryOpParameters{0, 1, false, 1, {}},
+        BinaryOpParameters{0, 0, true, 1, {}}
 ));
 
 
 INSTANTIATE_TEST_SUITE_P(ZeroResult, MOS6502_TestFixture_ADC, ::testing::Values(
-    ArithmeticTestParameters{0, 0, false, 0, {Flag::ZERO}},
-    ArithmeticTestParameters{(Byte)-1, 0, true, 0, {Flag::ZERO, Flag::CARRY}},
-    ArithmeticTestParameters{0, (Byte)-1, true, 0, {Flag::ZERO, Flag::CARRY}},
-    ArithmeticTestParameters{(Byte)INT8_MIN, (Byte)INT8_MIN, false, 0, {Flag::ZERO, Flag::OVERFLOW_F, Flag::CARRY}}
+        BinaryOpParameters{0, 0, false, 0, {Flag::ZERO}},
+        BinaryOpParameters{(Byte)-1, 0, true, 0, {Flag::ZERO, Flag::CARRY}},
+        BinaryOpParameters{0, (Byte)-1, true, 0, {Flag::ZERO, Flag::CARRY}},
+        BinaryOpParameters{(Byte)INT8_MIN, (Byte)INT8_MIN, false, 0, {Flag::ZERO, Flag::OVERFLOW_F, Flag::CARRY}}
 ));
 
 
 INSTANTIATE_TEST_SUITE_P(NegativeResult, MOS6502_TestFixture_ADC, ::testing::Values(
-    ArithmeticTestParameters{(Byte)-1, 0, false, (Byte)-1, {Flag::NEGATIVE}},
-    ArithmeticTestParameters{0, (Byte)-1, false, (Byte)-1, {Flag::NEGATIVE}},
-    ArithmeticTestParameters{(Byte)-10, (Byte)-10, false, (Byte)-20, {Flag::NEGATIVE, Flag::CARRY}},
-    ArithmeticTestParameters{INT8_MAX, INT8_MAX, true, UINT8_MAX, {Flag::OVERFLOW_F, Flag::NEGATIVE}}
+        BinaryOpParameters{(Byte)-1, 0, false, (Byte)-1, {Flag::NEGATIVE}},
+        BinaryOpParameters{0, (Byte)-1, false, (Byte)-1, {Flag::NEGATIVE}},
+        BinaryOpParameters{(Byte)-10, (Byte)-10, false, (Byte)-20, {Flag::NEGATIVE, Flag::CARRY}},
+        BinaryOpParameters{INT8_MAX, INT8_MAX, true, UINT8_MAX, {Flag::OVERFLOW_F, Flag::NEGATIVE}}
 ));
 
 
 INSTANTIATE_TEST_SUITE_P(LeadingToOverflow, MOS6502_TestFixture_ADC, ::testing::Values(
-    ArithmeticTestParameters{(Byte)-100, (Byte)-100, false, (Byte)-200, {Flag::OVERFLOW_F, Flag::CARRY}},
-    ArithmeticTestParameters{INT8_MAX, INT8_MAX, true, UINT8_MAX, {Flag::OVERFLOW_F, Flag::NEGATIVE}},
-    ArithmeticTestParameters{(Byte)INT8_MIN, (Byte)INT8_MIN, false, 0, {Flag::ZERO, Flag::OVERFLOW_F, Flag::CARRY}},
-    ArithmeticTestParameters{(Byte)INT8_MIN, (Byte)INT8_MIN, true, 1, {Flag::OVERFLOW_F, Flag::CARRY}}
+        BinaryOpParameters{(Byte)-100, (Byte)-100, false, (Byte)-200, {Flag::OVERFLOW_F, Flag::CARRY}},
+        BinaryOpParameters{INT8_MAX, INT8_MAX, true, UINT8_MAX, {Flag::OVERFLOW_F, Flag::NEGATIVE}},
+        BinaryOpParameters{(Byte)INT8_MIN, (Byte)INT8_MIN, false, 0, {Flag::ZERO, Flag::OVERFLOW_F, Flag::CARRY}},
+        BinaryOpParameters{(Byte)INT8_MIN, (Byte)INT8_MIN, true, 1, {Flag::OVERFLOW_F, Flag::CARRY}}
 ));
 
 
 INSTANTIATE_TEST_SUITE_P(SettingCarry, MOS6502_TestFixture_ADC, ::testing::Values(
-        ArithmeticTestParameters{(Byte)-1, 0, true, 0, {Flag::ZERO, Flag::CARRY}},
-        ArithmeticTestParameters{0, (Byte)-1, true, 0, {Flag::ZERO, Flag::CARRY}},
-        ArithmeticTestParameters{(Byte)-10, (Byte)-10, false, (Byte)-20, {Flag::NEGATIVE, Flag::CARRY}},
-        ArithmeticTestParameters{(Byte)-100, (Byte)-100, false, (Byte)-200, {Flag::OVERFLOW_F, Flag::CARRY}},
-        ArithmeticTestParameters{(Byte)INT8_MIN, (Byte)INT8_MIN, false, 0, {Flag::ZERO, Flag::OVERFLOW_F, Flag::CARRY}},
-        ArithmeticTestParameters{(Byte)INT8_MIN, (Byte)INT8_MIN, true, 1, {Flag::OVERFLOW_F, Flag::CARRY}}
+        BinaryOpParameters{(Byte)-1, 0, true, 0, {Flag::ZERO, Flag::CARRY}},
+        BinaryOpParameters{0, (Byte)-1, true, 0, {Flag::ZERO, Flag::CARRY}},
+        BinaryOpParameters{(Byte)-10, (Byte)-10, false, (Byte)-20, {Flag::NEGATIVE, Flag::CARRY}},
+        BinaryOpParameters{(Byte)-100, (Byte)-100, false, (Byte)-200, {Flag::OVERFLOW_F, Flag::CARRY}},
+        BinaryOpParameters{(Byte)INT8_MIN, (Byte)INT8_MIN, false, 0, {Flag::ZERO, Flag::OVERFLOW_F, Flag::CARRY}},
+        BinaryOpParameters{(Byte)INT8_MIN, (Byte)INT8_MIN, true, 1, {Flag::OVERFLOW_F, Flag::CARRY}}
 ));
 
 
