@@ -51,52 +51,6 @@ MOS6502_TestFixture_BinaryOp::test_binary(OpCode opcode,
     EXPECT_EQ(SR, status_from_flags(params.flagsSet));
 }
 
-//ROM::WriteResult MOS6502_TextFixture::write_immediate(Byte value) noexcept {
-//    return memory.set_byte(PC + 1, value);
-//}
-//
-//ROM::WriteResult MOS6502_TextFixture::write_zero_page(Byte address, Byte value) noexcept {
-//    return memory.set_byte(PC + 1, address)
-//        .and_then([this, address, value](){ return memory.set_byte(address, value); });
-//}
-//
-//ROM::WriteResult MOS6502_TextFixture::write_zero_page_X(Byte address, Byte value) noexcept {
-//    return memory.set_byte(PC + 1, address)
-//        .and_then([this, address, value](){ return memory.set_byte((Byte)(address + X), value); });
-//}
-//
-//ROM::WriteResult MOS6502_TextFixture::write_zero_page_Y(Byte address, Byte value) noexcept {
-//    return memory.set_byte(PC + 1, address)
-//        .and_then([this, address, value](){ return memory.set_byte((Byte)(address + Y), value); });
-//}
-//
-//ROM::WriteResult MOS6502_TextFixture::write_absolute(Word address, Byte value) noexcept {
-//    return set_word(PC + 1, address)
-//        .and_then([this, address, value](){ return memory.set_byte(address, value); });
-//}
-//
-//ROM::WriteResult MOS6502_TextFixture::write_absolute_X(Word address, Byte value) noexcept {
-//    return set_word(PC + 1, address)
-//        .and_then([this, address, value](){ return memory.set_byte(address + X, value); });
-//}
-//
-//ROM::WriteResult MOS6502_TextFixture::write_absolute_Y(Word address, Byte value) noexcept {
-//    return set_word(PC + 1, address)
-//        .and_then([this, address, value](){ return memory.set_byte(address + Y, value); });
-//}
-//
-//ROM::WriteResult MOS6502_TextFixture::write_indirect_X(Byte tableAddress, Word targetAddress, Byte value) noexcept {
-//    return memory.set_byte(PC + 1, tableAddress)
-//        .and_then([this, tableAddress, targetAddress](){ return set_word((Byte)(tableAddress + X), targetAddress); })
-//        .and_then([this, targetAddress, value](){ return memory.set_byte(targetAddress, value); });
-//}
-//
-//ROM::WriteResult MOS6502_TextFixture::write_indirect_Y(Byte tableAddress, Word targetAddress, Byte value) noexcept {
-//    return memory.set_byte(PC + 1, tableAddress)
-//        .and_then([this, tableAddress, targetAddress](){ return set_word(tableAddress, targetAddress); })
-//        .and_then([this, targetAddress, value](){ return memory.set_byte(targetAddress + Y, value); });
-//}
-
 MOS6502_TextFixture::Writer MOS6502_TextFixture::writer_to(Byte &loc) noexcept {
     return [&loc](Byte value) -> ROM::WriteResult {
         loc = value;

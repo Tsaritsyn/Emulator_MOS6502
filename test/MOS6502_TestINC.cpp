@@ -5,17 +5,27 @@
 #include "MOS6502_TestFixture.hpp"
 
 
-TEST_P(MOS6502_TestFixture_ROL, Test_Accumulator) {
-    test_unary(ROL_ACCUMULATOR,
+TEST_P(MOS6502_TestFixture_Increment, Test_INX) {
+    test_unary(INX_IMPLICIT,
                GetParam(),
-               ExecutionParameters::unary_accumulator(),
-               writer_to(AC),
-               reader_from(AC));
+               ExecutionParameters::implied(),
+               writer_to(X),
+               reader_from(X));
 }
 
-TEST_P(MOS6502_TestFixture_ROL, Test_ZeroPage) {
+
+TEST_P(MOS6502_TestFixture_Increment, Test_INY) {
+    test_unary(INY_IMPLICIT,
+               GetParam(),
+               ExecutionParameters::implied(),
+               writer_to(Y),
+               reader_from(Y));
+}
+
+
+TEST_P(MOS6502_TestFixture_Increment, Test_ZeroPage) {
     constexpr static Byte address = 0xf0;
-    test_unary(ROL_ZERO_PAGE,
+    test_unary(INC_ZERO_PAGE,
                GetParam(),
                ExecutionParameters::unary_zero_page(),
                writer_to_zero_page(address),
@@ -23,10 +33,10 @@ TEST_P(MOS6502_TestFixture_ROL, Test_ZeroPage) {
                [this]() { return memory[address]; });
 }
 
-TEST_P(MOS6502_TestFixture_ROL, Test_ZeroPageX_NoPageCrossing) {
+TEST_P(MOS6502_TestFixture_Increment, Test_ZeroPageX_NoPageCrossing) {
     constexpr static Byte address = 0xf0;
     X = 0x05;
-    test_unary(ROL_ZERO_PAGE_X,
+    test_unary(INC_ZERO_PAGE_X,
                GetParam(),
                ExecutionParameters::unary_zero_page_indexed(),
                writer_to_zero_page_X(address),
@@ -34,10 +44,10 @@ TEST_P(MOS6502_TestFixture_ROL, Test_ZeroPageX_NoPageCrossing) {
                [this]() { return memory[(Byte)(address + X)]; });
 }
 
-TEST_P(MOS6502_TestFixture_ROL, Test_ZeroPageX_PageCrossing) {
+TEST_P(MOS6502_TestFixture_Increment, Test_ZeroPageX_PageCrossing) {
     constexpr static Byte address = 0xf0;
     X = 0x40;
-    test_unary(ROL_ZERO_PAGE_X,
+    test_unary(INC_ZERO_PAGE_X,
                GetParam(),
                ExecutionParameters::unary_zero_page_indexed(),
                writer_to_zero_page_X(address),
@@ -45,9 +55,9 @@ TEST_P(MOS6502_TestFixture_ROL, Test_ZeroPageX_PageCrossing) {
                [this]() { return memory[(Byte)(address + X)]; });
 }
 
-TEST_P(MOS6502_TestFixture_ROL, Test_Absolute) {
+TEST_P(MOS6502_TestFixture_Increment, Test_Absolute) {
     constexpr static Word address = 0x02f0;
-    test_unary(ROL_ABSOLUTE,
+    test_unary(INC_ABSOLUTE,
                GetParam(),
                ExecutionParameters::unary_absolute(),
                writer_to_absolute(address),
@@ -55,10 +65,10 @@ TEST_P(MOS6502_TestFixture_ROL, Test_Absolute) {
                [this]() { return memory[address]; });
 }
 
-TEST_P(MOS6502_TestFixture_ROL, Test_AbsoluteX_NoPageCrossing) {
+TEST_P(MOS6502_TestFixture_Increment, Test_AbsoluteX_NoPageCrossing) {
     constexpr static Word address = 0x02f0;
     X = 0x05;
-    test_unary(ROL_ABSOLUTE_X,
+    test_unary(INC_ABSOLUTE_X,
                GetParam(),
                ExecutionParameters::unary_absolute_indexed(),
                writer_to_absolute_X(address),
@@ -66,10 +76,10 @@ TEST_P(MOS6502_TestFixture_ROL, Test_AbsoluteX_NoPageCrossing) {
                [this]() { return memory[address + X]; });
 }
 
-TEST_P(MOS6502_TestFixture_ROL, Test_AbsoluteX_PageCrossing) {
+TEST_P(MOS6502_TestFixture_Increment, Test_AbsoluteX_PageCrossing) {
     constexpr static Word address = 0x02f0;
     X = 0x20;
-    test_unary(ROL_ABSOLUTE_X,
+    test_unary(INC_ABSOLUTE_X,
                GetParam(),
                ExecutionParameters::unary_absolute_indexed(),
                writer_to_absolute_X(address),
@@ -79,22 +89,19 @@ TEST_P(MOS6502_TestFixture_ROL, Test_AbsoluteX_PageCrossing) {
 
 
 
-INSTANTIATE_TEST_SUITE_P(CarryReset, MOS6502_TestFixture_ROL, ::testing::Values(
-        UnaryOpParameters{.arg = 0, .carry = 0, .result = 0, .flagsSet = {Flag::ZERO}},
-        UnaryOpParameters{.arg = 0x80, .carry = 0, .result = 0, .flagsSet = {Flag::ZERO, Flag::CARRY}},
-        UnaryOpParameters{.arg = 0x40, .carry = 0, .result = 0x80, .flagsSet = {Flag::NEGATIVE}},
-        UnaryOpParameters{.arg = 0xc0, .carry = 0, .result = 0x80, .flagsSet = {Flag::NEGATIVE, Flag::CARRY}},
-        UnaryOpParameters{.arg = 0xff, .carry = 0, .result = 0xfe, .flagsSet = {Flag::NEGATIVE, Flag::CARRY}},
-        UnaryOpParameters{.arg = 0x7f, .carry = 0, .result = 0xfe, .flagsSet = {Flag::NEGATIVE}},
-        UnaryOpParameters{.arg = 0x39, .carry = 0, .result = 0x72, .flagsSet = {}}
+INSTANTIATE_TEST_SUITE_P(PositiveResult, MOS6502_TestFixture_Increment, ::testing::Values(
+        UnaryOpParameters{.arg = 0, .carry = 0, .result = 1, .flagsSet = {}},
+        UnaryOpParameters{.arg = 1, .carry = 0, .result = 2, .flagsSet = {}},
+        UnaryOpParameters{.arg = 10, .carry = 0, .result = 11, .flagsSet = {}}
 ));
 
-INSTANTIATE_TEST_SUITE_P(CarrySet, MOS6502_TestFixture_ROL, ::testing::Values(
-        UnaryOpParameters{.arg = 0, .carry = 1, .result = 1, .flagsSet = {}},
-        UnaryOpParameters{.arg = 0x80, .carry = 1, .result = 1, .flagsSet = {Flag::CARRY}},
-        UnaryOpParameters{.arg = 0x40, .carry = 1, .result = 0x81, .flagsSet = {Flag::NEGATIVE}},
-        UnaryOpParameters{.arg = 0xc0, .carry = 1, .result = 0x81, .flagsSet = {Flag::NEGATIVE, Flag::CARRY}},
-        UnaryOpParameters{.arg = 0xff, .carry = 1, .result = 0xff, .flagsSet = {Flag::NEGATIVE, Flag::CARRY}},
-        UnaryOpParameters{.arg = 0x7f, .carry = 1, .result = 0xff, .flagsSet = {Flag::NEGATIVE}},
-        UnaryOpParameters{.arg = 0x39, .carry = 1, .result = 0x73, .flagsSet = {}}
+INSTANTIATE_TEST_SUITE_P(NegativeResult, MOS6502_TestFixture_Increment, ::testing::Values(
+        UnaryOpParameters{.arg = 0x7f, .carry = 0, .result = 0x80, .flagsSet = {Flag::NEGATIVE}},
+        UnaryOpParameters{.arg = 0x93, .carry = 0, .result = 0x94, .flagsSet = {Flag::NEGATIVE}}
+));
+
+
+
+INSTANTIATE_TEST_SUITE_P(Overflow, MOS6502_TestFixture_Increment, ::testing::Values(
+        UnaryOpParameters{.arg = 0xff, .carry = 0, .result = 0, .flagsSet = {Flag::ZERO}}
 ));

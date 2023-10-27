@@ -31,16 +31,6 @@ protected:
 
     [[nodiscard]] std::expected<void, ROM::StackOverride> set_word(Word address, Word value) noexcept;
 
-//    ROM::WriteResult write_immediate(Byte value) noexcept;
-//    ROM::WriteResult write_zero_page(Byte address, Byte value) noexcept;
-//    ROM::WriteResult write_zero_page_X(Byte address, Byte value) noexcept;
-//    ROM::WriteResult write_zero_page_Y(Byte address, Byte value) noexcept;
-//    ROM::WriteResult write_absolute(Word address, Byte value) noexcept;
-//    ROM::WriteResult write_absolute_X(Word address, Byte value) noexcept;
-//    ROM::WriteResult write_absolute_Y(Word address, Byte value) noexcept;
-//    ROM::WriteResult write_indirect_X(Byte tableAddress, Word targetAddress, Byte value) noexcept;
-//    ROM::WriteResult write_indirect_Y(Byte tableAddress, Word targetAddress, Byte value) noexcept;
-
     Writer writer_to_immediate() noexcept;
     Writer writer_to_zero_page(Byte address) noexcept;
     Writer writer_to_zero_page_X(Byte address) noexcept;
@@ -70,6 +60,8 @@ struct ExecutionParameters {
     [[nodiscard]] constexpr static ExecutionParameters unary_zero_page_indexed() noexcept { return {.size = 2, .duration = 6}; }
     [[nodiscard]] constexpr static ExecutionParameters unary_absolute() noexcept { return {.size = 3, .duration = 6}; }
     [[nodiscard]] constexpr static ExecutionParameters unary_absolute_indexed() noexcept { return {.size = 3, .duration = 7}; }
+
+    [[nodiscard]] constexpr static ExecutionParameters implied() noexcept { return {.size = 1, .duration = 2}; }
 
 };
 
@@ -134,6 +126,8 @@ class MOS6502_TestFixture_LSR: public MOS6502_TestFixture_UnaryOp {};
 class MOS6502_TestFixture_ASL: public MOS6502_TestFixture_UnaryOp {};
 class MOS6502_TestFixture_ROL: public MOS6502_TestFixture_UnaryOp {};
 class MOS6502_TestFixture_ROR: public MOS6502_TestFixture_UnaryOp {};
+
+class MOS6502_TestFixture_Increment: public MOS6502_TestFixture_UnaryOp {};
 
 
 #endif //EMULATOR_MOS6502_MOS6502_TESTFIXTURE_HPP
