@@ -128,6 +128,7 @@ class MOS6502_TestFixture_ROL: public MOS6502_TestFixture_UnaryOp {};
 class MOS6502_TestFixture_ROR: public MOS6502_TestFixture_UnaryOp {};
 
 class MOS6502_TestFixture_Increment: public MOS6502_TestFixture_UnaryOp {};
+class MOS6502_TestFixture_Decrement: public MOS6502_TestFixture_UnaryOp {};
 
 
 #endif //EMULATOR_MOS6502_MOS6502_TESTFIXTURE_HPP
