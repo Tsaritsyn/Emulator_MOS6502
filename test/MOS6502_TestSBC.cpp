@@ -6,97 +6,158 @@
 #include "helpers.hpp"
 
 TEST_P(MOS6502_TestFixture_SBC, Test_Immediate) {
-    test_arithmetic(SBC_IMMEDIATE, GetParam(), 2, 2, [this](Byte value) { return write_immediate(value); });
+    test_binary(SBC_IMMEDIATE,
+                GetParam(),
+                ExecutionParameters::binary_immediate(),
+                writer_to(AC),
+                writer_to_immediate(),
+                reader_from(AC));
 }
 
 
 TEST_P(MOS6502_TestFixture_SBC, Test_ZeroPage) {
-    test_arithmetic(SBC_ZERO_PAGE, GetParam(), 2, 3, [this](Byte value) { return write_zero_page(0xf0, value); });
+    constexpr static Byte address = 0xf0;
+    test_binary(SBC_ZERO_PAGE,
+                GetParam(),
+                ExecutionParameters::binary_zero_page(),
+                writer_to(AC),
+                writer_to_zero_page(address),
+                reader_from(AC));
 }
 
 
 TEST_P(MOS6502_TestFixture_SBC, Test_ZeroPageX_NoPageCrossing) {
-    test_arithmetic(SBC_ZERO_PAGE_X, GetParam(), 2, 4, [this](Byte value) {
-        X = 0x05;
-        return write_zero_page_X(0xf0, value);
-    });
+    constexpr static Byte address = 0xf0;
+    X = 0x05;
+    test_binary(SBC_ZERO_PAGE_X,
+                GetParam(),
+                ExecutionParameters::binary_zero_page_indexed(),
+                writer_to(AC),
+                writer_to_zero_page_X(address),
+                reader_from(AC));
 }
 
 
 TEST_P(MOS6502_TestFixture_SBC, Test_ZeroPageX_PageCrossing) {
-    test_arithmetic(SBC_ZERO_PAGE_X, GetParam(), 2, 4, [this](Byte value) {
-        X = 0x40;
-        return write_zero_page_X(0xf0, value);
-    });
+    constexpr static Byte address = 0xf0;
+    X = 0x40;
+    test_binary(SBC_ZERO_PAGE_X,
+                GetParam(),
+                ExecutionParameters::binary_zero_page_indexed(),
+                writer_to(AC),
+                writer_to_zero_page_X(address),
+                reader_from(AC));
 }
 
 
 TEST_P(MOS6502_TestFixture_SBC, Test_Absolute) {
-    test_arithmetic(SBC_ABSOLUTE, GetParam(), 3, 4, [this](Byte value) { return write_absolute(0x02f0, value); });
+    constexpr static Word address = 0x02f0;
+    test_binary(SBC_ABSOLUTE,
+                GetParam(),
+                ExecutionParameters::binary_absolute(),
+                writer_to(AC),
+                writer_to_absolute(address),
+                reader_from(AC));
 }
 
 
 TEST_P(MOS6502_TestFixture_SBC, Test_AbsoluteX_NoPageCrossing) {
-    test_arithmetic(SBC_ABSOLUTE_X, GetParam(), 3, 4, [this](Byte value) {
-        X = 0x01;
-        return write_absolute_X(0x02f0, value);
-    });
+    constexpr static Word address = 0x02f0;
+    X = 0x01;
+    test_binary(SBC_ABSOLUTE_X,
+                GetParam(),
+                ExecutionParameters::binary_absolute_indexed(false),
+                writer_to(AC),
+                writer_to_absolute_X(address),
+                reader_from(AC));
 }
 
 
 TEST_P(MOS6502_TestFixture_SBC, Test_AbsoluteX_PageCrossing) {
-    test_arithmetic(SBC_ABSOLUTE_X, GetParam(), 3, 5, [this](Byte value) {
-        X = 0x20;
-        return write_absolute_X(0x02f0, value);
-    });
+    constexpr static Word address = 0x02f0;
+    X = 0x20;
+    test_binary(SBC_ABSOLUTE_X,
+                GetParam(),
+                ExecutionParameters::binary_absolute_indexed(true),
+                writer_to(AC),
+                writer_to_absolute_X(address),
+                reader_from(AC));
 }
 
 
 TEST_P(MOS6502_TestFixture_SBC, Test_AbsoluteY_NoPageCrossing) {
-    test_arithmetic(SBC_ABSOLUTE_Y, GetParam(), 3, 4, [this](Byte value) {
-        Y = 0x01;
-        return write_absolute_Y(0x02f0, value);
-    });
+    constexpr static Word address = 0x02f0;
+    Y = 0x01;
+    test_binary(SBC_ABSOLUTE_Y,
+                GetParam(),
+                ExecutionParameters::binary_absolute_indexed(false),
+                writer_to(AC),
+                writer_to_absolute_Y(address),
+                reader_from(AC));
 }
 
 
 TEST_P(MOS6502_TestFixture_SBC, Test_AbsoluteY_PageCrossing) {
-    test_arithmetic(SBC_ABSOLUTE_Y, GetParam(), 3, 5, [this](Byte value) {
-        Y = 0x20;
-        return write_absolute_Y(0x02f0, value);
-    });
+    constexpr static Word address = 0x02f0;
+    Y = 0x20;
+    test_binary(SBC_ABSOLUTE_Y,
+                GetParam(),
+                ExecutionParameters::binary_absolute_indexed(true),
+                writer_to(AC),
+                writer_to_absolute_Y(address),
+                reader_from(AC));
 }
 
 
 TEST_P(MOS6502_TestFixture_SBC, Test_IndirectX_NoPageCrossing) {
-    test_arithmetic(SBC_INDIRECT_X, GetParam(), 2, 6, [this](Byte value) {
-        X = 0x01;
-        return write_indirect_X(0xf0, 0x02f0, value);
-    });
+    constexpr static Byte tableAddress = 0xf0;
+    constexpr static Word targetAddress = 0x02f0;
+    X = 0x01;
+    test_binary(SBC_INDIRECT_X,
+                GetParam(),
+                ExecutionParameters::binary_indirect_X(),
+                writer_to(AC),
+                writer_to_indirect_X(tableAddress, targetAddress),
+                reader_from(AC));
 }
 
 
 TEST_P(MOS6502_TestFixture_SBC, Test_IndirectX_PageCrossing) {
-    test_arithmetic(SBC_INDIRECT_X, GetParam(), 2, 6, [this](Byte value) {
-        X = 0x40;
-        return write_indirect_X(0xf0, 0x02f0, value);
-    });
+    constexpr static Byte tableAddress = 0xf0;
+    constexpr static Word targetAddress = 0x02f0;
+    X = 0x40;
+    test_binary(SBC_INDIRECT_X,
+                GetParam(),
+                ExecutionParameters::binary_indirect_X(),
+                writer_to(AC),
+                writer_to_indirect_X(tableAddress, targetAddress),
+                reader_from(AC));
 }
 
 
 TEST_P(MOS6502_TestFixture_SBC, Test_IndirectY_NoPageCrossing) {
-    test_arithmetic(SBC_INDIRECT_Y, GetParam(), 2, 5, [this](Byte value) {
-        Y = 0x01;
-        return write_indirect_Y(0xf0, 0x02f0, value);
-    });
+    constexpr static Byte tableAddress = 0xf0;
+    constexpr static Word targetAddress = 0x02f0;
+    Y = 0x01;
+    test_binary(SBC_INDIRECT_Y,
+                GetParam(),
+                ExecutionParameters::binary_indirect_Y(false),
+                writer_to(AC),
+                writer_to_indirect_Y(tableAddress, targetAddress),
+                reader_from(AC));
 }
 
 
 TEST_P(MOS6502_TestFixture_SBC, Test_IndirectY_PageCrossing) {
-    test_arithmetic(SBC_INDIRECT_Y, GetParam(), 2, 6, [this](Byte value) {
-        Y = 0x40;
-        return write_indirect_Y(0xf0, 0x02f0, value);
-    });
+    constexpr static Byte tableAddress = 0xf0;
+    constexpr static Word targetAddress = 0x02f0;
+    Y = 0x40;
+    test_binary(SBC_INDIRECT_Y,
+                GetParam(),
+                ExecutionParameters::binary_indirect_Y(true),
+                writer_to(AC),
+                writer_to_indirect_Y(tableAddress, targetAddress),
+                reader_from(AC));
 }
 
 
