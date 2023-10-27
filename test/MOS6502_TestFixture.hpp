@@ -131,6 +131,7 @@ public:
 
 
 class MOS6502_TestFixture_LSR: public MOS6502_TestFixture_UnaryOp {};
+class MOS6502_TestFixture_ASL: public MOS6502_TestFixture_UnaryOp {};
 
 
 #endif //EMULATOR_MOS6502_MOS6502_TESTFIXTURE_HPP
