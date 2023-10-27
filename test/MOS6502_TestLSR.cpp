@@ -79,11 +79,22 @@ TEST_P(MOS6502_TestFixture_LSR, Test_AbsoluteX_PageCrossing) {
 
 
 
-INSTANTIATE_TEST_SUITE_P(NoFlags, MOS6502_TestFixture_LSR, ::testing::Values(
+INSTANTIATE_TEST_SUITE_P(ZeroResult, MOS6502_TestFixture_LSR, ::testing::Values(
         UnaryOpParameters{.arg = 0, .carry = 0, .result = 0, .flagsSet = {Flag::ZERO}},
-        UnaryOpParameters{.arg = 1, .carry = 0, .result = 0, .flagsSet = {Flag::ZERO, Flag::CARRY}},
+        UnaryOpParameters{.arg = 1, .carry = 0, .result = 0, .flagsSet = {Flag::ZERO, Flag::CARRY}}
+));
+
+INSTANTIATE_TEST_SUITE_P(NonZeroResult, MOS6502_TestFixture_LSR, ::testing::Values(
         UnaryOpParameters{.arg = 0x02, .carry = 0, .result = 0x01, .flagsSet = {}},
         UnaryOpParameters{.arg = 0x03, .carry = 0, .result = 0x01, .flagsSet = {Flag::CARRY}},
         UnaryOpParameters{.arg = 0xff, .carry = 0, .result = 0x7f, .flagsSet = {Flag::CARRY}},
         UnaryOpParameters{.arg = 0xfe, .carry = 0, .result = 0x7f, .flagsSet = {}}
+));
+
+
+
+INSTANTIATE_TEST_SUITE_P(SettingCarry, MOS6502_TestFixture_LSR, ::testing::Values(
+        UnaryOpParameters{.arg = 1, .carry = 0, .result = 0, .flagsSet = {Flag::ZERO, Flag::CARRY}},
+        UnaryOpParameters{.arg = 0x03, .carry = 0, .result = 0x01, .flagsSet = {Flag::CARRY}},
+        UnaryOpParameters{.arg = 0xff, .carry = 0, .result = 0x7f, .flagsSet = {Flag::CARRY}}
 ));
