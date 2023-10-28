@@ -47,22 +47,29 @@ struct ExecutionParameters {
     Word size;
     size_t duration;
 
-    [[nodiscard]] constexpr static ExecutionParameters binary_immediate() noexcept { return {.size = 2, .duration = 2}; }
-    [[nodiscard]] constexpr static ExecutionParameters binary_zero_page() noexcept { return {.size = 2, .duration = 3}; }
-    [[nodiscard]] constexpr static ExecutionParameters binary_zero_page_indexed() noexcept { return {.size = 2, .duration = 4}; }
-    [[nodiscard]] constexpr static ExecutionParameters binary_absolute() noexcept { return {.size = 3, .duration = 4}; }
+    [[nodiscard]] constexpr static ExecutionParameters binary_immediate() noexcept                        { return {.size = 2, .duration = 2}; }
+    [[nodiscard]] constexpr static ExecutionParameters binary_zero_page() noexcept                        { return {.size = 2, .duration = 3}; }
+    [[nodiscard]] constexpr static ExecutionParameters binary_zero_page_indexed() noexcept                { return {.size = 2, .duration = 4}; }
+    [[nodiscard]] constexpr static ExecutionParameters binary_absolute() noexcept                         { return {.size = 3, .duration = 4}; }
     [[nodiscard]] constexpr static ExecutionParameters binary_absolute_indexed(bool pageCrossed) noexcept { return {.size = 3, .duration = 4 + static_cast<size_t>(pageCrossed)}; }
-    [[nodiscard]] constexpr static ExecutionParameters binary_indirect_X() noexcept { return {.size = 2, .duration = 6}; }
-    [[nodiscard]] constexpr static ExecutionParameters binary_indirect_Y(bool pageCrossed) noexcept { return {.size = 2, .duration = 5 + static_cast<size_t>(pageCrossed)}; }
+    [[nodiscard]] constexpr static ExecutionParameters binary_indirect_X() noexcept                       { return {.size = 2, .duration = 6}; }
+    [[nodiscard]] constexpr static ExecutionParameters binary_indirect_Y(bool pageCrossed) noexcept       { return {.size = 2, .duration = 5 + static_cast<size_t>(pageCrossed)}; }
 
-    [[nodiscard]] constexpr static ExecutionParameters unary_accumulator() noexcept { return {.size = 1, .duration = 2}; }
-    [[nodiscard]] constexpr static ExecutionParameters unary_zero_page() noexcept { return {.size = 2, .duration = 5}; }
+    [[nodiscard]] constexpr static ExecutionParameters unary_accumulator() noexcept       { return {.size = 1, .duration = 2}; }
+    [[nodiscard]] constexpr static ExecutionParameters unary_zero_page() noexcept         { return {.size = 2, .duration = 5}; }
     [[nodiscard]] constexpr static ExecutionParameters unary_zero_page_indexed() noexcept { return {.size = 2, .duration = 6}; }
-    [[nodiscard]] constexpr static ExecutionParameters unary_absolute() noexcept { return {.size = 3, .duration = 6}; }
-    [[nodiscard]] constexpr static ExecutionParameters unary_absolute_indexed() noexcept { return {.size = 3, .duration = 7}; }
+    [[nodiscard]] constexpr static ExecutionParameters unary_absolute() noexcept          { return {.size = 3, .duration = 6}; }
+    [[nodiscard]] constexpr static ExecutionParameters unary_absolute_indexed() noexcept  { return {.size = 3, .duration = 7}; }
 
     [[nodiscard]] constexpr static ExecutionParameters implied() noexcept { return {.size = 1, .duration = 2}; }
 
+    [[nodiscard]] constexpr static ExecutionParameters transfer_immediate() noexcept                        { return binary_immediate(); };
+    [[nodiscard]] constexpr static ExecutionParameters transfer_zero_page() noexcept                        { return binary_zero_page(); };
+    [[nodiscard]] constexpr static ExecutionParameters transfer_zero_page_indexed() noexcept                { return binary_zero_page_indexed(); };
+    [[nodiscard]] constexpr static ExecutionParameters transfer_absolute() noexcept                         { return binary_absolute(); };
+    [[nodiscard]] constexpr static ExecutionParameters transfer_absolute_indexed(bool pageCrossed) noexcept { return binary_absolute_indexed(pageCrossed); };
+    [[nodiscard]] constexpr static ExecutionParameters transfer_indirect_X() noexcept                       { return binary_indirect_X(); };
+    [[nodiscard]] constexpr static ExecutionParameters transfer_indirect_Y(bool pageCrossed) noexcept       { return binary_indirect_Y(pageCrossed); };
 };
 
 
@@ -121,7 +128,6 @@ public:
                     const Reader &resultReader);
 };
 
-
 class MOS6502_TestFixture_LSR: public MOS6502_TestFixture_UnaryOp {};
 class MOS6502_TestFixture_ASL: public MOS6502_TestFixture_UnaryOp {};
 class MOS6502_TestFixture_ROL: public MOS6502_TestFixture_UnaryOp {};
@@ -129,6 +135,21 @@ class MOS6502_TestFixture_ROR: public MOS6502_TestFixture_UnaryOp {};
 
 class MOS6502_TestFixture_Increment: public MOS6502_TestFixture_UnaryOp {};
 class MOS6502_TestFixture_Decrement: public MOS6502_TestFixture_UnaryOp {};
+
+
+
+class MOS6502_TestFixture_Transfer: public ::testing::TestWithParam<Byte>, public MOS6502_TextFixture {
+    void SetUp() override;
+
+public:
+    void test_transfer(OpCode opcode,
+                    Byte arg,
+                    const ExecutionParameters &execParams,
+                    const Writer &argWriter,
+                    const Reader &resultReader);
+};
+
+class MOS6502_TextFixture_LDA: public MOS6502_TestFixture_Transfer {};
 
 
 #endif //EMULATOR_MOS6502_MOS6502_TESTFIXTURE_HPP

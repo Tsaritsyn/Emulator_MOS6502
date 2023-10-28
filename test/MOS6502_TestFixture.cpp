@@ -154,7 +154,7 @@ void MOS6502_TestFixture_UnaryOp::test_unary(OpCode opcode,
     SR[Flag::CARRY] = params.carry;
 
     ASSERT_TRUE(memory.set_byte(PC, opcode).has_value());
-    ASSERT_TRUE(argWriter(params.arg));
+    ASSERT_TRUE(argWriter(params.arg).has_value());
 
     maxNumberOfCommandsToExecute = 1;
     ASSERT_TRUE(execute().has_value());
@@ -163,4 +163,36 @@ void MOS6502_TestFixture_UnaryOp::test_unary(OpCode opcode,
     EXPECT_EQ(PC, execParams.size);
     EXPECT_EQ(cycle, execParams.duration);
     EXPECT_EQ(SR, status_from_flags(params.flagsSet));
+}
+
+void MOS6502_TestFixture_Transfer::SetUp() {
+    reset_registers();
+    memory.reset();
+
+    maxNumberOfCommandsToExecute = 0;
+    stop_on_break(false);
+}
+
+void MOS6502_TestFixture_Transfer::test_transfer(OpCode opcode,
+                                                 Byte arg,
+                                                 const ExecutionParameters &execParams,
+                                                 const MOS6502_TextFixture::Writer &argWriter,
+                                                 const MOS6502_TextFixture::Reader &resultReader) {
+    const auto expectedStatus = [arg]{
+        ProcessorStatus result(0);
+        if (arg == 0) result[Flag::ZERO] = SET;
+        if ((char)arg < 0) result[Flag::NEGATIVE] = SET;
+        return result;
+    }();
+
+    ASSERT_TRUE(memory.set_byte(PC, opcode).has_value());
+    ASSERT_TRUE(argWriter(arg).has_value());
+
+    maxNumberOfCommandsToExecute = 1;
+    ASSERT_TRUE(execute().has_value());
+
+    EXPECT_EQ(resultReader(), arg);
+    EXPECT_EQ(PC, execParams.size);
+    EXPECT_EQ(cycle, execParams.duration);
+    EXPECT_EQ(SR, expectedStatus);
 }
