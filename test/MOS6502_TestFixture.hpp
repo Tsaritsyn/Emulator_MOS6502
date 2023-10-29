@@ -147,9 +147,15 @@ public:
                     const ExecutionParameters &execParams,
                     const Writer &argWriter,
                     const Reader &resultReader);
+
+    void test_transfer_to_SP(OpCode opcode,
+                       Byte arg,
+                       const ExecutionParameters &execParams,
+                       const Writer &argWriter,
+                       const Reader &resultReader);
 };
 
-class MOS6502_TextFixture_LDA: public MOS6502_TestFixture_Transfer {};
+INSTANTIATE_TEST_SUITE_P(AllTests, MOS6502_TestFixture_Transfer, ::testing::Values(0, 1, 10, 100, (Byte)-10, 255));
 
 
 #endif //EMULATOR_MOS6502_MOS6502_TESTFIXTURE_HPP

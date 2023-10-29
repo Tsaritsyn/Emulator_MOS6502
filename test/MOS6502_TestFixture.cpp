@@ -196,3 +196,18 @@ void MOS6502_TestFixture_Transfer::test_transfer(OpCode opcode,
     EXPECT_EQ(cycle, execParams.duration);
     EXPECT_EQ(SR, expectedStatus);
 }
+
+void MOS6502_TestFixture_Transfer::test_transfer_to_SP(OpCode opcode, Byte arg, const ExecutionParameters &execParams,
+                                                       const MOS6502_TextFixture::Writer &argWriter,
+                                                       const MOS6502_TextFixture::Reader &resultReader) {
+    ASSERT_TRUE(memory.set_byte(PC, opcode).has_value());
+    ASSERT_TRUE(argWriter(arg).has_value());
+
+    maxNumberOfCommandsToExecute = 1;
+    ASSERT_TRUE(execute().has_value());
+
+    EXPECT_EQ(resultReader(), arg);
+    EXPECT_EQ(PC, execParams.size);
+    EXPECT_EQ(cycle, execParams.duration);
+    EXPECT_EQ(SR, 0);
+}
