@@ -125,6 +125,46 @@ MOS6502_TextFixture::Writer MOS6502_TextFixture::writer_to_indirect_Y(Byte table
     };
 }
 
+MOS6502_TextFixture::Reader MOS6502_TextFixture::reader_from_zero_page(Byte address) noexcept {
+    return [this, address]() { return memory[address]; };
+}
+
+MOS6502_TextFixture::Reader MOS6502_TextFixture::reader_from_zero_page_X(Byte address) noexcept {
+    return [this, address]() { return memory[(Byte)(address + X)]; };
+}
+
+MOS6502_TextFixture::Reader MOS6502_TextFixture::reader_from_zero_page_Y(Byte address) noexcept {
+    return [this, address]() { return memory[(Byte)(address + Y)]; };
+}
+
+MOS6502_TextFixture::Reader MOS6502_TextFixture::reader_from_absolute(Word address) noexcept {
+    return [this, address]() { return memory[address]; };
+}
+
+MOS6502_TextFixture::Reader MOS6502_TextFixture::reader_from_absolute_X(Word address) noexcept {
+    return [this, address]() { return memory[address + X]; };
+}
+
+MOS6502_TextFixture::Reader MOS6502_TextFixture::reader_from_absolute_Y(Word address) noexcept {
+    return [this, address]() { return memory[address + Y]; };
+}
+
+MOS6502_TextFixture::Reader MOS6502_TextFixture::reader_from_indirect_X(Word targetAddress) noexcept {
+    return [this, targetAddress] { return memory[targetAddress]; };
+}
+
+MOS6502_TextFixture::Reader MOS6502_TextFixture::reader_from_indirect_Y(Word targetAddress) noexcept {
+    return [this, targetAddress] { return memory[targetAddress + Y]; };
+}
+
+MOS6502_TextFixture::WriteResult MOS6502_TextFixture::set_operation_arg(Byte byte) noexcept {
+    return memory.set_byte(PC + 1, byte);
+}
+
+MOS6502_TextFixture::WriteResult MOS6502_TextFixture::set_operation_arg(Word word) noexcept {
+    return set_word(PC + 1, word);
+}
+
 
 std::ostream &operator<<(std::ostream &os, const BinaryOpParameters &parameters) {
     os << std::format("({:d}, {:d}, {:d}) -> {:d}, flags set: [", parameters.arg1, parameters.arg2, parameters.carry, parameters.result);
@@ -173,11 +213,11 @@ void MOS6502_TestFixture_Transfer::SetUp() {
     stop_on_break(false);
 }
 
-void MOS6502_TestFixture_Transfer::test_transfer(OpCode opcode,
-                                                 Byte arg,
-                                                 const ExecutionParameters &execParams,
-                                                 const MOS6502_TextFixture::Writer &argWriter,
-                                                 const MOS6502_TextFixture::Reader &resultReader) {
+void MOS6502_TestFixture_Transfer::test_transfer_with_flags(OpCode opcode,
+                                                            Byte arg,
+                                                            const ExecutionParameters &execParams,
+                                                            const Writer &argWriter,
+                                                            const Reader &resultReader) {
     const auto expectedStatus = [arg]{
         ProcessorStatus result(0);
         if (arg == 0) result[Flag::ZERO] = SET;
@@ -197,9 +237,9 @@ void MOS6502_TestFixture_Transfer::test_transfer(OpCode opcode,
     EXPECT_EQ(SR, expectedStatus);
 }
 
-void MOS6502_TestFixture_Transfer::test_transfer_to_SP(OpCode opcode, Byte arg, const ExecutionParameters &execParams,
-                                                       const MOS6502_TextFixture::Writer &argWriter,
-                                                       const MOS6502_TextFixture::Reader &resultReader) {
+void MOS6502_TestFixture_Transfer::test_transfer_without_flags(OpCode opcode, Byte arg, const ExecutionParameters &execParams,
+                                                               const Writer &argWriter,
+                                                               const Reader &resultReader) {
     ASSERT_TRUE(memory.set_byte(PC, opcode).has_value());
     ASSERT_TRUE(argWriter(arg).has_value());
 

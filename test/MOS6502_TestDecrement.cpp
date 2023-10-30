@@ -30,7 +30,7 @@ TEST_P(MOS6502_TestFixture_Decrement, Test_ZeroPage) {
                ExecutionParameters::unary_zero_page(),
                writer_to_zero_page(address),
             // we cannot construct a reader here, since memory[address] gives us copy of byte, not a reference to actual byte of memory
-               [this]() { return memory[address]; });
+               reader_from_zero_page(address));
 }
 
 TEST_P(MOS6502_TestFixture_Decrement, Test_ZeroPageX_NoPageCrossing) {
@@ -41,7 +41,7 @@ TEST_P(MOS6502_TestFixture_Decrement, Test_ZeroPageX_NoPageCrossing) {
                ExecutionParameters::unary_zero_page_indexed(),
                writer_to_zero_page_X(address),
             // we cannot construct a reader here, since memory[address] gives us copy of byte, not a reference to actual byte of memory
-               [this]() { return memory[(Byte)(address + X)]; });
+               reader_from_zero_page_X(address));
 }
 
 TEST_P(MOS6502_TestFixture_Decrement, Test_ZeroPageX_PageCrossing) {
@@ -52,7 +52,7 @@ TEST_P(MOS6502_TestFixture_Decrement, Test_ZeroPageX_PageCrossing) {
                ExecutionParameters::unary_zero_page_indexed(),
                writer_to_zero_page_X(address),
             // we cannot construct a reader here, since memory[address] gives us copy of byte, not a reference to actual byte of memory
-               [this]() { return memory[(Byte)(address + X)]; });
+               reader_from_zero_page_X(address));
 }
 
 TEST_P(MOS6502_TestFixture_Decrement, Test_Absolute) {
@@ -62,7 +62,7 @@ TEST_P(MOS6502_TestFixture_Decrement, Test_Absolute) {
                ExecutionParameters::unary_absolute(),
                writer_to_absolute(address),
             // we cannot construct a reader here, since memory[address] gives us copy of byte, not a reference to actual byte of memory
-               [this]() { return memory[address]; });
+               reader_from_absolute(address));
 }
 
 TEST_P(MOS6502_TestFixture_Decrement, Test_AbsoluteX_NoPageCrossing) {
@@ -73,7 +73,7 @@ TEST_P(MOS6502_TestFixture_Decrement, Test_AbsoluteX_NoPageCrossing) {
                ExecutionParameters::unary_absolute_indexed(),
                writer_to_absolute_X(address),
             // we cannot construct a reader here, since memory[address] gives us copy of byte, not a reference to actual byte of memory
-               [this]() { return memory[address + X]; });
+               reader_from_absolute_X(address));
 }
 
 TEST_P(MOS6502_TestFixture_Decrement, Test_AbsoluteX_PageCrossing) {
@@ -84,7 +84,7 @@ TEST_P(MOS6502_TestFixture_Decrement, Test_AbsoluteX_PageCrossing) {
                ExecutionParameters::unary_absolute_indexed(),
                writer_to_absolute_X(address),
             // we cannot construct a reader here, since memory[address] gives us copy of byte, not a reference to actual byte of memory
-               [this]() { return memory[address + X]; });
+               reader_from_absolute_X(address));
 }
 
 

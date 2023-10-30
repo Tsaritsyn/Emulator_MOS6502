@@ -1,23 +1,54 @@
 //
-// Created by Mikhail on 18/09/2023.
+// Created by Mikhail on 30/10/2023.
 //
 
-//#include "MOS6502_TestFixture.hpp"
-//
-//constexpr std::array<Byte, 4> testedInputsAND {0, 1, 10, static_cast<unsigned char>(-10)};
-//
-//static std::array<Addressing, 4> testedAddressings {
-//        // no page crossing
-//        Addressing::ZeroPage(0x10),
-//        Addressing::ZeroPageY(0x10, 0x10),
-//        Addressing::Absolute(0x2010),
-//
-//        // page crossing
-//        Addressing::ZeroPageY(0xf0, 0x30),
-//};
-//
-//TEST_F(MOS6502_TestFixture, Test_STX) {
-//    for (auto value: testedInputsAND)
-//        for (const auto& addressing: testedAddressings)
-//            test_storage(Emulator::Register::X, value, addressing);
-//}
+#include "MOS6502_TestFixture.hpp"
+
+
+TEST_P(MOS6502_TestFixture_Transfer, STX_ZeroPage) {
+    constexpr static Byte address = 0xf0;
+
+    ASSERT_TRUE(set_operation_arg(address));
+    test_transfer_without_flags(STX_ZERO_PAGE,
+                                GetParam(),
+                                ExecutionParameters::transfer_zero_page(),
+                                writer_to(X),
+                                reader_from_zero_page(address));
+}
+
+TEST_P(MOS6502_TestFixture_Transfer, STX_ZeroPageY_NoPageCrossing) {
+    constexpr static Byte address = 0xf0;
+    Y = 0x01;
+
+    ASSERT_TRUE(set_operation_arg(address));
+    test_transfer_without_flags(STX_ZERO_PAGE_Y,
+                                GetParam(),
+                                ExecutionParameters::transfer_zero_page_indexed(),
+                                writer_to(X),
+                                reader_from_zero_page_Y(address));
+}
+
+TEST_P(MOS6502_TestFixture_Transfer, STX_ZeroPageY_PageCrossing) {
+    constexpr static Byte address = 0xf0;
+    Y = 0x40;
+
+    ASSERT_TRUE(set_operation_arg(address));
+    test_transfer_without_flags(STX_ZERO_PAGE_Y,
+                                GetParam(),
+                                ExecutionParameters::transfer_zero_page_indexed(),
+                                writer_to(X),
+                                reader_from_zero_page_Y(address));
+}
+
+TEST_P(MOS6502_TestFixture_Transfer, STX_Absolute) {
+    constexpr static Word address = 0x02f0;
+
+    ASSERT_TRUE(set_operation_arg(address));
+    test_transfer_without_flags(STX_ABSOLUTE,
+                                GetParam(),
+                                ExecutionParameters::transfer_absolute(),
+                                writer_to(X),
+                                reader_from_absolute(address));
+}
+
+

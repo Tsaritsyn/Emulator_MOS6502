@@ -21,15 +21,19 @@ class MOS6502_TextFixture: public MOS6502 {
 public:
     using Writer = std::function<ROM::WriteResult(Byte)>;
     using Reader = std::function<Byte(void)>;
+    using WriteResult = std::expected<void, ROM::StackOverride>;
 
     static Writer writer_to(Byte &loc) noexcept;
 
     static Reader reader_from(const Byte &loc) noexcept;
 
+    [[nodiscard]] WriteResult set_operation_arg(Byte byte) noexcept;
+    [[nodiscard]] WriteResult set_operation_arg(Word word) noexcept;
+
 protected:
     void reset_registers() noexcept;
 
-    [[nodiscard]] std::expected<void, ROM::StackOverride> set_word(Word address, Word value) noexcept;
+    [[nodiscard]] WriteResult set_word(Word address, Word value) noexcept;
 
     Writer writer_to_immediate() noexcept;
     Writer writer_to_zero_page(Byte address) noexcept;
@@ -40,6 +44,15 @@ protected:
     Writer writer_to_absolute_Y(Word address) noexcept;
     Writer writer_to_indirect_X(Byte tableAddress, Word targetAddress) noexcept;
     Writer writer_to_indirect_Y(Byte tableAddress, Word targetAddress) noexcept;
+
+    Reader reader_from_zero_page(Byte address) noexcept;
+    Reader reader_from_zero_page_X(Byte address) noexcept;
+    Reader reader_from_zero_page_Y(Byte address) noexcept;
+    Reader reader_from_absolute(Word address) noexcept;
+    Reader reader_from_absolute_X(Word address) noexcept;
+    Reader reader_from_absolute_Y(Word address) noexcept;
+    Reader reader_from_indirect_X(Word targetAddress) noexcept;
+    Reader reader_from_indirect_Y(Word targetAddress) noexcept;
 };
 
 
@@ -142,20 +155,18 @@ class MOS6502_TestFixture_Transfer: public ::testing::TestWithParam<Byte>, publi
     void SetUp() override;
 
 public:
-    void test_transfer(OpCode opcode,
-                    Byte arg,
-                    const ExecutionParameters &execParams,
-                    const Writer &argWriter,
-                    const Reader &resultReader);
+    void test_transfer_with_flags(OpCode opcode,
+                                  Byte arg,
+                                  const ExecutionParameters &execParams,
+                                  const Writer &argWriter,
+                                  const Reader &resultReader);
 
-    void test_transfer_to_SP(OpCode opcode,
-                       Byte arg,
-                       const ExecutionParameters &execParams,
-                       const Writer &argWriter,
-                       const Reader &resultReader);
+    void test_transfer_without_flags(OpCode opcode,
+                                     Byte arg,
+                                     const ExecutionParameters &execParams,
+                                     const Writer &argWriter,
+                                     const Reader &resultReader);
 };
-
-INSTANTIATE_TEST_SUITE_P(AllTests, MOS6502_TestFixture_Transfer, ::testing::Values(0, 1, 10, 100, (Byte)-10, 255));
 
 
 #endif //EMULATOR_MOS6502_MOS6502_TESTFIXTURE_HPP
