@@ -165,6 +165,14 @@ MOS6502_TextFixture::WriteResult MOS6502_TextFixture::set_operation_arg(Word wor
     return set_word(PC + 1, word);
 }
 
+Byte MOS6502_TextFixture::stack_size() const noexcept {
+    return UINT8_MAX - SP;
+}
+
+Byte MOS6502_TextFixture::stack_item(Byte index) const noexcept {
+    return memory.stack(UINT8_MAX - index);
+}
+
 
 std::ostream &operator<<(std::ostream &os, const BinaryOpParameters &parameters) {
     os << std::format("({:d}, {:d}, {:d}) -> {:d}, flags set: [", parameters.arg1, parameters.arg2, parameters.carry, parameters.result);
@@ -250,4 +258,26 @@ void MOS6502_TestFixture_Transfer::test_transfer_without_flags(OpCode opcode, By
     EXPECT_EQ(PC, execParams.size);
     EXPECT_EQ(cycle, execParams.duration);
     EXPECT_EQ(SR, 0);
+}
+
+void MOS6502_TestFixture_Push::SetUp() {
+    reset_registers();
+    memory.reset();
+
+    maxNumberOfCommandsToExecute = 0;
+    stop_on_break(false);
+}
+
+void MOS6502_TestFixture_Push::test_push(OpCode opcode, Byte arg, const ExecutionParameters &execParams,
+                                         const MOS6502_TextFixture::Writer &argWriter) {
+    ASSERT_TRUE(memory.set_byte(PC, opcode).has_value());
+    ASSERT_TRUE(argWriter(arg).has_value());
+
+    maxNumberOfCommandsToExecute = 1;
+    ASSERT_TRUE(execute().has_value());
+
+    EXPECT_EQ(stack_size(), 1);
+    EXPECT_EQ(stack_item(0), arg);
+    EXPECT_EQ(PC, execParams.size);
+    EXPECT_EQ(cycle, execParams.duration);
 }

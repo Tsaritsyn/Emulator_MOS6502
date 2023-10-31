@@ -171,6 +171,7 @@ add_executable(Emulator_MOS6502_Test
         test/MOS6502_TestIncrement.cpp
         test/MOS6502_TestDecrement.cpp
         "test/MOS6502_TestT##.cpp"
+        test/MOS6502_TestPush.cpp
 )
 
 target_include_directories(Emulator_MOS6502_Test PRIVATE lib test)

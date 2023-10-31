@@ -51,6 +51,7 @@ namespace Emulator {
         [[nodiscard]] static bool is_in_stack(Word address) noexcept { return (address >= STACK_BOTTOM) && (address <= STACK_BOTTOM + UINT8_MAX); }
 
     private:
+        
         std::array<Byte, UINT16_MAX> m_bytes;
     };
 
