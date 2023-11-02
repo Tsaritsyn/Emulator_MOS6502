@@ -7,7 +7,10 @@
 
 TEST_P(MOS6502_TestFixture_Transfer, PLA) {
     Byte arg = GetParam();
-    test_pull(PLA_IMPLICIT, arg, ExecutionParameters::stack_pull(), reader_from(AC));
+    test_pull(PLA_IMPLICIT,
+              arg,
+              STACK_PULL_PARAMS,
+              reader_from(AC));
 
     ProcessorStatus expectedFlags(0);
     if (arg == 0) expectedFlags[Emulator::Flag::ZERO] = SET;
@@ -18,6 +21,6 @@ TEST_P(MOS6502_TestFixture_Transfer, PLA) {
 TEST_P(MOS6502_TestFixture_Transfer, PLP) {
     test_pull(PLP_IMPLICIT,
               GetParam(),
-              ExecutionParameters::stack_pull(),
+              STACK_PULL_PARAMS,
               [this]() { return SR.to_byte(); });
 }

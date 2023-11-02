@@ -8,7 +8,7 @@
 TEST_P(MOS6502_TestFixture_SBC, Test_Immediate) {
     test_binary(SBC_IMMEDIATE,
                 GetParam(),
-                ExecutionParameters::binary_immediate(),
+                BINARY_IMMEDIATE_PARAMS,
                 writer_to(AC),
                 writer_to_immediate(),
                 reader_from(AC));
@@ -19,7 +19,7 @@ TEST_P(MOS6502_TestFixture_SBC, Test_ZeroPage) {
     constexpr static Byte address = 0xf0;
     test_binary(SBC_ZERO_PAGE,
                 GetParam(),
-                ExecutionParameters::binary_zero_page(),
+                BINARY_ZERO_PAGE_PARAMS,
                 writer_to(AC),
                 writer_to_zero_page(address),
                 reader_from(AC));
@@ -31,7 +31,7 @@ TEST_P(MOS6502_TestFixture_SBC, Test_ZeroPageX_NoPageCrossing) {
     X = 0x05;
     test_binary(SBC_ZERO_PAGE_X,
                 GetParam(),
-                ExecutionParameters::binary_zero_page_indexed(),
+                BINARY_ZERO_PAGE_X_PARAMS,
                 writer_to(AC),
                 writer_to_zero_page_X(address),
                 reader_from(AC));
@@ -43,7 +43,7 @@ TEST_P(MOS6502_TestFixture_SBC, Test_ZeroPageX_PageCrossing) {
     X = 0x40;
     test_binary(SBC_ZERO_PAGE_X,
                 GetParam(),
-                ExecutionParameters::binary_zero_page_indexed(),
+                BINARY_ZERO_PAGE_X_PARAMS,
                 writer_to(AC),
                 writer_to_zero_page_X(address),
                 reader_from(AC));
@@ -54,7 +54,7 @@ TEST_P(MOS6502_TestFixture_SBC, Test_Absolute) {
     constexpr static Word address = 0x02f0;
     test_binary(SBC_ABSOLUTE,
                 GetParam(),
-                ExecutionParameters::binary_absolute(),
+                BINARY_ABSOLUTE_PARAMS,
                 writer_to(AC),
                 writer_to_absolute(address),
                 reader_from(AC));
@@ -66,7 +66,7 @@ TEST_P(MOS6502_TestFixture_SBC, Test_AbsoluteX_NoPageCrossing) {
     X = 0x01;
     test_binary(SBC_ABSOLUTE_X,
                 GetParam(),
-                ExecutionParameters::binary_absolute_indexed(false),
+                BINARY_ABSOLUTE_X_NO_PAGE_CROSSING_PARAMS,
                 writer_to(AC),
                 writer_to_absolute_X(address),
                 reader_from(AC));
@@ -78,7 +78,7 @@ TEST_P(MOS6502_TestFixture_SBC, Test_AbsoluteX_PageCrossing) {
     X = 0x20;
     test_binary(SBC_ABSOLUTE_X,
                 GetParam(),
-                ExecutionParameters::binary_absolute_indexed(true),
+                BINARY_ABSOLUTE_X_PAGE_CROSSING_PARAMS,
                 writer_to(AC),
                 writer_to_absolute_X(address),
                 reader_from(AC));
@@ -90,7 +90,7 @@ TEST_P(MOS6502_TestFixture_SBC, Test_AbsoluteY_NoPageCrossing) {
     Y = 0x01;
     test_binary(SBC_ABSOLUTE_Y,
                 GetParam(),
-                ExecutionParameters::binary_absolute_indexed(false),
+                BINARY_ABSOLUTE_X_NO_PAGE_CROSSING_PARAMS,
                 writer_to(AC),
                 writer_to_absolute_Y(address),
                 reader_from(AC));
@@ -102,7 +102,7 @@ TEST_P(MOS6502_TestFixture_SBC, Test_AbsoluteY_PageCrossing) {
     Y = 0x20;
     test_binary(SBC_ABSOLUTE_Y,
                 GetParam(),
-                ExecutionParameters::binary_absolute_indexed(true),
+                BINARY_ABSOLUTE_X_PAGE_CROSSING_PARAMS,
                 writer_to(AC),
                 writer_to_absolute_Y(address),
                 reader_from(AC));
@@ -115,7 +115,7 @@ TEST_P(MOS6502_TestFixture_SBC, Test_IndirectX_NoPageCrossing) {
     X = 0x01;
     test_binary(SBC_INDIRECT_X,
                 GetParam(),
-                ExecutionParameters::binary_indirect_X(),
+                BINARY_INDIRECT_X_PARAMS,
                 writer_to(AC),
                 writer_to_indirect_X(tableAddress, targetAddress),
                 reader_from(AC));
@@ -128,7 +128,7 @@ TEST_P(MOS6502_TestFixture_SBC, Test_IndirectX_PageCrossing) {
     X = 0x40;
     test_binary(SBC_INDIRECT_X,
                 GetParam(),
-                ExecutionParameters::binary_indirect_X(),
+                BINARY_INDIRECT_X_PARAMS,
                 writer_to(AC),
                 writer_to_indirect_X(tableAddress, targetAddress),
                 reader_from(AC));
@@ -141,7 +141,7 @@ TEST_P(MOS6502_TestFixture_SBC, Test_IndirectY_NoPageCrossing) {
     Y = 0x01;
     test_binary(SBC_INDIRECT_Y,
                 GetParam(),
-                ExecutionParameters::binary_indirect_Y(false),
+                BINARY_INDIRECT_Y_NO_PAGE_CROSSING_PARAMS,
                 writer_to(AC),
                 writer_to_indirect_Y(tableAddress, targetAddress),
                 reader_from(AC));
@@ -154,7 +154,7 @@ TEST_P(MOS6502_TestFixture_SBC, Test_IndirectY_PageCrossing) {
     Y = 0x40;
     test_binary(SBC_INDIRECT_Y,
                 GetParam(),
-                ExecutionParameters::binary_indirect_Y(true),
+                BINARY_INDIRECT_Y_PAGE_CROSSING_PARAMS,
                 writer_to(AC),
                 writer_to_indirect_Y(tableAddress, targetAddress),
                 reader_from(AC));

@@ -64,37 +64,39 @@ protected:
 };
 
 
-struct ExecutionParameters {
-    Word size;
-    size_t duration;
+struct ExecutionParameters { Word size; size_t duration; };
 
-    [[nodiscard]] constexpr static ExecutionParameters binary_immediate() noexcept                        { return {.size = 2, .duration = 2}; }
-    [[nodiscard]] constexpr static ExecutionParameters binary_zero_page() noexcept                        { return {.size = 2, .duration = 3}; }
-    [[nodiscard]] constexpr static ExecutionParameters binary_zero_page_indexed() noexcept                { return {.size = 2, .duration = 4}; }
-    [[nodiscard]] constexpr static ExecutionParameters binary_absolute() noexcept                         { return {.size = 3, .duration = 4}; }
-    [[nodiscard]] constexpr static ExecutionParameters binary_absolute_indexed(bool pageCrossed) noexcept { return {.size = 3, .duration = 4 + static_cast<size_t>(pageCrossed)}; }
-    [[nodiscard]] constexpr static ExecutionParameters binary_indirect_X() noexcept                       { return {.size = 2, .duration = 6}; }
-    [[nodiscard]] constexpr static ExecutionParameters binary_indirect_Y(bool pageCrossed) noexcept       { return {.size = 2, .duration = 5 + static_cast<size_t>(pageCrossed)}; }
 
-    [[nodiscard]] constexpr static ExecutionParameters unary_accumulator() noexcept       { return {.size = 1, .duration = 2}; }
-    [[nodiscard]] constexpr static ExecutionParameters unary_zero_page() noexcept         { return {.size = 2, .duration = 5}; }
-    [[nodiscard]] constexpr static ExecutionParameters unary_zero_page_indexed() noexcept { return {.size = 2, .duration = 6}; }
-    [[nodiscard]] constexpr static ExecutionParameters unary_absolute() noexcept          { return {.size = 3, .duration = 6}; }
-    [[nodiscard]] constexpr static ExecutionParameters unary_absolute_indexed() noexcept  { return {.size = 3, .duration = 7}; }
+constexpr inline ExecutionParameters BINARY_IMMEDIATE_PARAMS                     = {.size = 2, .duration = 2};
+constexpr inline ExecutionParameters BINARY_ZERO_PAGE_PARAMS                     = {.size = 2, .duration = 3};
+constexpr inline ExecutionParameters BINARY_ZERO_PAGE_X_PARAMS                   = {.size = 2, .duration = 4};
+constexpr inline ExecutionParameters BINARY_ABSOLUTE_PARAMS                      = {.size = 3, .duration = 4};
+constexpr inline ExecutionParameters BINARY_ABSOLUTE_X_NO_PAGE_CROSSING_PARAMS   = {.size = 3, .duration = 4};
+constexpr inline ExecutionParameters BINARY_ABSOLUTE_X_PAGE_CROSSING_PARAMS      = {.size = 3, .duration = 5};
+constexpr inline ExecutionParameters BINARY_INDIRECT_X_PARAMS                    = {.size = 2, .duration = 6};
+constexpr inline ExecutionParameters BINARY_INDIRECT_Y_NO_PAGE_CROSSING_PARAMS   = {.size = 2, .duration = 5};
+constexpr inline ExecutionParameters BINARY_INDIRECT_Y_PAGE_CROSSING_PARAMS      = {.size = 2, .duration = 6};
 
-    [[nodiscard]] constexpr static ExecutionParameters implied() noexcept { return {.size = 1, .duration = 2}; }
+constexpr inline ExecutionParameters UNARY_ACCUMULATOR_PARAMS                    = {.size = 1, .duration = 2};
+constexpr inline ExecutionParameters UNARY_ZERO_PAGE_PARAMS                      = {.size = 2, .duration = 5};
+constexpr inline ExecutionParameters UNARY_ZERO_PAGE_X_PARAMS                    = {.size = 2, .duration = 6};
+constexpr inline ExecutionParameters UNARY_ABSOLUTE_PARAMS                       = {.size = 3, .duration = 6};
+constexpr inline ExecutionParameters UNARY_ABSOLUTE_X_PARAMS                     = {.size = 3, .duration = 7};
 
-    [[nodiscard]] constexpr static ExecutionParameters transfer_immediate() noexcept                        { return binary_immediate(); };
-    [[nodiscard]] constexpr static ExecutionParameters transfer_zero_page() noexcept                        { return binary_zero_page(); };
-    [[nodiscard]] constexpr static ExecutionParameters transfer_zero_page_indexed() noexcept                { return binary_zero_page_indexed(); };
-    [[nodiscard]] constexpr static ExecutionParameters transfer_absolute() noexcept                         { return binary_absolute(); };
-    [[nodiscard]] constexpr static ExecutionParameters transfer_absolute_indexed(bool pageCrossed) noexcept { return binary_absolute_indexed(pageCrossed); };
-    [[nodiscard]] constexpr static ExecutionParameters transfer_indirect_X() noexcept                       { return binary_indirect_X(); };
-    [[nodiscard]] constexpr static ExecutionParameters transfer_indirect_Y(bool pageCrossed) noexcept       { return binary_indirect_Y(pageCrossed); };
+constexpr inline ExecutionParameters IMPLIED_PARAMS                              = {.size = 1, .duration = 2};
 
-    [[nodiscard]] constexpr static ExecutionParameters stack_push() noexcept { return {.size = 1, .duration = 3}; }
-    [[nodiscard]] constexpr static ExecutionParameters stack_pull() noexcept { return {.size = 1, .duration = 4}; }
-};
+constexpr inline ExecutionParameters TRANSFER_IMMEDIATE_PARAMS                   = {.size = 2, .duration = 2};
+constexpr inline ExecutionParameters TRANSFER_ZERO_PAGE_PARAMS                   = {.size = 2, .duration = 3};
+constexpr inline ExecutionParameters TRANSFER_ZERO_PAGE_X_PARAMS                 = {.size = 2, .duration = 4};
+constexpr inline ExecutionParameters TRANSFER_ABSOLUTE_PARAMS                    = {.size = 3, .duration = 4};
+constexpr inline ExecutionParameters TRANSFER_ABSOLUTE_X_NO_PAGE_CROSSING_PARAMS = {.size = 3, .duration = 4};
+constexpr inline ExecutionParameters TRANSFER_ABSOLUTE_X_PAGE_CROSSING_PARAMS    = {.size = 3, .duration = 5};
+constexpr inline ExecutionParameters TRANSFER_INDIRECT_X_PARAMS                  = {.size = 2, .duration = 6};
+constexpr inline ExecutionParameters TRANSFER_INDIRECT_Y_NO_PAGE_CROSSING_PARAMS = {.size = 2, .duration = 5};
+constexpr inline ExecutionParameters TRANSFER_INDIRECT_Y_PAGE_CROSSING_PARAMS    = {.size = 2, .duration = 6};
+
+constexpr inline ExecutionParameters STACK_PUSH_PARAMS                           = {.size = 1, .duration = 3};
+constexpr inline ExecutionParameters STACK_PULL_PARAMS                           = {.size = 1, .duration = 4};
 
 
 struct BinaryOpParameters {

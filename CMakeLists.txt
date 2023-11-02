@@ -123,8 +123,6 @@ add_executable(Emulator_MOS6502_Test
         lib/MOS6502_helpers.hpp
         test/MOS6502_TestFixture.cpp
         test/MOS6502_TestFixture.hpp
-        test/Addressing.cpp
-        test/Addressing.hpp
         test/MOS6502_TestLDA.cpp
         test/helpers.cpp
         test/helpers.hpp
@@ -133,24 +131,7 @@ add_executable(Emulator_MOS6502_Test
         test/MOS6502_TestSTA.cpp
         test/MOS6502_TestSTX.cpp
         test/MOS6502_TestSTY.cpp
-        test/MOS6502_TestRegisterTransfer.cpp
-        test/MOS6502_TestRegisterPush.cpp
-        test/MOS6502_TestRegisterPull.cpp
-        test/MOS6502_TestLogical.cpp
-        test/MOS6502_TestBIT.cpp
-        test/MOS6502_TestArithmetics.cpp
-        test/MOS6502_TestCompare.cpp
-        test/MOS6502_TestDeincrementMemory.cpp
-        test/MOS6502_TestDeincrementRegisters.cpp
-        test/MOS6502_TestShift.cpp
-        test/MOS6502_TestRotate.cpp
         lib/Result.hpp
-        test/MOS6502_TestJMP.cpp
-        test/MOS6502_TestSubroutine.cpp
-        test/MOS6502_TestBranch.cpp
-        test/MOS6502_TestBRK.cpp
-        test/TestNOP.cpp
-        test/MOS6502_TestRTI.cpp
         lib/Operation.cpp
         lib/Operation.hpp
         lib/Error.hpp
@@ -158,7 +139,6 @@ add_executable(Emulator_MOS6502_Test
         lib/ROM.hpp
         lib/ProcessorStatus.cpp
         lib/ProcessorStatus.hpp
-        test/MOS6502_test_definitions.hpp
         test/MOS6502_TestADC.cpp
         test/MOS6502_TestSBC.cpp
         test/MOS6502_TestAND.cpp

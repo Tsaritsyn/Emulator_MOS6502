@@ -11,7 +11,7 @@ TEST_P(MOS6502_TestFixture_Transfer, STA_ZeroPage) {
     ASSERT_TRUE(set_operation_arg(address));
     test_transfer_without_flags(STA_ZERO_PAGE,
                              GetParam(),
-                             ExecutionParameters::transfer_zero_page(),
+                             TRANSFER_ZERO_PAGE_PARAMS,
                              writer_to(AC),
                              reader_from_zero_page(address));
 }
@@ -23,7 +23,7 @@ TEST_P(MOS6502_TestFixture_Transfer, STA_ZeroPageX_NoPageCrossing) {
     ASSERT_TRUE(set_operation_arg(address));
     test_transfer_without_flags(STA_ZERO_PAGE_X,
                              GetParam(),
-                             ExecutionParameters::transfer_zero_page_indexed(),
+                             TRANSFER_ZERO_PAGE_X_PARAMS,
                              writer_to(AC),
                              reader_from_zero_page_X(address));
 }
@@ -35,7 +35,7 @@ TEST_P(MOS6502_TestFixture_Transfer, STA_ZeroPageX_PageCrossing) {
     ASSERT_TRUE(set_operation_arg(address));
     test_transfer_without_flags(STA_ZERO_PAGE_X,
                              GetParam(),
-                             ExecutionParameters::transfer_zero_page_indexed(),
+                             TRANSFER_ZERO_PAGE_X_PARAMS,
                              writer_to(AC),
                              reader_from_zero_page_X(address));
 }
@@ -46,7 +46,7 @@ TEST_P(MOS6502_TestFixture_Transfer, STA_Absolute) {
     ASSERT_TRUE(set_operation_arg(address));
     test_transfer_without_flags(STA_ABSOLUTE,
                              GetParam(),
-                             ExecutionParameters::transfer_absolute(),
+                             TRANSFER_ABSOLUTE_PARAMS,
                              writer_to(AC),
                              reader_from_absolute(address));
 }
@@ -58,7 +58,7 @@ TEST_P(MOS6502_TestFixture_Transfer, STA_AbsoluteX_NoPageCrossing) {
     ASSERT_TRUE(set_operation_arg(address));
     test_transfer_without_flags(STA_ABSOLUTE_X,
                              GetParam(),
-                             ExecutionParameters::transfer_absolute_indexed(true),
+                             TRANSFER_ABSOLUTE_X_PAGE_CROSSING_PARAMS,
                              writer_to(AC),
                              reader_from_absolute_X(address));
 }
@@ -70,7 +70,7 @@ TEST_P(MOS6502_TestFixture_Transfer, STA_AbsoluteX_PageCrossing) {
     ASSERT_TRUE(set_operation_arg(address));
     test_transfer_without_flags(STA_ABSOLUTE_X,
                              GetParam(),
-                             ExecutionParameters::transfer_absolute_indexed(true),
+                             TRANSFER_ABSOLUTE_X_PAGE_CROSSING_PARAMS,
                              writer_to(AC),
                              reader_from_absolute_X(address));
 }
@@ -82,7 +82,7 @@ TEST_P(MOS6502_TestFixture_Transfer, STA_AbsoluteY_NoPageCrossing) {
     ASSERT_TRUE(set_operation_arg(address));
     test_transfer_without_flags(STA_ABSOLUTE_Y,
                              GetParam(),
-                             ExecutionParameters::transfer_absolute_indexed(true),
+                             TRANSFER_ABSOLUTE_X_PAGE_CROSSING_PARAMS,
                              writer_to(AC),
                              reader_from_absolute_Y(address));
 }
@@ -94,7 +94,7 @@ TEST_P(MOS6502_TestFixture_Transfer, STA_AbsoluteY_PageCrossing) {
     ASSERT_TRUE(set_operation_arg(address));
     test_transfer_without_flags(STA_ABSOLUTE_Y,
                              GetParam(),
-                             ExecutionParameters::transfer_absolute_indexed(true),
+                             TRANSFER_ABSOLUTE_X_PAGE_CROSSING_PARAMS,
                              writer_to(AC),
                              reader_from_absolute_Y(address));
 }
@@ -109,7 +109,7 @@ TEST_P(MOS6502_TestFixture_Transfer, STA_IndirectX_NoPageCrossing) {
 
     test_transfer_without_flags(STA_INDIRECT_X,
                              GetParam(),
-                             ExecutionParameters::transfer_indirect_X(),
+                             TRANSFER_INDIRECT_X_PARAMS,
                              writer_to(AC),
                              reader_from_indirect_X(targetAddress));
 }
@@ -124,7 +124,7 @@ TEST_P(MOS6502_TestFixture_Transfer, STA_IndirectX_PageCrossing) {
 
     test_transfer_without_flags(STA_INDIRECT_X,
                              GetParam(),
-                             ExecutionParameters::transfer_indirect_X(),
+                             TRANSFER_INDIRECT_X_PARAMS,
                              writer_to(AC),
                              reader_from_indirect_X(targetAddress));
 }
@@ -139,7 +139,7 @@ TEST_P(MOS6502_TestFixture_Transfer, STA_IndirectY_NoPageCrossing) {
 
     test_transfer_without_flags(STA_INDIRECT_Y,
                              GetParam(),
-                             ExecutionParameters::transfer_indirect_X(),
+                             TRANSFER_INDIRECT_Y_PAGE_CROSSING_PARAMS,
                              writer_to(AC),
                              reader_from_indirect_Y(targetAddress));
 }
@@ -154,7 +154,7 @@ TEST_P(MOS6502_TestFixture_Transfer, STA_IndirectY_PageCrossing) {
 
     test_transfer_without_flags(STA_INDIRECT_Y,
                              GetParam(),
-                             ExecutionParameters::transfer_indirect_X(),
+                             TRANSFER_INDIRECT_Y_PAGE_CROSSING_PARAMS,
                              writer_to(AC),
                              reader_from_indirect_Y(targetAddress));
 }

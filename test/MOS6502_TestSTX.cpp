@@ -11,7 +11,7 @@ TEST_P(MOS6502_TestFixture_Transfer, STX_ZeroPage) {
     ASSERT_TRUE(set_operation_arg(address));
     test_transfer_without_flags(STX_ZERO_PAGE,
                                 GetParam(),
-                                ExecutionParameters::transfer_zero_page(),
+                                TRANSFER_ZERO_PAGE_PARAMS,
                                 writer_to(X),
                                 reader_from_zero_page(address));
 }
@@ -23,7 +23,7 @@ TEST_P(MOS6502_TestFixture_Transfer, STX_ZeroPageY_NoPageCrossing) {
     ASSERT_TRUE(set_operation_arg(address));
     test_transfer_without_flags(STX_ZERO_PAGE_Y,
                                 GetParam(),
-                                ExecutionParameters::transfer_zero_page_indexed(),
+                                TRANSFER_ZERO_PAGE_X_PARAMS,
                                 writer_to(X),
                                 reader_from_zero_page_Y(address));
 }
@@ -35,7 +35,7 @@ TEST_P(MOS6502_TestFixture_Transfer, STX_ZeroPageY_PageCrossing) {
     ASSERT_TRUE(set_operation_arg(address));
     test_transfer_without_flags(STX_ZERO_PAGE_Y,
                                 GetParam(),
-                                ExecutionParameters::transfer_zero_page_indexed(),
+                                TRANSFER_ZERO_PAGE_X_PARAMS,
                                 writer_to(X),
                                 reader_from_zero_page_Y(address));
 }
@@ -46,7 +46,7 @@ TEST_P(MOS6502_TestFixture_Transfer, STX_Absolute) {
     ASSERT_TRUE(set_operation_arg(address));
     test_transfer_without_flags(STX_ABSOLUTE,
                                 GetParam(),
-                                ExecutionParameters::transfer_absolute(),
+                                TRANSFER_ABSOLUTE_PARAMS,
                                 writer_to(X),
                                 reader_from_absolute(address));
 }
