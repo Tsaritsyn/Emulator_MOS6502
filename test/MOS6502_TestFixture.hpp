@@ -36,6 +36,8 @@ public:
     /// 0 corresponds to the topmost item in stack
     [[nodiscard]] Byte stack_item(Byte index) const noexcept;
 
+    [[nodiscard]] bool is_stack_full() const noexcept;
+
 protected:
     void reset_registers() noexcept;
 
@@ -91,6 +93,7 @@ struct ExecutionParameters {
     [[nodiscard]] constexpr static ExecutionParameters transfer_indirect_Y(bool pageCrossed) noexcept       { return binary_indirect_Y(pageCrossed); };
 
     [[nodiscard]] constexpr static ExecutionParameters stack_push() noexcept { return {.size = 1, .duration = 3}; }
+    [[nodiscard]] constexpr static ExecutionParameters stack_pull() noexcept { return {.size = 1, .duration = 4}; }
 };
 
 
@@ -174,18 +177,16 @@ public:
                                      const ExecutionParameters &execParams,
                                      const Writer &argWriter,
                                      const Reader &resultReader);
-};
 
-
-
-class MOS6502_TestFixture_Push: public ::testing::TestWithParam<Byte>, public MOS6502_TextFixture {
-    void SetUp() override;
-
-public:
     void test_push(OpCode opcode,
                    Byte arg,
                    const ExecutionParameters &execParams,
                    const Writer &argWriter);
+
+    void test_pull(OpCode opcode,
+                   Byte arg,
+                   const ExecutionParameters &execParams,
+                   const Reader &resultReader);
 };
 
 

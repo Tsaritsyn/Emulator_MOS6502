@@ -173,6 +173,10 @@ Byte MOS6502_TextFixture::stack_item(Byte index) const noexcept {
     return memory.stack(UINT8_MAX - index);
 }
 
+bool MOS6502_TextFixture::is_stack_full() const noexcept {
+    return SP == 0;
+}
+
 
 std::ostream &operator<<(std::ostream &os, const BinaryOpParameters &parameters) {
     os << std::format("({:d}, {:d}, {:d}) -> {:d}, flags set: [", parameters.arg1, parameters.arg2, parameters.carry, parameters.result);
@@ -260,15 +264,7 @@ void MOS6502_TestFixture_Transfer::test_transfer_without_flags(OpCode opcode, By
     EXPECT_EQ(SR, 0);
 }
 
-void MOS6502_TestFixture_Push::SetUp() {
-    reset_registers();
-    memory.reset();
-
-    maxNumberOfCommandsToExecute = 0;
-    stop_on_break(false);
-}
-
-void MOS6502_TestFixture_Push::test_push(OpCode opcode, Byte arg, const ExecutionParameters &execParams,
+void MOS6502_TestFixture_Transfer::test_push(OpCode opcode, Byte arg, const ExecutionParameters &execParams,
                                          const MOS6502_TextFixture::Writer &argWriter) {
     ASSERT_TRUE(memory.set_byte(PC, opcode).has_value());
     ASSERT_TRUE(argWriter(arg).has_value());
@@ -278,6 +274,25 @@ void MOS6502_TestFixture_Push::test_push(OpCode opcode, Byte arg, const Executio
 
     EXPECT_EQ(stack_size(), 1);
     EXPECT_EQ(stack_item(0), arg);
+    EXPECT_EQ(PC, execParams.size);
+    EXPECT_EQ(cycle, execParams.duration);
+}
+
+void MOS6502_TestFixture_Transfer::test_pull(OpCode opcode,
+                                             Byte arg,
+                                             const ExecutionParameters &execParams,
+                                             const MOS6502_TextFixture::Reader &resultReader) {
+    const auto initialStackSize = stack_size();
+    ASSERT_FALSE(is_stack_full());  // since we will now push our argument to the stack
+
+    ASSERT_TRUE(memory.set_byte(PC, opcode).has_value());
+    memory.stack(SP--) = arg;
+
+    maxNumberOfCommandsToExecute = 1;
+    ASSERT_TRUE(execute().has_value());
+
+    EXPECT_EQ(stack_size(), initialStackSize);
+    EXPECT_EQ(resultReader(), arg);
     EXPECT_EQ(PC, execParams.size);
     EXPECT_EQ(cycle, execParams.duration);
 }
