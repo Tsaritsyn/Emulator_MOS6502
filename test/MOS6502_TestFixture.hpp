@@ -39,6 +39,8 @@ public:
     [[nodiscard]] bool is_stack_full() const noexcept;
 
 protected:
+    void setup() noexcept;
+
     void reset_registers() noexcept;
 
     [[nodiscard]] WriteResult set_word(Word address, Word value) noexcept;
@@ -98,6 +100,16 @@ constexpr inline ExecutionParameters TRANSFER_INDIRECT_Y_PAGE_CROSSING_PARAMS   
 constexpr inline ExecutionParameters STACK_PUSH_PARAMS                           = {.size = 1, .duration = 3};
 constexpr inline ExecutionParameters STACK_PULL_PARAMS                           = {.size = 1, .duration = 4};
 
+constexpr inline ExecutionParameters COMPARE_IMMEDIATE_PARAMS                    = {.size = 2, .duration = 2};
+constexpr inline ExecutionParameters COMPARE_ZERO_PAGE_PARAMS                    = {.size = 2, .duration = 3};
+constexpr inline ExecutionParameters COMPARE_ZERO_PAGE_X_PARAMS                  = {.size = 2, .duration = 4};
+constexpr inline ExecutionParameters COMPARE_ABSOLUTE_PARAMS                     = {.size = 3, .duration = 4};
+constexpr inline ExecutionParameters COMPARE_ABSOLUTE_X_NO_PAGE_CROSSING_PARAMS  = {.size = 3, .duration = 4};
+constexpr inline ExecutionParameters COMPARE_ABSOLUTE_X_PAGE_CROSSING_PARAMS     = {.size = 3, .duration = 5};
+constexpr inline ExecutionParameters COMPARE_INDIRECT_X_PARAMS                   = {.size = 2, .duration = 6};
+constexpr inline ExecutionParameters COMPARE_INDIRECT_Y_NO_PAGE_CROSSING_PARAMS  = {.size = 2, .duration = 5};
+constexpr inline ExecutionParameters COMPARE_INDIRECT_Y_PAGE_CROSSING_PARAMS     = {.size = 2, .duration = 6};
+
 
 struct BinaryOpParameters {
     friend std::ostream &operator<<(std::ostream &os, const BinaryOpParameters &parameters);
@@ -109,7 +121,7 @@ struct BinaryOpParameters {
 };
 
 class MOS6502_TestFixture_BinaryOp: public ::testing::TestWithParam<BinaryOpParameters>, public MOS6502_TextFixture {
-    void SetUp() override;
+    void SetUp() override { setup(); };
 
 public:
 
@@ -144,7 +156,7 @@ struct UnaryOpParameters {
 };
 
 class MOS6502_TestFixture_UnaryOp: public ::testing::TestWithParam<UnaryOpParameters>, public MOS6502_TextFixture {
-    void SetUp() override;
+    void SetUp() override { setup(); };
 
 public:
     void test_unary(OpCode opcode,
@@ -165,7 +177,7 @@ class MOS6502_TestFixture_Decrement: public MOS6502_TestFixture_UnaryOp {};
 
 
 class MOS6502_TestFixture_Transfer: public ::testing::TestWithParam<Byte>, public MOS6502_TextFixture {
-    void SetUp() override;
+    void SetUp() override { setup(); };
 
 public:
     void test_transfer_with_flags(OpCode opcode,
@@ -190,6 +202,30 @@ public:
                    const ExecutionParameters &execParams,
                    const Reader &resultReader);
 };
+
+
+
+struct CompareParameters {
+    friend std::ostream &operator<<(std::ostream &os, const CompareParameters &parameters);
+
+    Byte arg1, arg2;
+    std::vector<Flag> flagsSet;
+};
+
+class MOS6502_TestFixture_Compare: public ::testing::TestWithParam<CompareParameters>, public MOS6502_TextFixture {
+    void SetUp() override { setup(); };
+
+public:
+    void test_compare(OpCode opcode,
+                      const CompareParameters &params,
+                      const ExecutionParameters &execParams,
+                      const Writer &arg1Writer,
+                      const Writer &arg2Writer);
+};
+
+class MOS6502_TestFixture_CMP: public MOS6502_TestFixture_Compare {};
+class MOS6502_TestFixture_CPX: public MOS6502_TestFixture_Compare {};
+class MOS6502_TestFixture_CPY: public MOS6502_TestFixture_Compare {};
 
 
 #endif //EMULATOR_MOS6502_MOS6502_TESTFIXTURE_HPP

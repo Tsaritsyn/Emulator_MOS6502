@@ -21,14 +21,6 @@ std::expected<void, ROM::StackOverride> MOS6502_TextFixture::set_word(Word addre
             );
 }
 
-void MOS6502_TestFixture_BinaryOp::SetUp() {
-    reset_registers();
-    memory.reset();
-
-    maxNumberOfCommandsToExecute = 0;
-    stop_on_break(false);
-}
-
 void
 MOS6502_TestFixture_BinaryOp::test_binary(OpCode opcode,
                                           const BinaryOpParameters &params,
@@ -177,6 +169,14 @@ bool MOS6502_TextFixture::is_stack_full() const noexcept {
     return SP == 0;
 }
 
+void MOS6502_TextFixture::setup() noexcept {
+    reset_registers();
+    memory.reset();
+
+    maxNumberOfCommandsToExecute = 0;
+    stop_on_break(false);
+}
+
 
 std::ostream &operator<<(std::ostream &os, const BinaryOpParameters &parameters) {
     os << std::format("({:d}, {:d}, {:d}) -> {:d}, flags set: [", parameters.arg1, parameters.arg2, parameters.carry, parameters.result);
@@ -188,14 +188,6 @@ std::ostream &operator<<(std::ostream &os, const UnaryOpParameters &parameters) 
     os << std::format("(0x{:02x}, {:d}) -> 0x{:02x}, flags set: [", parameters.arg, parameters.carry, parameters.result);
     std::ranges::for_each(parameters.flagsSet, [&os](Flag flag){ os << flag << ", "; });
     return os << ']';
-}
-
-void MOS6502_TestFixture_UnaryOp::SetUp() {
-    reset_registers();
-    memory.reset();
-
-    maxNumberOfCommandsToExecute = 0;
-    stop_on_break(false);
 }
 
 void MOS6502_TestFixture_UnaryOp::test_unary(OpCode opcode,
@@ -215,14 +207,6 @@ void MOS6502_TestFixture_UnaryOp::test_unary(OpCode opcode,
     EXPECT_EQ(PC, execParams.size);
     EXPECT_EQ(cycle, execParams.duration);
     EXPECT_EQ(SR, status_from_flags(params.flagsSet));
-}
-
-void MOS6502_TestFixture_Transfer::SetUp() {
-    reset_registers();
-    memory.reset();
-
-    maxNumberOfCommandsToExecute = 0;
-    stop_on_break(false);
 }
 
 void MOS6502_TestFixture_Transfer::test_transfer_with_flags(OpCode opcode,
@@ -295,4 +279,27 @@ void MOS6502_TestFixture_Transfer::test_pull(OpCode opcode,
     EXPECT_EQ(resultReader(), arg);
     EXPECT_EQ(PC, execParams.size);
     EXPECT_EQ(cycle, execParams.duration);
+}
+
+void MOS6502_TestFixture_Compare::test_compare(OpCode opcode,
+                                               const CompareParameters &params,
+                                               const ExecutionParameters &execParams,
+                                               const MOS6502_TextFixture::Writer &arg1Writer,
+                                               const MOS6502_TextFixture::Writer &arg2Writer) {
+    ASSERT_TRUE(arg1Writer(params.arg1));
+    ASSERT_TRUE(arg2Writer(params.arg2));
+    ASSERT_TRUE(memory.set_byte(PC, opcode));
+
+    maxNumberOfCommandsToExecute = 1;
+    ASSERT_TRUE(execute());
+
+    EXPECT_EQ(PC, execParams.size);
+    EXPECT_EQ(cycle, execParams.duration);
+    EXPECT_EQ(SR, status_from_flags(params.flagsSet));
+}
+
+std::ostream &operator<<(std::ostream &os, const CompareParameters &parameters) {
+    os << std::format("{:d} ? {:d} -> flags set: [", parameters.arg1, parameters.arg2);
+    std::ranges::for_each(parameters.flagsSet, [&os](Flag flag){ os << flag << ", "; });
+    return os << ']';
 }
