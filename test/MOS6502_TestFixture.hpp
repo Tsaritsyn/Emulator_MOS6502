@@ -228,4 +228,30 @@ class MOS6502_TestFixture_CPX: public MOS6502_TestFixture_Compare {};
 class MOS6502_TestFixture_CPY: public MOS6502_TestFixture_Compare {};
 
 
+struct BranchParameters {
+    friend std::ostream &operator<<(std::ostream &os, const BranchParameters &parameters);
+
+    Word initialPC;
+    char offset;
+    Word finalPC;
+    bool doBranch;
+    size_t duration;
+};
+
+constexpr size_t BRANCH_DURATION_NO_JUMP = 2;
+constexpr size_t BRANCH_DURATION_JUMP_SAME_PAGE = 3;
+constexpr size_t BRANCH_DURATION_JUMP_OTHER_PAGE = 4;
+
+class MOS6502_TestFixture_Branch: public ::testing::TestWithParam<BranchParameters>, public MOS6502_TextFixture {
+    void SetUp() override { setup(); };
+
+public:
+    /// here execParams.size is the resulting PC after the branch
+    void test_branch(OpCode opcode,
+                      const BranchParameters &params,
+                      Flag targetFlag,
+                      bool targetValue);
+};
+
+
 #endif //EMULATOR_MOS6502_MOS6502_TESTFIXTURE_HPP

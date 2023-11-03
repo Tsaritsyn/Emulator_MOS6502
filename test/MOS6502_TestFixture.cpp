@@ -303,3 +303,25 @@ std::ostream &operator<<(std::ostream &os, const CompareParameters &parameters) 
     std::ranges::for_each(parameters.flagsSet, [&os](Flag flag){ os << flag << ", "; });
     return os << ']';
 }
+
+void MOS6502_TestFixture_Branch::test_branch(OpCode opcode,
+                                             const BranchParameters &params,
+                                             Flag targetFlag,
+                                             bool targetValue) {
+    PC = params.initialPC;
+
+    SR[targetFlag] = (params.doBranch) ? targetValue : !targetValue;
+    ASSERT_TRUE(memory.set_byte(PC, opcode));
+    ASSERT_TRUE(memory.set_byte(PC + 1, (Byte)params.offset));
+
+    maxNumberOfCommandsToExecute = 1;
+    ASSERT_TRUE(execute());
+
+    EXPECT_EQ(PC, params.finalPC);
+    EXPECT_EQ(cycle, params.duration);
+}
+
+std::ostream &operator<<(std::ostream &os, const BranchParameters &parameters) {
+    return os << std::format("0x{:04x} -> 0x{:04x} (offset {:d}) {}",
+                             parameters.initialPC, parameters.finalPC, parameters.offset, (parameters.doBranch) ? "do" : "don't");
+}
