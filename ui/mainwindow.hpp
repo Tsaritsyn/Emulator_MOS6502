@@ -13,6 +13,7 @@
 #include <QMenuBar>
 
 #include "pageview.hpp"
+#include "registerview.hpp"
 
 class MainWindow : public QMainWindow {
 Q_OBJECT

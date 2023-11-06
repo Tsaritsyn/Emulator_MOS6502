@@ -73,6 +73,20 @@ namespace Emulator {
         using ExecutionResult = std::expected<void, OperationError>;
         ExecutionResult execute(const Operation& operation) noexcept;
 
+        Word get_PC() const noexcept { return PC; }
+
+        Byte get_AC() const noexcept { return AC; }
+
+        Byte get_X() const noexcept { return X; }
+
+        Byte get_Y() const noexcept { return Y; }
+
+        const ProcessorStatus &get_SR() const noexcept { return SR; }
+
+        Byte get_SP() const noexcept { return SP; }
+
+        size_t get_cycle() const noexcept { return cycle; }
+
 
     private:
         friend class MOS6502_TestFixture;

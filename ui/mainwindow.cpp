@@ -50,6 +50,9 @@ void MainWindow::execute_program() {
     cpu.reset();
     cpu.stop_on_break(true);
 
+    auto registerView = new RegisterView(cpu, this);
+    mainWidget->layout()->addWidget(registerView);
+
     auto executionStatus = cpu.execute();
 
     if (!executionStatus.has_value()) {
@@ -98,7 +101,7 @@ void MainWindow::execute_program() {
                 );
     }
 
-    std::cout << cpu.dump(false) << '\n';
+    registerView->update();
 }
 
 MainWindow::~MainWindow() {
