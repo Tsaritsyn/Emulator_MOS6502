@@ -4,17 +4,20 @@
 
 // You may need to build the project (run Qt uic code generator) to get "ui_ByteView.h" resolved
 
-#include <iostream>
-
 #include <QMessageBox>
+#include <QGuiApplication>
+#include <ranges>
 
 #include "byteview.hpp"
 #include "helpers.hpp"
 
-constexpr int DEFAULT_DATA = -1;
+inline constexpr int DEFAULT_DATA = -1;
+inline constexpr static Style DEFAULT_STYLE = { .foreground = QColorConstants::Black, .background = QColorConstants::White };
 
 
 ByteView::ByteView(ROM &memory_, Word address_, QWidget *parent): QWidget(parent), memory{memory_}, address{address_} {
+    palette = QGuiApplication::palette();
+
     mainLayout = new QHBoxLayout(this);
     setLayout(mainLayout);
     layout()->setSizeConstraint(QLayout::SetMinimumSize);
@@ -28,9 +31,16 @@ ByteView::ByteView(ROM &memory_, Word address_, QWidget *parent): QWidget(parent
     valueEditor->setFixedWidth(addressLabel->width());
     commentEditor->setFixedHeight(addressLabel->height());
 
-    for (auto opcode: allOpcodes) assemblySelector->addItem(byte_description(opcode).c_str(), opcode);
+    auto model = assemblySelector->model();
+    for (const auto [index, opcode]: std::ranges::views::enumerate(allOpcodes)) {
+        const auto [foreground, background] = max_duration_of(opcode).transform(color_by).value_or(DEFAULT_STYLE);
+        assemblySelector->addItem(byte_description(opcode).c_str(), opcode);
+        model->setData(model->index(static_cast<int>(index), 0), background, Qt::BackgroundRole);
+        model->setData(model->index(static_cast<int>(index), 0), foreground, Qt::ForegroundRole);
+    }
     assemblySelector->addItem("Raw", DEFAULT_DATA);
     update_assembly();
+    update_color();
 
     layout()->addWidget(addressLabel);
     layout()->addWidget(valueEditor);
@@ -40,11 +50,10 @@ ByteView::ByteView(ROM &memory_, Word address_, QWidget *parent): QWidget(parent
     connect(valueEditor, &MyTextEdit::textEntered, this, [this](){
         auto text = valueEditor->toPlainText().toStdString();
         set_memory(text);
-        update_assembly();
     });
     connect(assemblySelector, &QComboBox::currentIndexChanged, this, [this](){
-        auto data = assemblySelector->currentData().toInt();
-        if (data != DEFAULT_DATA) set_memory(data);
+        auto data_ = assemblySelector->currentData().toInt();
+        if (data_ != DEFAULT_DATA) set_memory(data_);
         update_value_text();
     });
 }
@@ -73,16 +82,19 @@ void ByteView::set_memory(const std::string& text) {
 }
 
 void ByteView::set_memory(int value) {
-    if (value >= 0 && value <= UINT8_MAX) {
-        auto result = memory.set_byte(address, static_cast<Byte>(value));
-        if (!result.has_value()) {
-            QMessageBox::warning(this,
-                                 "Attempt to override stack",
-                                 QString::fromStdString(std::vformat("Writing to address 0x{:04x} that belongs to stack", std::make_format_args(result.error().address)))
-            );
-        }
-        else update_assembly();
+    if (value < 0 || value > UINT8_MAX) return;
+
+    const auto result = memory.set_byte(address, static_cast<Byte>(value));
+    if (!result.has_value()) {
+        QMessageBox::warning(this,
+                             "Attempt to override stack",
+                             QString::fromStdString(std::vformat("Writing to address 0x{:04x} that belongs to stack", std::make_format_args(result.error().address)))
+        );
+        return;
     }
+
+    update_assembly();
+    update_color();
 }
 
 void ByteView::update_value_text() {
@@ -97,4 +109,13 @@ ByteView::~ByteView() {
     delete valueEditor;
     delete assemblySelector;
     delete mainLayout;
+}
+
+void ByteView::update_color() {
+    const auto [foreground, background] = max_duration_of(memory[address]).transform(color_by).value_or(DEFAULT_STYLE);
+
+    palette.setColor(QPalette::ColorGroup::Active, QPalette::ColorRole::Button, background);
+    palette.setColor(QPalette::ColorGroup::Inactive, QPalette::ColorRole::Button, background);
+
+    this->setPalette(palette);
 }

@@ -55,11 +55,14 @@ private:
 
     void update_assembly();
     void update_value_text();
+    void update_color();
+
+    QHBoxLayout* mainLayout;
 
     MyTextEdit* valueEditor;
     QComboBox* assemblySelector;
 
-    QHBoxLayout* mainLayout;
+    QPalette palette;
 
     ROM &memory;
     Word address;
