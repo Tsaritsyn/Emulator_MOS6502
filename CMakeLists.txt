@@ -47,6 +47,8 @@ add_executable(Emulator_MOS6502 main.cpp
         ui/definitions.hpp
         ui/registerview.cpp
         ui/registerview.hpp
+        ui/constantsview.cpp
+        ui/constantsview.hpp
 )
 
 target_include_directories(Emulator_MOS6502 PRIVATE lib ui)

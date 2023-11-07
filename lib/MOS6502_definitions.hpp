@@ -12,6 +12,13 @@
 #include <format>
 
 
+template<typename ... Ts>
+struct Overload : Ts ... {
+    using Ts::operator() ...;
+};
+template<class... Ts> Overload(Ts...) -> Overload<Ts...>;
+
+
 namespace Emulator {
     using Byte = uint8_t;
     using Word = uint16_t;

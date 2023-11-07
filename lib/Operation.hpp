@@ -13,13 +13,6 @@
 #include "ROM.hpp"
 
 
-template<typename ... Ts>
-struct Overload : Ts ... {
-    using Ts::operator() ...;
-};
-template<class... Ts> Overload(Ts...) -> Overload<Ts...>;
-
-
 namespace Emulator {
 
     struct ADC_Immediate   { constexpr static OpCode opcode = ADC_IMMEDIATE;   Byte value; };

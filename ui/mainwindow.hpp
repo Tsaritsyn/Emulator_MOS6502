@@ -14,6 +14,7 @@
 
 #include "pageview.hpp"
 #include "registerview.hpp"
+#include "constantsview.hpp"
 
 class MainWindow : public QMainWindow {
 Q_OBJECT
@@ -29,8 +30,8 @@ private slots:
     void execute_program();
 
 private:
-
     QWidget* mainWidget;
+    QWidget* environmentWidget;
 
     ROM &memory;
 };
