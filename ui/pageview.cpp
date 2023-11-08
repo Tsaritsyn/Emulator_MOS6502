@@ -7,19 +7,24 @@
 #include "pageview.hpp"
 
 
-PageView::PageView(Byte pageIndex, ROM &memory, QWidget *parent): QWidget(parent), m_pageIndex(pageIndex), m_memory(memory) {
+PageView::PageView(Byte pageIndex, ROM &memory, QWidget *parent): QWidget(parent), byteViews() {
 
-    mainLayout = std::make_unique<QVBoxLayout>(this);
+    mainLayout = new QVBoxLayout(this);
     mainLayout->setSizeConstraint(QLayout::SetMinimumSize);
 
-    for (int i = 0; i <= UINT8_MAX; i++) {
+    for (size_t i = 0; i <= UINT8_MAX; i++) {
         WordToBytes address;
         address.high() = pageIndex;
         address.low() = (Byte)i;
 
-        byteViews[i] = std::make_unique<ByteView>(memory, address.word, this);
-        mainLayout->addWidget(byteViews[i].get());
+        byteViews[i] = new ByteView(memory, address.word, this);
+        mainLayout->addWidget(byteViews[i]);
     }
 
-    setLayout(mainLayout.get());
+    setLayout(mainLayout);
+}
+
+PageView::~PageView() {
+    delete mainLayout;
+    for (auto byteView: byteViews) delete byteView;
 }

@@ -13,14 +13,14 @@
 
 
 ByteView::ByteView(ROM &memory_, Word address_, QWidget *parent): QWidget(parent), memory{memory_}, address{address_} {
-    mainLayout = std::make_unique<QHBoxLayout>(this);
-    setLayout(mainLayout.get());
+    mainLayout = new QHBoxLayout(this);
+    setLayout(mainLayout);
     layout()->setSizeConstraint(QLayout::SetMinimumSize);
 
-    indexLabel = std::make_unique<QLabel>(std::format("0x{:04x}", address).c_str(), this);
-    valueLabel = std::make_unique<QTextEdit>(std::format("{:d}", memory[address]).c_str(), this);
-    assemblyDecodingLabel = std::make_unique<QLabel>(this);
-    commentLabel = std::make_unique<QTextEdit>("", this);
+    auto indexLabel = new QLabel(std::format("0x{:04x}", address).c_str(), this);
+    valueLabel = new QTextEdit(std::format("{:d}", memory[address]).c_str(), this);
+    assemblyDecodingLabel = new QLabel(this);
+    auto commentLabel = new QTextEdit("", this);
 
     valueLabel->setFixedHeight(indexLabel->height());
     valueLabel->setFixedWidth(indexLabel->width());
@@ -28,12 +28,12 @@ ByteView::ByteView(ROM &memory_, Word address_, QWidget *parent): QWidget(parent
 
     update_decoding();
 
-    layout()->addWidget(indexLabel.get());
-    layout()->addWidget(valueLabel.get());
-    layout()->addWidget(assemblyDecodingLabel.get());
-    layout()->addWidget(commentLabel.get());
+    layout()->addWidget(indexLabel);
+    layout()->addWidget(valueLabel);
+    layout()->addWidget(assemblyDecodingLabel);
+    layout()->addWidget(commentLabel);
 
-    connect(valueLabel.get(), &QTextEdit::textChanged, this, &ByteView::change_value);
+    connect(valueLabel, &QTextEdit::textChanged, this, &ByteView::change_value);
 }
 
 void ByteView::change_value() {
@@ -76,4 +76,10 @@ void ByteView::change_value() {
 
 void ByteView::update_decoding() {
     assemblyDecodingLabel->setText(byte_description(memory[address]).c_str());
+}
+
+ByteView::~ByteView() {
+    delete valueLabel;
+    delete assemblyDecodingLabel;
+    delete mainLayout;
 }

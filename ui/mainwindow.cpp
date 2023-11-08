@@ -13,38 +13,35 @@
 using namespace Emulator;
 
 
-MainWindow::MainWindow(ROM &memory_, QWidget* parent): QMainWindow(parent), memory(memory_) {
-    mainWidget = std::make_unique<QWidget>(this);
+MainWindow::MainWindow(ROM &memory_, QWidget* parent): QMainWindow(parent), /*pageViews(), scrollAreas(),*/ memory(memory_) {
+    mainWidget = new QWidget(this);
 
-    pageViewsLayout = std::make_unique<QHBoxLayout>(mainWidget.get());
-    mainWidget->setLayout(pageViewsLayout.get());
-    setCentralWidget(mainWidget.get());
+    auto pageViewsLayout = new QHBoxLayout(mainWidget);
+    mainWidget->setLayout(pageViewsLayout);
+    setCentralWidget(mainWidget);
 
-    execute = std::make_unique<QAction>("Execute", this);
-    connect(execute.get(), &QAction::triggered, this, &MainWindow::execute_program);
+    auto execute = new QAction("Execute", this);
+    connect(execute, &QAction::triggered, this, &MainWindow::execute_program);
 
-    addPageView = std::make_unique<QAction>("Add page", this);
-    connect(addPageView.get(), &QAction::triggered, this, &MainWindow::add_page_view);
+    auto addPageView = new QAction("Add page", this);
+    connect(addPageView, &QAction::triggered, this, &MainWindow::add_page_view);
 
-    fileMenu = std::unique_ptr<QMenu>(menuBar()->addMenu("File"));
-    fileMenu->addAction(execute.get());
-    fileMenu->addAction(addPageView.get());
+    auto fileMenu = menuBar()->addMenu("File");
+    fileMenu->addAction(execute);
+    fileMenu->addAction(addPageView);
 }
 
 
 void MainWindow::add_page_view() {
     Byte page = (Byte)QInputDialog::getInt(this, "Page", "Page index", 0, 0, UINT8_MAX);
 
-    auto scrollArea = std::make_unique<QScrollArea>(mainWidget.get());
+    auto scrollArea = new QScrollArea(mainWidget);
 
-    auto pageView = std::make_unique<PageView>(page, memory, scrollArea.get());
+    auto pageView = new PageView(page, memory, scrollArea);
     scrollArea->setWidgetResizable(true);
-    scrollArea->setWidget(pageView.get());
+    scrollArea->setWidget(pageView);
 
-    pageViewsLayout->addWidget(scrollArea.get());
-
-    scrollAreas.push_back(std::move(scrollArea));
-    pageViews.push_back(std::move(pageView));
+    mainWidget->layout()->addWidget(scrollArea);
 }
 
 void MainWindow::execute_program() {
@@ -102,4 +99,8 @@ void MainWindow::execute_program() {
     }
 
     std::cout << cpu.dump(false) << '\n';
+}
+
+MainWindow::~MainWindow() {
+    delete mainWidget;
 };
