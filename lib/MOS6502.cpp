@@ -449,8 +449,10 @@ namespace Emulator {
     Byte MOS6502::shift_left(Byte value) noexcept {
         cycle++;
         SR[Flag::CARRY] = get_bit(value, 7);
-        set_writing_flags(value << 1);
-        return value << 1;
+
+        const Byte result = (Byte)(value << 1);
+        set_writing_flags(result);
+        return result;
     }
 
     std::expected<void, MOS6502::AddressOverflow> MOS6502::branch(char offset) noexcept {
@@ -508,7 +510,7 @@ namespace Emulator {
 
     Byte MOS6502::rotate_left(Byte value) noexcept {
         cycle++;
-        Byte newValue = value << 1;
+        Byte newValue = (Byte)(value << 1);
         set_bit(newValue, 0, SR[Flag::CARRY]);
         set_writing_flags(newValue);
         SR[Flag::CARRY] = get_bit(value, 7);

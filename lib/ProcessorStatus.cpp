@@ -73,12 +73,12 @@ std::string Emulator::ProcessorStatus::verbose_description() const noexcept {
 }
 
 Emulator::Byte Emulator::ProcessorStatus::to_byte() const noexcept {
-    Byte result = 0;
+    int result = 0;
     for (auto flag: std::ranges::reverse_view(flags)) {
         result <<= 1;
         result += flag;
     }
-    return result;
+    return (Byte)result;
 }
 
 Emulator::ProcessorStatus Emulator::ProcessorStatus::operator|(const Emulator::ProcessorStatus &other) const noexcept {
