@@ -5,15 +5,15 @@
 #include <iostream>
 #include <format>
 #include <utility>
-#include <algorithm>
 
 #include "MOS6502_helpers.hpp"
 
 namespace Emulator {
 
     void set_bit(Byte &byte, int number, bool value) {
-        if (value) byte |= 1 << number;
-        else byte &= ~(Byte)(1 << number);
+        const Byte setter = static_cast<Byte>(1 << number);
+        if (value) byte |= setter;
+        else byte &= ~setter;
     }
 
 

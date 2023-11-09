@@ -21,18 +21,18 @@ Q_OBJECT
 public:
     explicit ByteView(ROM &memory, Word address, QWidget *parent = nullptr);
 
+    ~ByteView() override;
+
 private slots:
     void change_value();
 
 private:
     void update_decoding();
 
-    std::unique_ptr<QLabel> indexLabel;
-    std::unique_ptr<QTextEdit> valueLabel;
-    std::unique_ptr<QLabel> assemblyDecodingLabel;
-    std::unique_ptr<QTextEdit> commentLabel;
+    QTextEdit* valueLabel;
+    QLabel* assemblyDecodingLabel;
 
-    std::unique_ptr<QHBoxLayout> mainLayout;
+    QHBoxLayout* mainLayout;
 
     ROM &memory;
     Word address;

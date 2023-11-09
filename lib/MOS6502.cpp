@@ -54,7 +54,7 @@ namespace Emulator {
         for (Word i = 0; i <= UINT8_MAX; i++) result += std::vformat("{:#02x} ", std::make_format_args(memory[i]));
 
         result += "\nStack: ";
-        for (int i = 0; i <= UINT8_MAX; i++) result += std::vformat("{:#02x} ", std::make_format_args(memory.stack((Byte)i)));
+        for (int i = 0; i <= UINT8_MAX; i++) result += std::vformat("{:#02x} ", std::make_format_args(memory.stack(static_cast<Byte>(i))));
 
         result += std::vformat("\nSpecial addresses:\n\tnon-maskable interrupt handler = {:#04x}\n\tpower on reset location = {:#04x}\n\tBRK/interrupt request handler = {:#04x}\n",
                                std::make_format_args(memory.get_word(ROM::INTERRUPT_HANDLER), memory.get_word(ROM::RESET_LOCATION), memory.get_word(ROM::BRK_HANDLER)));
@@ -62,7 +62,7 @@ namespace Emulator {
         if (include_memory) {
             result += "Remaining memory:\n";
             for (int i = 0x1000; i <= UINT16_MAX; i++)
-                if (!Emulator::ROM::is_in_stack((Word)i)) result += std::vformat("{:#02x} ", std::make_format_args(memory[(Word)i]));
+                if (!Emulator::ROM::is_in_stack(static_cast<Word>(i))) result += std::vformat("{:#02x} ", std::make_format_args(memory[static_cast<Word>(i)]));
             result += '\n';
         }
 
@@ -159,7 +159,7 @@ namespace Emulator {
 
     void MOS6502::set_writing_flags(Byte value) {
         SR[Flag::ZERO] = value == 0;
-        SR[Flag::NEGATIVE] = (char)value < 0;
+        SR[Flag::NEGATIVE] = static_cast<char>(value) < 0;
     }
 
     MOS6502::ExecutionResult MOS6502::execute(const Operation &operation) noexcept {
@@ -437,9 +437,9 @@ namespace Emulator {
 
     void MOS6502::add_to_accumulator(Byte value) noexcept {
         SR[Flag::OVERFLOW_F] = SR[Flag::CARRY];
-        add_with_overflow((char)AC, (char)value, SR[Flag::OVERFLOW_F], INT8_MIN, INT8_MAX);
+        add_with_overflow(static_cast<char>(AC), static_cast<char>(value), SR[Flag::OVERFLOW_F], INT8_MIN, INT8_MAX);
 
-        set_register(Register::AC, (Byte)add_with_overflow(AC, value, SR[Flag::CARRY], 0, UINT8_MAX));
+        set_register(Register::AC, Byte(add_with_overflow(AC, value, SR[Flag::CARRY], 0, UINT8_MAX)));
     }
 
     void MOS6502::and_with_accumulator(Byte value) noexcept {
@@ -449,14 +449,16 @@ namespace Emulator {
     Byte MOS6502::shift_left(Byte value) noexcept {
         cycle++;
         SR[Flag::CARRY] = get_bit(value, 7);
-        set_writing_flags(value << 1);
-        return value << 1;
+
+        const Byte result = static_cast<Byte>(value << 1);
+        set_writing_flags(result);
+        return result;
     }
 
     std::expected<void, MOS6502::AddressOverflow> MOS6502::branch(char offset) noexcept {
         if (offset > UINT16_MAX - PC || (offset < 0 && -offset > PC)) return std::unexpected(AddressOverflow());
 
-        PC = (Word)(PC + offset);
+        PC = static_cast<Word>(PC + offset);
         cycle++;
         return {};
     }
@@ -467,8 +469,8 @@ namespace Emulator {
         SR[Flag::ZERO] = result == 0;
 
         // for some reason, these flags are taken not from the result, but from the tested values
-        SR[Flag::OVERFLOW_F] = get_bit(value, (int)Flag::OVERFLOW_F);
-        SR[Flag::NEGATIVE] = get_bit(value, (int)Flag::NEGATIVE);
+        SR[Flag::OVERFLOW_F] = get_bit(value, static_cast<int>(Flag::OVERFLOW_F));
+        SR[Flag::NEGATIVE] = get_bit(value, static_cast<int>(Flag::NEGATIVE));
     }
 
     void MOS6502::compare(Byte reg, Byte value) noexcept {
@@ -508,7 +510,7 @@ namespace Emulator {
 
     Byte MOS6502::rotate_left(Byte value) noexcept {
         cycle++;
-        Byte newValue = value << 1;
+        Byte newValue = static_cast<Byte>(value << 1);
         set_bit(newValue, 0, SR[Flag::CARRY]);
         set_writing_flags(newValue);
         SR[Flag::CARRY] = get_bit(value, 7);
@@ -528,10 +530,10 @@ namespace Emulator {
 
     void MOS6502::subtract_from_accumulator(Byte value) noexcept {
         SR[Flag::OVERFLOW_F] = SR[Flag::CARRY];
-        subtract_with_overflow((char)AC, (char)value, SR[Flag::OVERFLOW_F], INT8_MIN, INT8_MAX);
+        subtract_with_overflow(static_cast<char>(AC), static_cast<char>(value), SR[Flag::OVERFLOW_F], INT8_MIN, INT8_MAX);
         SR[Flag::OVERFLOW_F] = !SR[Flag::OVERFLOW_F];
 
-        set_register(Register::AC, (Byte)subtract_with_overflow(AC, value, SR[Flag::CARRY], 0, UINT8_MAX));
+        set_register(Register::AC, static_cast<Byte>(subtract_with_overflow(AC, value, SR[Flag::CARRY], 0, UINT8_MAX)));
     }
 
     Byte MOS6502::index_zero_page(Byte address, Byte index) noexcept {
@@ -592,14 +594,14 @@ namespace Emulator {
             case ASL_ABSOLUTE:    return ASL_Absolute{.address = fetch_word()};
             case ASL_ABSOLUTE_X:  return ASL_AbsoluteX{.address = fetch_word()};
 
-            case BCC_RELATIVE:    return BCC{.offset = (char)memory.fetch_byte(PC++, cycle)};
-            case BCS_RELATIVE:    return BCS{.offset = (char)memory.fetch_byte(PC++, cycle)};
-            case BEQ_RELATIVE:    return BEQ{.offset = (char)memory.fetch_byte(PC++, cycle)};
-            case BNE_RELATIVE:    return BNE{.offset = (char)memory.fetch_byte(PC++, cycle)};
-            case BMI_RELATIVE:    return BMI{.offset = (char)memory.fetch_byte(PC++, cycle)};
-            case BPL_RELATIVE:    return BPL{.offset = (char)memory.fetch_byte(PC++, cycle)};
-            case BVC_RELATIVE:    return BVC{.offset = (char)memory.fetch_byte(PC++, cycle)};
-            case BVS_RELATIVE:    return BVS{.offset = (char)memory.fetch_byte(PC++, cycle)};
+            case BCC_RELATIVE:    return BCC{.offset = static_cast<char>(memory.fetch_byte(PC++, cycle))};
+            case BCS_RELATIVE:    return BCS{.offset = static_cast<char>(memory.fetch_byte(PC++, cycle))};
+            case BEQ_RELATIVE:    return BEQ{.offset = static_cast<char>(memory.fetch_byte(PC++, cycle))};
+            case BNE_RELATIVE:    return BNE{.offset = static_cast<char>(memory.fetch_byte(PC++, cycle))};
+            case BMI_RELATIVE:    return BMI{.offset = static_cast<char>(memory.fetch_byte(PC++, cycle))};
+            case BPL_RELATIVE:    return BPL{.offset = static_cast<char>(memory.fetch_byte(PC++, cycle))};
+            case BVC_RELATIVE:    return BVC{.offset = static_cast<char>(memory.fetch_byte(PC++, cycle))};
+            case BVS_RELATIVE:    return BVS{.offset = static_cast<char>(memory.fetch_byte(PC++, cycle))};
 
             case BIT_ZERO_PAGE:   return BIT_ZeroPage{.address = memory.fetch_byte(PC++, cycle)};
             case BIT_ABSOLUTE:    return BIT_Absolute{.address = fetch_word()};
@@ -758,12 +760,12 @@ namespace Emulator {
     Word MOS6502::resolve(Word address, AddressingMode mode) noexcept {
         switch (mode) {
             case AddressingMode::ZERO_PAGE:   return address;
-            case AddressingMode::ZERO_PAGE_X: return index_zero_page((Byte)address, X);
-            case AddressingMode::ZERO_PAGE_Y: return index_zero_page((Byte)address, Y);
+            case AddressingMode::ZERO_PAGE_X: return index_zero_page(static_cast<Byte>(address), X);
+            case AddressingMode::ZERO_PAGE_Y: return index_zero_page(static_cast<Byte>(address), Y);
             case AddressingMode::ABSOLUTE:    return address;
             case AddressingMode::ABSOLUTE_X:  return index_absolute(address, X);
             case AddressingMode::ABSOLUTE_Y:  return index_absolute(address, Y);
-            case AddressingMode::INDIRECT_X:  return fetch_word(index_zero_page((Byte)address, X));
+            case AddressingMode::INDIRECT_X:  return fetch_word(index_zero_page(static_cast<Byte>(address), X));
             case AddressingMode::INDIRECT_Y:  return index_absolute(fetch_word(address), Y);
         }
 

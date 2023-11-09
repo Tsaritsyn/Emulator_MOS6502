@@ -25,12 +25,11 @@ Q_OBJECT
 public:
     explicit PageView(Byte pageIndex, ROM &memory, QWidget *parent = nullptr);
 
-private:
-    std::unique_ptr<QVBoxLayout> mainLayout;
-    std::unique_ptr<ByteView> byteViews[256];
+    ~PageView() override;
 
-    Byte m_pageIndex;
-    ROM &m_memory;
+private:
+    QVBoxLayout* mainLayout;
+    std::array<ByteView*, 256> byteViews;
 };
 
 

@@ -22,19 +22,14 @@ public:
 
     void add_page_view();
 
+    ~MainWindow() override;
+
 private slots:
     void execute_program();
 
 private:
-    std::vector<std::unique_ptr<PageView>> pageViews;
-    std::vector<std::unique_ptr<QScrollArea>> scrollAreas;
 
-    std::unique_ptr<QWidget> mainWidget;
-    std::unique_ptr<QHBoxLayout> pageViewsLayout;
-
-    std::unique_ptr<QMenu> fileMenu;
-    std::unique_ptr<QAction> execute;
-    std::unique_ptr<QAction> addPageView;
+    QWidget* mainWidget;
 
     ROM &memory;
 };
