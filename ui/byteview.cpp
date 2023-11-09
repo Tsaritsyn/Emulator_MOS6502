@@ -58,7 +58,7 @@ void ByteView::change_value() {
 
     if (newValue <= UINT8_MAX) {
         std::cout << "Setting memory...\n";
-        auto result = memory.set_byte(address, (Byte)newValue);
+        auto result = memory.set_byte(address, static_cast<Byte>(newValue));
         std::cout << "Result obtained\n";
         if (!result.has_value()) {
             std::cout << "Result is an error\n";

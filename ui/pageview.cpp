@@ -15,7 +15,7 @@ PageView::PageView(Byte pageIndex, ROM &memory, QWidget *parent): QWidget(parent
     for (size_t i = 0; i <= UINT8_MAX; i++) {
         WordToBytes address;
         address.high() = pageIndex;
-        address.low() = (Byte)i;
+        address.low() = static_cast<Byte>(i);
 
         byteViews[i] = new ByteView(memory, address.word, this);
         mainLayout->addWidget(byteViews[i]);

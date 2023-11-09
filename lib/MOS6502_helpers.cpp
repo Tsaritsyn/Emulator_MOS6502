@@ -11,7 +11,7 @@
 namespace Emulator {
 
     void set_bit(Byte &byte, int number, bool value) {
-        const Byte setter = (Byte)(1 << number);
+        const Byte setter = static_cast<Byte>(1 << number);
         if (value) byte |= setter;
         else byte &= ~setter;
     }

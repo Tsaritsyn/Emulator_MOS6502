@@ -33,7 +33,7 @@ MainWindow::MainWindow(ROM &memory_, QWidget* parent): QMainWindow(parent), /*pa
 
 
 void MainWindow::add_page_view() {
-    Byte page = (Byte)QInputDialog::getInt(this, "Page", "Page index", 0, 0, UINT8_MAX);
+    Byte page = static_cast<Byte>(QInputDialog::getInt(this, "Page", "Page index", 0, 0, UINT8_MAX));
 
     auto scrollArea = new QScrollArea(mainWidget);
 
