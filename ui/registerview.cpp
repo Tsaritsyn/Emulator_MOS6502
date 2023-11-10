@@ -31,7 +31,7 @@ RegisterView::RegisterView(MOS6502 &cpu, QWidget *parent): QWidget(parent), m_cp
 
     for (size_t i = 0; i < valueLabels.size(); i++) {
         valueLabels[i] = new QLabel("undefined");
-        newLayout->addWidget(valueLabels[i], (int)i, 1);
+        newLayout->addWidget(valueLabels[i], static_cast<int>(i), 1);
     }
     update();
 

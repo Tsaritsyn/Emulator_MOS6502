@@ -135,13 +135,9 @@ public:
 };
 
 class MOS6502_TestFixture_ADC: public MOS6502_TestFixture_BinaryOp {};
-
 class MOS6502_TestFixture_SBC: public MOS6502_TestFixture_BinaryOp {};
-
 class MOS6502_TestFixture_AND: public MOS6502_TestFixture_BinaryOp {};
-
 class MOS6502_TestFixture_ORA: public MOS6502_TestFixture_BinaryOp {};
-
 class MOS6502_TestFixture_EOR: public MOS6502_TestFixture_BinaryOp {};
 
 

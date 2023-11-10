@@ -17,8 +17,8 @@ ConstantsView::ConstantsView(QWidget *parent): QWidget(parent), constants{BUILTI
     setLayout(newLayout);
 
     for (size_t i = 0; i < constants.size(); i++) {
-        newLayout->addWidget(new QLabel(QString::fromStdString(constants[i].name), this), (int)i, 0);
-        newLayout->addWidget(new QLabel(QString::fromStdString(to_string(constants[i].value)), this), (int)i, 1);
+        newLayout->addWidget(new QLabel(QString::fromStdString(constants[i].name), this), static_cast<int>(i), 0);
+        newLayout->addWidget(new QLabel(QString::fromStdString(to_string(constants[i].value)), this), static_cast<int>(i), 1);
     }
 }
 

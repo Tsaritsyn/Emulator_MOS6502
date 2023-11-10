@@ -166,38 +166,38 @@ INSTANTIATE_TEST_SUITE_P(ZeroResult, MOS6502_TestFixture_SBC, ::testing::Values(
         BinaryOpParameters{0, 0, true, 0, {Flag::ZERO, Flag::CARRY}},
         BinaryOpParameters{1, 1, true, 0, {Flag::ZERO, Flag::CARRY}},
         BinaryOpParameters{1, 0, false, 0, {Flag::ZERO, Flag::CARRY}},
-        BinaryOpParameters{(Byte)INT8_MIN, INT8_MAX, false, 0, {Flag::ZERO, Flag::OVERFLOW_F, Flag::CARRY}}
+        BinaryOpParameters{static_cast<Byte>(INT8_MIN), INT8_MAX, false, 0, {Flag::ZERO, Flag::OVERFLOW_F, Flag::CARRY}}
 ));
 
 
 INSTANTIATE_TEST_SUITE_P(NegativeResult, MOS6502_TestFixture_SBC, ::testing::Values(
-        BinaryOpParameters{0, 1, true, (Byte)-1, {Flag::NEGATIVE}},
-        BinaryOpParameters{0, 0, false, (Byte)-1, {Flag::NEGATIVE}},
-        BinaryOpParameters{0, 1, false, (Byte)-2, {Flag::NEGATIVE}},
-        BinaryOpParameters{100, (Byte)-100, true, 200, {Flag::NEGATIVE, Flag::OVERFLOW_F}}
+        BinaryOpParameters{0, 1, true, static_cast<Byte>(-1), {Flag::NEGATIVE}},
+        BinaryOpParameters{0, 0, false, static_cast<Byte>(-1), {Flag::NEGATIVE}},
+        BinaryOpParameters{0, 1, false, static_cast<Byte>(-2), {Flag::NEGATIVE}},
+        BinaryOpParameters{100, static_cast<Byte>(-100), true, 200, {Flag::NEGATIVE, Flag::OVERFLOW_F}}
 ));
 
 
 INSTANTIATE_TEST_SUITE_P(PositiveResult, MOS6502_TestFixture_SBC, ::testing::Values(
         BinaryOpParameters{1, 0, true, 1, {Flag::CARRY}},
-        BinaryOpParameters{(Byte)-100, (Byte)100, true, (Byte)-200, {Flag::OVERFLOW_F, Flag::CARRY}}
+        BinaryOpParameters{static_cast<Byte>(-100), 100, true, static_cast<Byte>(-200), {Flag::OVERFLOW_F, Flag::CARRY}}
 ));
 
 
 INSTANTIATE_TEST_SUITE_P(OverflowFromPositiveToNegative, MOS6502_TestFixture_SBC, ::testing::Values(
-        BinaryOpParameters{100, (Byte)-100, true, 200, {Flag::NEGATIVE, Flag::OVERFLOW_F}}
+        BinaryOpParameters{100, static_cast<Byte>(-100), true, 200, {Flag::NEGATIVE, Flag::OVERFLOW_F}}
 ));
 
 
 INSTANTIATE_TEST_SUITE_P(OverflowFromNegativeToPositive, MOS6502_TestFixture_SBC, ::testing::Values(
-        BinaryOpParameters{(Byte)-100, (Byte)100, true, (Byte)-200, {Flag::OVERFLOW_F, Flag::CARRY}},
-        BinaryOpParameters{(Byte)INT8_MIN, INT8_MAX, false, 0, {Flag::ZERO, Flag::OVERFLOW_F, Flag::CARRY}}
+        BinaryOpParameters{static_cast<Byte>(-100), 100, true, static_cast<Byte>(-200), {Flag::OVERFLOW_F, Flag::CARRY}},
+        BinaryOpParameters{static_cast<Byte>(INT8_MIN), INT8_MAX, false, 0, {Flag::ZERO, Flag::OVERFLOW_F, Flag::CARRY}}
 ));
 
 
 INSTANTIATE_TEST_SUITE_P(ClearingCarry, MOS6502_TestFixture_SBC, ::testing::Values(
-        BinaryOpParameters{0, 1, true, (Byte)-1, {Flag::NEGATIVE}},
-        BinaryOpParameters{0, 0, false, (Byte)-1, {Flag::NEGATIVE}},
-        BinaryOpParameters{0, 1, false, (Byte)-2, {Flag::NEGATIVE}},
-        BinaryOpParameters{100, (Byte)-100, true, 200, {Flag::NEGATIVE, Flag::OVERFLOW_F}}
+        BinaryOpParameters{0, 1, true, static_cast<Byte>(-1), {Flag::NEGATIVE}},
+        BinaryOpParameters{0, 0, false, static_cast<Byte>(-1), {Flag::NEGATIVE}},
+        BinaryOpParameters{0, 1, false, static_cast<Byte>(-2), {Flag::NEGATIVE}},
+        BinaryOpParameters{100, static_cast<Byte>(-100), true, 200, {Flag::NEGATIVE, Flag::OVERFLOW_F}}
 ));

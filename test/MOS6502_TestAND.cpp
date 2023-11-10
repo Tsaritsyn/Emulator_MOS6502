@@ -173,8 +173,8 @@ INSTANTIATE_TEST_SUITE_P(WithAllOnes, MOS6502_TestFixture_AND, ::testing::Values
         BinaryOpParameters{1, 0xff, false, 1, {}},
         BinaryOpParameters{2, 0xff, false, 2, {}},
         BinaryOpParameters{0x37, 0xff, false, 0x37, {}},
-        BinaryOpParameters{(Byte)-1, 0xff, false, (Byte)-1, {Flag::NEGATIVE}},
-        BinaryOpParameters{(Byte)-100, 0xff, false, (Byte)-100, {Flag::NEGATIVE}}
+        BinaryOpParameters{static_cast<Byte>(-1), 0xff, false, static_cast<Byte>(-1), {Flag::NEGATIVE}},
+        BinaryOpParameters{static_cast<Byte>(-100), 0xff, false, static_cast<Byte>(-100), {Flag::NEGATIVE}}
 ));
 
 INSTANTIATE_TEST_SUITE_P(ArbitraryNumbers, MOS6502_TestFixture_AND, ::testing::Values(

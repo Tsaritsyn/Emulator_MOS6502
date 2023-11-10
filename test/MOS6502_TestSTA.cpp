@@ -105,7 +105,7 @@ TEST_P(MOS6502_TestFixture_Transfer, STA_IndirectX_NoPageCrossing) {
 
     X = 0x01;
     ASSERT_TRUE(set_operation_arg(tableAddress));
-    ASSERT_TRUE(set_word((Byte)(tableAddress + X), targetAddress));
+    ASSERT_TRUE(set_word(static_cast<Byte>(tableAddress + X), targetAddress));
 
     test_transfer_without_flags(STA_INDIRECT_X,
                              GetParam(),
@@ -120,7 +120,7 @@ TEST_P(MOS6502_TestFixture_Transfer, STA_IndirectX_PageCrossing) {
 
     X = 0x40;
     ASSERT_TRUE(set_operation_arg(tableAddress));
-    ASSERT_TRUE(set_word((Byte)(tableAddress + X), targetAddress));
+    ASSERT_TRUE(set_word(static_cast<Byte>(tableAddress + X), targetAddress));
 
     test_transfer_without_flags(STA_INDIRECT_X,
                              GetParam(),

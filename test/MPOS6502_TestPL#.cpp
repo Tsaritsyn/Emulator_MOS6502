@@ -14,7 +14,7 @@ TEST_P(MOS6502_TestFixture_Transfer, PLA) {
 
     ProcessorStatus expectedFlags(0);
     if (arg == 0) expectedFlags[Emulator::Flag::ZERO] = SET;
-    if ((char)arg < 0) expectedFlags[Emulator::Flag::NEGATIVE] = SET;
+    if (static_cast<char>(arg) < 0) expectedFlags[Emulator::Flag::NEGATIVE] = SET;
     EXPECT_EQ(SR, expectedFlags);
 }
 

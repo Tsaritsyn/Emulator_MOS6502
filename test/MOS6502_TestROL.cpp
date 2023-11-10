@@ -31,7 +31,7 @@ TEST_P(MOS6502_TestFixture_ROL, Test_ZeroPageX_NoPageCrossing) {
                UNARY_ZERO_PAGE_X_PARAMS,
                writer_to_zero_page_X(address),
             // we cannot construct a reader here, since memory[address] gives us copy of byte, not a reference to actual byte of memory
-               [this]() { return memory[(Byte)(address + X)]; });
+               [this]() { return memory[static_cast<Byte>(address + X)]; });
 }
 
 TEST_P(MOS6502_TestFixture_ROL, Test_ZeroPageX_PageCrossing) {
@@ -42,7 +42,7 @@ TEST_P(MOS6502_TestFixture_ROL, Test_ZeroPageX_PageCrossing) {
                UNARY_ZERO_PAGE_X_PARAMS,
                writer_to_zero_page_X(address),
             // we cannot construct a reader here, since memory[address] gives us copy of byte, not a reference to actual byte of memory
-               [this]() { return memory[(Byte)(address + X)]; });
+               [this]() { return memory[static_cast<Byte>(address + X)]; });
 }
 
 TEST_P(MOS6502_TestFixture_ROL, Test_Absolute) {

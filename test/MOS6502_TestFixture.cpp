@@ -69,14 +69,14 @@ MOS6502_TextFixture::Writer MOS6502_TextFixture::writer_to_zero_page(Byte addres
 MOS6502_TextFixture::Writer MOS6502_TextFixture::writer_to_zero_page_X(Byte address) noexcept {
     return [this, address](Byte value) -> ROM::WriteResult {
         return memory.set_byte(PC + 1, address)
-                .and_then([this, address, value](){ return memory.set_byte((Byte)(address + X), value); });
+                .and_then([this, address, value](){ return memory.set_byte(static_cast<Byte>(address + X), value); });
     };
 }
 
 MOS6502_TextFixture::Writer MOS6502_TextFixture::writer_to_zero_page_Y(Byte address) noexcept {
     return [this, address](Byte value) -> ROM::WriteResult {
         return memory.set_byte(PC + 1, address)
-                .and_then([this, address, value](){ return memory.set_byte((Byte)(address + Y), value); });
+                .and_then([this, address, value](){ return memory.set_byte(static_cast<Byte>(address + Y), value); });
     };
 }
 
@@ -104,7 +104,7 @@ MOS6502_TextFixture::Writer MOS6502_TextFixture::writer_to_absolute_Y(Word addre
 MOS6502_TextFixture::Writer MOS6502_TextFixture::writer_to_indirect_X(Byte tableAddress, Word targetAddress) noexcept {
     return [this, tableAddress, targetAddress](Byte value) -> ROM::WriteResult {
         return memory.set_byte(PC + 1, tableAddress)
-            .and_then([this, tableAddress, targetAddress](){ return set_word((Byte)(tableAddress + X), targetAddress); })
+            .and_then([this, tableAddress, targetAddress](){ return set_word(static_cast<Byte>(tableAddress + X), targetAddress); })
             .and_then([this, targetAddress, value](){ return memory.set_byte(targetAddress, value); });
     };
 }
@@ -122,11 +122,11 @@ MOS6502_TextFixture::Reader MOS6502_TextFixture::reader_from_zero_page(Byte addr
 }
 
 MOS6502_TextFixture::Reader MOS6502_TextFixture::reader_from_zero_page_X(Byte address) noexcept {
-    return [this, address]() { return memory[(Byte)(address + X)]; };
+    return [this, address]() { return memory[static_cast<Byte>(address + X)]; };
 }
 
 MOS6502_TextFixture::Reader MOS6502_TextFixture::reader_from_zero_page_Y(Byte address) noexcept {
-    return [this, address]() { return memory[(Byte)(address + Y)]; };
+    return [this, address]() { return memory[static_cast<Byte>(address + Y)]; };
 }
 
 MOS6502_TextFixture::Reader MOS6502_TextFixture::reader_from_absolute(Word address) noexcept {
@@ -217,7 +217,7 @@ void MOS6502_TestFixture_Transfer::test_transfer_with_flags(OpCode opcode,
     const auto expectedStatus = [arg]{
         ProcessorStatus result(0);
         if (arg == 0) result[Flag::ZERO] = SET;
-        if ((char)arg < 0) result[Flag::NEGATIVE] = SET;
+        if (static_cast<char>(arg) < 0) result[Flag::NEGATIVE] = SET;
         return result;
     }();
 
@@ -312,7 +312,7 @@ void MOS6502_TestFixture_Branch::test_branch(OpCode opcode,
 
     SR[targetFlag] = (params.doBranch) ? targetValue : !targetValue;
     ASSERT_TRUE(memory.set_byte(PC, opcode));
-    ASSERT_TRUE(memory.set_byte(PC + 1, (Byte)params.offset));
+    ASSERT_TRUE(memory.set_byte(PC + 1, static_cast<Byte>(params.offset)));
 
     maxNumberOfCommandsToExecute = 1;
     ASSERT_TRUE(execute());

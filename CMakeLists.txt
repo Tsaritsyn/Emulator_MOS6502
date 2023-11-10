@@ -7,9 +7,6 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wshadow -Wconversion -Wpedantic -Werror" )
-
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wnon-virtual-dtor -Wold-style-cast -Wcast-align -Woverloaded-virtual -Wunused -Wduplicated-cond -Wduplicated-branches -Wnull-dereference -Wuseless-cast -Wimplicit-fallthrough" )
 
 # allows huge std::variant
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O1 -Wa,-mbig-obj" )
@@ -52,6 +49,7 @@ add_executable(Emulator_MOS6502 main.cpp
 )
 
 target_include_directories(Emulator_MOS6502 PRIVATE lib ui)
+target_compile_options(Emulator_MOS6502 PRIVATE -Wall -Wextra -Wshadow -Wconversion -Wpedantic -Werror -Wnon-virtual-dtor -Wold-style-cast -Wcast-align -Woverloaded-virtual -Wunused -Wduplicated-cond -Wduplicated-branches -Wnull-dereference -Wuseless-cast -Wimplicit-fallthrough)
 
 
 
@@ -160,6 +158,7 @@ add_executable(Emulator_MOS6502_Test
 )
 
 target_include_directories(Emulator_MOS6502_Test PRIVATE lib test)
+target_compile_options(Emulator_MOS6502_Test PRIVATE -Wall -Wextra -Wshadow -Wconversion -Wpedantic -Werror -Wnon-virtual-dtor -Wold-style-cast -Wcast-align -Woverloaded-virtual -Wunused -Wduplicated-cond -Wduplicated-branches -Wnull-dereference -Wuseless-cast -Wimplicit-fallthrough)
 
 target_link_libraries(Emulator_MOS6502_Test gtest gtest_main)
 add_test(NAME test COMMAND Emulator_MOS6502)

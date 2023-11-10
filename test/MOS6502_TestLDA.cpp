@@ -135,5 +135,5 @@ TEST_P(MOS6502_TestFixture_Transfer, LDA_IndirectY_PageCrossing) {
                              reader_from(AC));
 }
 
-INSTANTIATE_TEST_SUITE_P(AllTests, MOS6502_TestFixture_Transfer, ::testing::Values(0, 1, 10, 100, (Byte)-10, 255));
+INSTANTIATE_TEST_SUITE_P(AllTests, MOS6502_TestFixture_Transfer, ::testing::Values(0, 1, 10, 100, static_cast<Byte>(-10), 255));
 

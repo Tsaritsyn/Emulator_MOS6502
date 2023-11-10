@@ -163,24 +163,24 @@ TEST_P(MOS6502_TestFixture_ORA, Test_IndirectY_PageCrossing) {
 
 
 
-INSTANTIATE_TEST_SUITE_P(WithZero, MOS6502_TestFixture_OR, ::testing::Values(
+INSTANTIATE_TEST_SUITE_P(WithZero, MOS6502_TestFixture_ORA, ::testing::Values(
         BinaryOpParameters{0, 0, false, 0, {Flag::ZERO}},
         BinaryOpParameters{1, 0, false, 1, {}},
         BinaryOpParameters{2, 0, false, 2, {}},
         BinaryOpParameters{0x37, 0, false, 0x37, {}},
-        BinaryOpParameters{(Byte)-1, 0, false, (Byte)-1, {Flag::NEGATIVE}},
-        BinaryOpParameters{(Byte)-100, 0, false, (Byte)-100, {Flag::NEGATIVE}}
+        BinaryOpParameters{static_cast<Byte>(-1), 0, false, static_cast<Byte>(-1), {Flag::NEGATIVE}},
+        BinaryOpParameters{static_cast<Byte>(-100), 0, false, static_cast<Byte>(-100), {Flag::NEGATIVE}}
 ));
 
-INSTANTIATE_TEST_SUITE_P(WithAllOnes, MOS6502_TestFixture_OR, ::testing::Values(
+INSTANTIATE_TEST_SUITE_P(WithAllOnes, MOS6502_TestFixture_ORA, ::testing::Values(
         BinaryOpParameters{1, 0xff, false, 0xff, {Flag::NEGATIVE}},
         BinaryOpParameters{2, 0xff, false, 0xff, {Flag::NEGATIVE}},
         BinaryOpParameters{0x37, 0xff, false, 0xff, {Flag::NEGATIVE}},
-        BinaryOpParameters{(Byte)-1, 0xff, false, 0xff, {Flag::NEGATIVE}},
-        BinaryOpParameters{(Byte)-100, 0xff, false, 0xff, {Flag::NEGATIVE}}
+        BinaryOpParameters{static_cast<Byte>(-1), 0xff, false, 0xff, {Flag::NEGATIVE}},
+        BinaryOpParameters{static_cast<Byte>(-100), 0xff, false, 0xff, {Flag::NEGATIVE}}
 ));
 
-INSTANTIATE_TEST_SUITE_P(ArbitraryNumbers, MOS6502_TestFixture_OR, ::testing::Values(
+INSTANTIATE_TEST_SUITE_P(ArbitraryNumbers, MOS6502_TestFixture_ORA, ::testing::Values(
         BinaryOpParameters{0x59, 0x3c, false, 0x7d, {}},
         BinaryOpParameters{0x82, 0x5e, false, 0xde, {Flag::NEGATIVE}},
         BinaryOpParameters{0xd7, 0x2f, false, 0xff, {Flag::NEGATIVE}},
