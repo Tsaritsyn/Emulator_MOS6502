@@ -42,6 +42,9 @@ add_executable(Emulator_MOS6502 main.cpp
         lib/ROM.hpp
         lib/ProcessorStatus.cpp
         lib/ProcessorStatus.hpp
+        ui/helpers.cpp
+        ui/helpers.hpp
+        ui/definitions.hpp
 )
 
 target_include_directories(Emulator_MOS6502 PRIVATE lib ui)
