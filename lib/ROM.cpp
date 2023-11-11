@@ -25,9 +25,7 @@ std::expected<void, Emulator::ROM::StackOverride> Emulator::ROM::set_byte(Word a
 }
 
 std::expected<void, Emulator::ROM::StackOverride> Emulator::ROM::set_byte(Emulator::Word address, Emulator::Byte value) {
-    if (is_in_stack(address)) {
-        return std::unexpected<StackOverride>{address};
-    }
+    if (is_in_stack(address)) return std::unexpected<StackOverride>{address};
     m_bytes[address] = value;
     return {};
 }

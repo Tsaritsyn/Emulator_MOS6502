@@ -22,6 +22,7 @@ namespace Emulator {
         static constexpr Word INTERRUPT_HANDLER = 0xFFFA;
         static constexpr Word RESET_LOCATION = 0xFFFC;
         static constexpr Word BRK_HANDLER = 0xFFFE;
+        static constexpr Word STACK_BOTTOM = 0x0100;
 
 
         ROM(): m_bytes{} {};
@@ -48,8 +49,6 @@ namespace Emulator {
         [[nodiscard]] static bool is_in_stack(Word address) noexcept { return (address >= STACK_BOTTOM) && (address <= STACK_BOTTOM + UINT8_MAX); }
 
     private:
-        static constexpr Word STACK_BOTTOM = 0x0100;
-
         std::array<Byte, UINT16_MAX> m_bytes;
     };
 

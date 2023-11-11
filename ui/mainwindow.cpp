@@ -16,8 +16,8 @@ using namespace Emulator;
 MainWindow::MainWindow(ROM &memory_, QWidget* parent): QMainWindow(parent), /*pageViews(), scrollAreas(),*/ memory(memory_) {
     mainWidget = new QWidget(this);
 
-    auto pageViewsLayout = new QHBoxLayout(mainWidget);
-    mainWidget->setLayout(pageViewsLayout);
+    auto mainLayout = new QHBoxLayout(mainWidget);
+    mainWidget->setLayout(mainLayout);
     setCentralWidget(mainWidget);
 
     auto execute = new QAction("Execute", this);
@@ -25,6 +25,15 @@ MainWindow::MainWindow(ROM &memory_, QWidget* parent): QMainWindow(parent), /*pa
 
     auto addPageView = new QAction("Add page", this);
     connect(addPageView, &QAction::triggered, this, &MainWindow::add_page_view);
+
+    environmentWidget = new QWidget(mainWidget);
+    auto environmentLayout = new QVBoxLayout(environmentWidget);
+    environmentWidget->setLayout(environmentLayout);
+
+    mainLayout->addWidget(environmentWidget);
+
+    auto constantsView = new ConstantsView(environmentWidget);
+    environmentLayout->addWidget(constantsView);
 
     auto fileMenu = menuBar()->addMenu("File");
     fileMenu->addAction(execute);
@@ -49,6 +58,9 @@ void MainWindow::execute_program() {
     cpu.burn(memory);
     cpu.reset();
     cpu.stop_on_break(true);
+
+    auto registerView = new RegisterView(cpu, this);
+    environmentWidget->layout()->addWidget(registerView);
 
     auto executionStatus = cpu.execute();
 
@@ -98,7 +110,7 @@ void MainWindow::execute_program() {
                 );
     }
 
-    std::cout << cpu.dump(false) << '\n';
+    registerView->update();
 }
 
 MainWindow::~MainWindow() {
